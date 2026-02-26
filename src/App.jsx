@@ -56,6 +56,8 @@ function App() {
       <main>
         {/* Hero Section */}
         <section className="hero">
+          <div className="hero-bg"></div>
+          <div className="hero-overlay"></div>
           <div className="hero-content">
             <h1 className="fade-in-up">
               Твой аромат <br />
@@ -63,7 +65,7 @@ function App() {
             </h1>
             <p className="fade-in-up delay-1">
               Эксклюзивная оригинальная парфюмерия на распив.
-              Удобные форматы 3, 5 и 10 мл для тех, кто ценит качество, стиль и возможность меняться.
+              Удобные форматы 3, 5, 10 и 100 мл для тех, кто ценит качество, стиль и возможность меняться.
             </p>
             <div className="hero-actions fade-in-up delay-2">
               <a href="#catalog" className="btn-primary" style={{ textDecoration: 'none' }}>
@@ -100,7 +102,7 @@ function App() {
                   <Droplets size={36} color="var(--color-accent-blue)" />
                 </div>
                 <h3 style={{ fontSize: '1.4rem' }}>Собери гардероб</h3>
-                <p style={{ color: 'var(--color-text-muted)' }}>Удобные атомайзеры 3, 5, 10 мл позволяют собрать коллекцию роскошных ароматов без переплат за полноразмерные флаконы.</p>
+                <p style={{ color: 'var(--color-text-muted)' }}>Удобные атомайзеры 3, 5, 10 и 100 мл позволяют собрать коллекцию роскошных ароматов без переплат за полноразмерные флаконы.</p>
               </div>
 
               <div className="glass-card" style={{ padding: '3rem 2rem', textAlign: 'center' }}>

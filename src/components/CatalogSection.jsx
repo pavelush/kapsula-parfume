@@ -14,7 +14,7 @@ const fragrances = [
             5: { price: "2 450" },
             10: { price: "4 900" }
         },
-        imgUrl: "https://static.tildacdn.com/stor3963-3565-4835-a438-373161353930/e9cdaaa2ce3d4a655b7e62f75c637d08.png"
+        imgUrl: "/images/products/bal-dafrique.png"
     },
     {
         id: 2,
@@ -27,7 +27,7 @@ const fragrances = [
             5: { price: "1 600" },
             10: { price: "3 200" }
         },
-        imgUrl: "https://static.tildacdn.com/stor6631-3537-4664-b830-663065616131/c05a4b6ed5466ccb83903995491d427e.png"
+        imgUrl: "/images/products/pink-molecule.png"
     },
     {
         id: 3,
@@ -40,7 +40,7 @@ const fragrances = [
             5: { price: "4 700" },
             10: { price: "9 400" }
         },
-        imgUrl: "https://static.tildacdn.com/stor3966-6238-4362-b830-303966653166/c864343337355786b4b263b5c0c48999.png"
+        imgUrl: "/images/products/gentle-fluidity.png"
     },
     {
         id: 4,
@@ -53,7 +53,7 @@ const fragrances = [
             5: { price: "5 000" },
             10: { price: "10 000" }
         },
-        imgUrl: "https://static.tildacdn.com/stor6231-3866-4963-b662-666563336638/049801f9f6dfd028ad36404b504f0221.png"
+        imgUrl: "/images/products/blue-talisman.png"
     },
     {
         id: 5,
@@ -66,20 +66,20 @@ const fragrances = [
             5: { price: "4 500" },
             10: { price: "9 000" }
         },
-        imgUrl: "https://static.tildacdn.com/stor3830-3435-4634-b538-313831653565/0d23fce2320c4054f2fa01249a8fd4d8.png"
+        imgUrl: "/images/products/guidance.png"
     },
     {
         id: 6,
-        name: "Baccarat Rouge 540",
+        name: "Morning Chess",
         description: "Тот самый легендарный аромат от Франсиса Кюркджяна. Слияние жасмина, шафрана и амбры.",
-        brand: "Maison Francis Kurkdjian",
+        brand: "Vilhelm Parfumerie",
         colorTheme: "rgba(220, 38, 38, 0.15)", // Red theme
         prices: {
             3: { price: "2 500" },
             5: { price: "4 000" },
             10: { price: "8 000" }
         },
-        imgUrl: "https://static.tildacdn.com/stor6662-6238-4234-b235-373262333633/c8ce4ad533f8e5837ff2ce3462f8373b.png"
+        imgUrl: "/images/products/morning-chess.webp"
     }
 ];
 
