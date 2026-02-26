@@ -11,7 +11,7 @@ function App() {
   const [favorites, setFavorites] = useState([]);
 
   const toggleFavorite = (id) => {
-    setFavorites(prev => 
+    setFavorites(prev =>
       prev.includes(id) ? prev.filter(fId => fId !== id) : [...prev, id]
     );
   };
@@ -79,7 +79,7 @@ function App() {
               <span className="text-gradient">всегда с тобой</span>
             </h1>
             <p className="fade-in-up delay-1">
-              Эксклюзивная оригинальная парфюмерия на распив.
+              Эксклюзивная оригинальная парфюмерия.
               Удобные форматы 3, 5, 10 и 100 мл для тех, кто ценит качество, стиль и возможность меняться.
             </p>
             <div className="hero-actions fade-in-up delay-2">
