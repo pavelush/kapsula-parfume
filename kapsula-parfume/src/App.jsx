@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import CatalogSection from './components/CatalogSection';
 import FAQSection from './components/FAQSection';
-import { ShoppingBag, ChevronRight, Menu, X, Star, Droplets, ShieldCheck, Sun, Moon } from 'lucide-react';
+import { ShoppingBag, ChevronRight, Menu, X, Star, Droplets, ShieldCheck, Sun, Moon, Heart } from 'lucide-react';
 import './index.css';
 
 function App() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLightMode, setIsLightMode] = useState(false);
+  const [favorites, setFavorites] = useState([]);
+
+  const toggleFavorite = (id) => {
+    setFavorites(prev => 
+      prev.includes(id) ? prev.filter(fId => fId !== id) : [...prev, id]
+    );
+  };
 
   useEffect(() => {
     // Optionally load from localStorage here if desired
@@ -41,6 +48,14 @@ function App() {
           <div className="nav-actions" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <button className="btn-icon" onClick={() => setIsLightMode(!isLightMode)} title="Переключить тему">
               {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
+            </button>
+            <button className="btn-icon" style={{ position: 'relative' }} title="Избранное">
+              <Heart size={20} fill={favorites.length > 0 ? "var(--color-accent-gold, #fbbf24)" : "none"} color={favorites.length > 0 ? "var(--color-accent-gold, #fbbf24)" : "currentColor"} />
+              {favorites.length > 0 && (
+                <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: 'var(--gradient-primary)', color: 'white', fontSize: '10px', fontWeight: 'bold', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {favorites.length}
+                </span>
+              )}
             </button>
             <button className="btn-icon">
               <ShoppingBag size={20} />
@@ -79,7 +94,7 @@ function App() {
         </section>
 
         {/* Catalog Section Refactored to Component */}
-        <CatalogSection />
+        <CatalogSection favorites={favorites} toggleFavorite={toggleFavorite} />
 
         {/* Features / About Section */}
         <section id="about" className="section" style={{ background: 'rgba(25, 25, 30, 0.4)', position: 'relative' }}>

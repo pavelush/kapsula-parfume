@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, ChevronDown } from 'lucide-react';
+import { ShoppingBag, ChevronDown, Heart, Filter, X } from 'lucide-react';
 
 // Mock data based on the real site context and aesthetic requirements
 const fragrances = [
@@ -83,7 +83,7 @@ const fragrances = [
     }
 ];
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, isFavorite, onToggleFavorite }) => {
     const [selectedVolume, setSelectedVolume] = useState(5); // Default 5ml
     const [isHovered, setIsHovered] = useState(false);
     const currentPrice = product.prices[selectedVolume];
@@ -122,6 +122,30 @@ const ProductCard = ({ product }) => {
                 justifyContent: 'center',
                 overflow: 'hidden'
             }}>
+                <button
+                    onClick={(e) => { e.preventDefault(); onToggleFavorite(product.id); }}
+                    style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        background: isFavorite ? 'rgba(251, 191, 36, 0.2)' : 'rgba(0,0,0,0.4)',
+                        border: `1px solid ${isFavorite ? 'rgba(251, 191, 36, 0.5)' : 'var(--glass-border)'}`,
+                        borderRadius: '50%',
+                        width: '36px',
+                        height: '36px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        zIndex: 2,
+                        backdropFilter: 'blur(5px)',
+                        transition: 'all 0.3s ease',
+                        color: isFavorite ? 'var(--color-accent-gold, #fbbf24)' : 'white'
+                    }}
+                    title={isFavorite ? "Убрать из избранного" : "В избранное"}
+                >
+                    <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
+                </button>
                 <div style={{
                     width: '100%',
                     height: '100%',
@@ -194,14 +218,89 @@ const ProductCard = ({ product }) => {
     );
 }
 
-export default function CatalogSection() {
+export default function CatalogSection({ favorites = [], toggleFavorite = () => { } }) {
+    const [selectedBrands, setSelectedBrands] = useState([]);
+
+    // Calculate max price and min price from products based on their minimal variation
+    const maxAvailablePrice = Math.max(...fragrances.map(f => Math.max(...Object.values(f.prices).map(p => parseInt(p.price.replace(/[^\d]/g, ''), 10)))));
+    const minAvailablePrice = Math.min(...fragrances.map(f => Math.min(...Object.values(f.prices).map(p => parseInt(p.price.replace(/[^\d]/g, ''), 10)))));
+
+    const [maxPrice, setMaxPrice] = useState(maxAvailablePrice);
+
+    const brands = [...new Set(fragrances.map(f => f.brand))].sort();
+
+    const toggleBrand = (brand) => {
+        setSelectedBrands(prev =>
+            prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]
+        );
+    };
+
+    const filteredFragrances = fragrances.filter(product => {
+        const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(product.brand);
+        const productMinPrice = Math.min(...Object.values(product.prices).map(p => parseInt(p.price.replace(/[^\d]/g, ''), 10)));
+        const matchesPrice = productMinPrice <= maxPrice;
+
+        return matchesBrand && matchesPrice;
+    });
+
     return (
         <section id="catalog" className="section container">
-            <div style={{ textAlign: 'center', marginBottom: '4rem', maxWidth: '700px', margin: '0 auto 4rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '3rem', maxWidth: '700px', margin: '0 auto 3rem' }}>
                 <h2 className="fade-in-up">Коллекция <span className="text-gradient">Ароматов</span></h2>
                 <p className="fade-in-up delay-1" style={{ color: 'var(--color-text-muted)', fontSize: '1.1rem' }}>
                     Тщательно отобранная нишевая и селективная парфюмерия. Выберите оптимальный объем для знакомства или постоянного использования.
                 </p>
+            </div>
+
+            {/* Filters Section */}
+            <div className="glass-card fade-in-up delay-2" style={{ padding: '1.5rem', marginBottom: '3rem', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
+                <div style={{ flex: '1 1 280px' }}>
+                    <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'white' }}><Filter size={18} /> Бренды</h4>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        {brands.map(brand => (
+                            <button
+                                key={brand}
+                                onClick={() => toggleBrand(brand)}
+                                style={{
+                                    padding: '6px 14px',
+                                    borderRadius: '20px',
+                                    border: `1px solid ${selectedBrands.includes(brand) ? 'var(--color-accent-gold)' : 'var(--glass-border)'}`,
+                                    background: selectedBrands.includes(brand) ? 'rgba(251, 191, 36, 0.1)' : 'transparent',
+                                    color: selectedBrands.includes(brand) ? 'var(--color-accent-gold)' : 'var(--color-text-muted)',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                }}
+                            >
+                                {brand}
+                                {selectedBrands.includes(brand) && <X size={12} />}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div style={{ flex: '1 1 280px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h4 style={{ color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>Цена до:</h4>
+                        <span style={{ color: 'var(--color-accent-gold)', fontWeight: 'bold', fontSize: '1.1rem' }}>{maxPrice.toLocaleString('ru-RU')} ₽</span>
+                    </div>
+                    <input
+                        type="range"
+                        min={minAvailablePrice}
+                        max={maxAvailablePrice}
+                        step="100"
+                        value={maxPrice}
+                        onChange={(e) => setMaxPrice(parseInt(e.target.value, 10))}
+                        style={{ width: '100%', accentColor: 'var(--color-accent-gold)', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px', outline: 'none', cursor: 'pointer' }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.8rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                        <span>{minAvailablePrice.toLocaleString('ru-RU')} ₽</span>
+                        <span>{maxAvailablePrice.toLocaleString('ru-RU')} ₽</span>
+                    </div>
+                </div>
             </div>
 
             <div style={{
@@ -209,9 +308,21 @@ export default function CatalogSection() {
                 gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
                 gap: '2.5rem'
             }}>
-                {fragrances.map(product => (
-                    <ProductCard key={product.id} product={product} />
-                ))}
+                {filteredFragrances.length > 0 ? (
+                    filteredFragrances.map(product => (
+                        <ProductCard
+                            key={product.id}
+                            product={product}
+                            isFavorite={favorites.includes(product.id)}
+                            onToggleFavorite={toggleFavorite}
+                        />
+                    ))
+                ) : (
+                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '20px', border: '1px dashed var(--glass-border)' }}>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: '1.2rem', marginBottom: '1rem' }}>Ничего не найдено по вашим фильтрам.</p>
+                        <button onClick={() => { setSelectedBrands([]); setMaxPrice(maxAvailablePrice); }} className="btn-secondary" style={{ padding: '10px 24px' }}>Сбросить фильтры</button>
+                    </div>
+                )}
             </div>
 
             <div style={{ textAlign: 'center', marginTop: '4rem' }}>
