@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Trash2, ShoppingBag } from 'lucide-react';
+import PrivacyPolicyModal from './PrivacyPolicyModal';
 
 export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, updateQuantity, clearCart }) {
     const [paymentMethods, setPaymentMethods] = useState([]);
@@ -14,6 +15,8 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
+    const [isConsentGiven, setIsConsentGiven] = useState(false);
+    const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -273,13 +276,40 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                                     ))}
                                 </select>
                             </div>
-                            <button type="submit" className="btn-primary" disabled={isSubmitting} style={{ padding: '14px', width: '100%', marginTop: '10px' }}>
+
+                            <div style={{ marginTop: '10px' }}>
+                                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                                    <input
+                                        type="checkbox"
+                                        required
+                                        checked={isConsentGiven}
+                                        onChange={(e) => setIsConsentGiven(e.target.checked)}
+                                        style={{ marginTop: '3px', width: '16px', height: '16px', accentColor: 'var(--color-accent-gold)' }}
+                                    />
+                                    <span>
+                                        Я даю согласие на обработку персональных данных в соответствии с{' '}
+                                        <span
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setIsPrivacyModalOpen(true);
+                                            }}
+                                            style={{ color: 'var(--color-accent-gold)', textDecoration: 'underline', cursor: 'pointer' }}
+                                        >
+                                            политикой конфиденциальности
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <button type="submit" className="btn-primary" disabled={isSubmitting || !isConsentGiven} style={{ padding: '14px', width: '100%', marginTop: '10px', opacity: (!isConsentGiven || isSubmitting) ? 0.5 : 1, cursor: (!isConsentGiven || isSubmitting) ? 'not-allowed' : 'pointer' }}>
                                 {isSubmitting ? 'Оформление...' : 'Оформить заказ'}
                             </button>
                         </form>
                     </div>
                 )}
             </div>
+
+            <PrivacyPolicyModal isOpen={isPrivacyModalOpen} onClose={() => setIsPrivacyModalOpen(false)} />
 
             <style dangerouslySetInnerHTML={{
                 __html: `

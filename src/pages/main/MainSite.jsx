@@ -15,9 +15,11 @@ function MainSite() {
     contact_phone: '+7 916 203 54 94',
     contact_address: 'Россия, Москва, ТЦ Авиапарк (1 этаж)',
     contact_hours: 'Ежедневно 10:00 - 22:00',
+    contact_map_url: 'https://yandex.ru/map-widget/v1/?z=12&ol=biz&oid=166160100779',
     social_telegram: 'https://t.me/kapsulaparfum',
     social_instagram: 'https://www.instagram.com/kapsula.parfum',
-    social_vk: 'https://vk.ru/kapsula.parfum'
+    social_vk: 'https://vk.ru/kapsula.parfum',
+    social_tiktok: 'https://www.tiktok.com/@kapsulaparfum?_r=1&_t=ZS-93gqFKeHXou'
   });
 
   const toggleFavorite = (id) => {
@@ -226,22 +228,29 @@ function MainSite() {
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15.08 2H8.92C3.13 2 2 3.13 2 8.92v6.16C2 20.87 3.13 22 8.92 22h6.16c5.79 0 6.92-1.13 6.92-6.92V8.92C22 3.13 20.87 2 15.08 2Zm2.55 13.56c.49.54 1.01 1.05 1.47 1.62.24.28.45.67.14.99-.24.22-.65.21-.97.21h-2.14c-.6 0-.98-.24-1.33-.7-.41-.56-.83-1.12-1.29-1.65-.25-.28-.53-.33-.84-.14-.42.24-.55.67-.55 1.13v.8c0 .35-.15.54-.51.56-1.46.04-2.81-.33-3.99-1.2-1.39-1.04-2.42-2.4-3.26-3.95-.53-.98-.99-1.99-1.42-3.01-.15-.36-.05-.59.35-.61h2.15c.34 0 .58.15.72.48.51 1.25 1.1 2.45 1.94 3.49.19.24.41.33.68.21.31-.14.41-.42.41-.75v-2.3c0-.42-.14-.64-.52-.75.2-.17.44-.26.7-.26h1.9c.32.06.44.24.44.58v2.79c0 .4.15.54.45.42.27-.11.48-.31.67-.54.67-.85 1.21-1.78 1.65-2.75.14-.3.34-.44.66-.44h2.24c.05 0 .11 0 .16.02.39.09.47.33.31.66-.54.99-1.12 1.96-1.8 2.85-.31.42-.32.68.04 1.08Z" /></svg>
                   </a>
                 )}
+                {settings.social_tiktok && (
+                  <a href={settings.social_tiktok} target="_blank" rel="noopener noreferrer" className="btn-icon" style={{ width: '40px', height: '40px' }} title="TikTok">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.12-3.44-3.17-3.64-5.46-.24-2.42.86-4.99 2.98-6.31 1.4-.89 3.12-1.25 4.75-1.06V11.2c-1.16-.27-2.39-.12-3.47.33-1.07.45-1.95 1.34-2.37 2.4-.41 1.05-.33 2.27.24 3.24.59.99 1.63 1.64 2.79 1.8 1.25.17 2.54-.15 3.55-.88.94-.69 1.53-1.74 1.66-2.9.11-1.04.05-2.09.05-3.13V0h1.76z" /></svg>
+                  </a>
+                )}
               </div>
             </div>
           </div>
         </div>
 
         {/* Yandex Map Wrap */}
-        <div className="container" style={{ marginBottom: '3rem', borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)' }}>
-          <iframe
-            src="https://yandex.ru/map-widget/v1/?z=12&ol=biz&oid=166160100779"
-            width="100%"
-            height="400"
-            frameBorder="0"
-            allowFullScreen={true}
-            style={{ position: 'relative', display: 'block' }}
-          ></iframe>
-        </div>
+        {settings.contact_map_url && (
+          <div className="container" style={{ marginBottom: '3rem', borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)' }}>
+            <iframe
+              src={settings.contact_map_url}
+              width="100%"
+              height="400"
+              frameBorder="0"
+              allowFullScreen={true}
+              style={{ position: 'relative', display: 'block' }}
+            ></iframe>
+          </div>
+        )}
         <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
           <span>© {new Date().getFullYear()} Kapsula Parfume. Все права защищены.</span>
           <a href="/privacy" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Политика конфиденциальности</a>

@@ -6,11 +6,11 @@ import './Admin.css';
 const navItems = [
     { name: 'Заказы', path: '/admin', icon: ShoppingCart },
     { name: 'Товары', path: '/admin/products', icon: Package },
-    { name: 'Доставка', path: '/admin/delivery', icon: MapPin },
     { name: 'Бренды', path: '/admin/brands', icon: LayoutList },
-    { name: 'Вопросы (FAQ)', path: '/admin/faq', icon: MessageSquare },
-    { name: 'Настройки', path: '/admin/settings', icon: Settings },
+    { name: 'Доставка', path: '/admin/delivery', icon: MapPin },
+    { name: 'FAQ', path: '/admin/faq', icon: MessageSquare },
     { name: 'Оплата', path: '/admin/payments', icon: CreditCard },
+    { name: 'Настройки', path: '/admin/settings', icon: Settings },
 ];
 
 export default function AdminLayout({ children }) {

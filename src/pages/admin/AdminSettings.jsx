@@ -106,6 +106,16 @@ export default function AdminSettings() {
                             onChange={(e) => handleChange('contact_address', e.target.value)}
                         />
                     </div>
+                    <div className="form-group">
+                        <label>Ссылка на карту (Yandex/Google)</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={settings.contact_map_url || ''}
+                            onChange={(e) => handleChange('contact_map_url', e.target.value)}
+                            placeholder="https://yandex.ru/map-widget/v1/?..."
+                        />
+                    </div>
 
                     <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Социальные сети</h3>
 
@@ -134,6 +144,15 @@ export default function AdminSettings() {
                             className="form-control"
                             value={settings.social_vk || ''}
                             onChange={(e) => handleChange('social_vk', e.target.value)}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Ссылка на TikTok</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={settings.social_tiktok || ''}
+                            onChange={(e) => handleChange('social_tiktok', e.target.value)}
                         />
                     </div>
 
