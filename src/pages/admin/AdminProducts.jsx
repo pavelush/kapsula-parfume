@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Image as ImageIcon, X } from 'lucide-react';
 
 export default function AdminProducts() {
     const [products, setProducts] = useState([]);
