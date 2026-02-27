@@ -328,43 +328,43 @@ export default function AdminProducts() {
                             <h4 style={{ color: 'white', marginBottom: '1rem', marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>Цены</h4>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                                 <div className="form-group">
-                                    <label>Цена 3 мл (формат "1 500")</label>
+                                    <label>Цена за 3 мл (₽)</label>
                                     <input
                                         type="text"
                                         className="form-control"
                                         value={currentProduct.price_3}
                                         onChange={(e) => setCurrentProduct({ ...currentProduct, price_3: e.target.value })}
-                                        required
+                                        placeholder="Например: 1 500"
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label>Цена 5 мл</label>
+                                    <label>Цена за 5 мл (₽)</label>
                                     <input
                                         type="text"
                                         className="form-control"
                                         value={currentProduct.price_5}
                                         onChange={(e) => setCurrentProduct({ ...currentProduct, price_5: e.target.value })}
-                                        required
+                                        placeholder="Например: 2 450"
                                     />
                                 </div>
                                 <div className="form-group">
                                     <label>Цена за 10 мл (₽)</label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         className="form-control"
                                         value={currentProduct.price_10}
                                         onChange={(e) => setCurrentProduct({ ...currentProduct, price_10: e.target.value })}
-                                        placeholder="Например: 1500"
+                                        placeholder="Например: 4 900"
                                     />
                                 </div>
                                 <div className="form-group">
                                     <label>Цена за 100 мл (₽)</label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         className="form-control"
                                         value={currentProduct.price_100}
                                         onChange={(e) => setCurrentProduct({ ...currentProduct, price_100: e.target.value })}
-                                        placeholder="Например: 10000"
+                                        placeholder="Например: 35 000"
                                     />
                                 </div>
                             </div>
