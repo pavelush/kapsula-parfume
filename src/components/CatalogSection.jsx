@@ -4,9 +4,10 @@ import { ShoppingBag, ChevronDown, Heart, Filter, X } from 'lucide-react';
 // Removed mock data, we fetch it now :)
 
 const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => {
-    const [selectedVolume, setSelectedVolume] = useState(5); // Default 5ml
+    const availableVolumes = [3, 5, 10, 100].filter(vol => product.prices && product.prices[vol] && product.prices[vol].price && String(product.prices[vol].price).trim() !== "");
+    const [selectedVolume, setSelectedVolume] = useState(availableVolumes.length > 0 ? availableVolumes[0] : 3);
     const [isHovered, setIsHovered] = useState(false);
-    const currentPrice = product.prices[selectedVolume];
+    const currentPrice = product.prices[selectedVolume] || { price: "0" };
 
     return (
         <div
@@ -93,7 +94,7 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
                 <div style={{ marginTop: 'auto' }}>
                     {/* Volume Selector */}
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', padding: '4px', background: 'rgba(0,0,0,0.4)', borderRadius: '30px', border: '1px solid var(--glass-border)' }}>
-                        {[3, 5, 10, 100].map(vol => (
+                        {availableVolumes.map(vol => (
                             <button
                                 key={vol}
                                 onClick={() => setSelectedVolume(vol)}
