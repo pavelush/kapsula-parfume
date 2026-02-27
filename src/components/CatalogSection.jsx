@@ -1,89 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingBag, ChevronDown, Heart, Filter, X } from 'lucide-react';
 
-// Mock data based on the real site context and aesthetic requirements
-const fragrances = [
-    {
-        id: 1,
-        name: "Bal D'Afrique",
-        description: "Парижский авангард и африканская культура в одном флаконе. Теплый и романтичный аромат.",
-        brand: "Byredo",
-        colorTheme: "rgba(16, 185, 129, 0.15)", // Green theme
-        prices: {
-            3: { price: "1 500" },
-            5: { price: "2 450" },
-            10: { price: "4 900" }
-        },
-        imgUrl: "/images/products/bal-dafrique.png"
-    },
-    {
-        id: 2,
-        name: "Pink Molecule 090.09",
-        description: "Яркая, искрящаяся интерпретация скандинавских пейзажей через призму розового шампанского.",
-        brand: "Zarkoperfume",
-        colorTheme: "rgba(236, 72, 153, 0.15)", // Pink theme
-        prices: {
-            3: { price: "1 200" },
-            5: { price: "1 600" },
-            10: { price: "3 200" }
-        },
-        imgUrl: "/images/products/pink-molecule.png"
-    },
-    {
-        id: 3,
-        name: "Gentle Fluidity Gold",
-        description: "Щедрый, обволакивающий шлейф. В его сердце мускус, кориандр и роскошная ваниль.",
-        brand: "Maison Francis Kurkdjian",
-        colorTheme: "rgba(251, 191, 36, 0.15)", // Gold/Yellow theme
-        prices: {
-            3: { price: "3 000" },
-            5: { price: "4 700" },
-            10: { price: "9 400" }
-        },
-        imgUrl: "/images/products/gentle-fluidity.png"
-    },
-    {
-        id: 4,
-        name: "Blue Talisman",
-        description: "Бесконечная свежесть и элегантность, воплощенная в современном звучании груши и бергамота.",
-        brand: "Ex Nihilo",
-        colorTheme: "rgba(14, 165, 233, 0.15)", // Blue theme
-        prices: {
-            3: { price: "3 000" },
-            5: { price: "5 000" },
-            10: { price: "10 000" }
-        },
-        imgUrl: "/images/products/blue-talisman.png"
-    },
-    {
-        id: 5,
-        name: "Guidance",
-        description: "Увлекательное путешествие по сказочному лесу, где звучат ноты груши, ладана и лесного ореха.",
-        brand: "Amouage",
-        colorTheme: "rgba(217, 70, 239, 0.15)", // Purple theme
-        prices: {
-            3: { price: "2 700" },
-            5: { price: "4 500" },
-            10: { price: "9 000" }
-        },
-        imgUrl: "/images/products/guidance.png"
-    },
-    {
-        id: 6,
-        name: "Morning Chess",
-        description: "Тот самый легендарный аромат от Франсиса Кюркджяна. Слияние жасмина, шафрана и амбры.",
-        brand: "Vilhelm Parfumerie",
-        colorTheme: "rgba(220, 38, 38, 0.15)", // Red theme
-        prices: {
-            3: { price: "2 500" },
-            5: { price: "4 000" },
-            10: { price: "8 000" }
-        },
-        imgUrl: "/images/products/morning-chess.webp"
-    }
-];
+// Removed mock data, we fetch it now :)
 
-const ProductCard = ({ product, isFavorite, onToggleFavorite }) => {
+const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => {
     const [selectedVolume, setSelectedVolume] = useState(5); // Default 5ml
     const [isHovered, setIsHovered] = useState(false);
     const currentPrice = product.prices[selectedVolume];
@@ -208,7 +128,11 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite }) => {
                                 {currentPrice.price} ₽
                             </span>
                         </div>
-                        <button className="btn-primary" style={{ padding: '10px 20px', fontSize: '0.9rem' }}>
+                        <button
+                            className="btn-primary"
+                            style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+                            onClick={(e) => { e.preventDefault(); onAddToCart(product, selectedVolume, currentPrice.price); }}
+                        >
                             <ShoppingBag size={18} />
                         </button>
                     </div>
@@ -218,16 +142,45 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite }) => {
     );
 }
 
-export default function CatalogSection({ favorites = [], toggleFavorite = () => { } }) {
+export default function CatalogSection({ favorites = [], toggleFavorite = () => { }, addToCart = () => { } }) {
     const [selectedBrands, setSelectedBrands] = useState([]);
+    const [visibleCount, setVisibleCount] = useState(6);
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const response = await fetch('/api/products');
+                if (response.ok) {
+                    const data = await response.json();
+                    setProducts(data);
+                } else {
+                    console.error("Failed to fetch products");
+                }
+            } catch (error) {
+                console.error("Error fetching products:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProducts();
+    }, []);
 
     // Calculate max price and min price from products based on their minimal variation
-    const maxAvailablePrice = Math.max(...fragrances.map(f => Math.max(...Object.values(f.prices).map(p => parseInt(p.price.replace(/[^\d]/g, ''), 10)))));
-    const minAvailablePrice = Math.min(...fragrances.map(f => Math.min(...Object.values(f.prices).map(p => parseInt(p.price.replace(/[^\d]/g, ''), 10)))));
+    const maxAvailablePrice = products.length > 0 ? Math.max(...products.map(f => Math.max(...Object.values(f.prices).map(p => parseInt(String(p.price).replace(/[^\d]/g, ''), 10))))) : 10000;
+    const minAvailablePrice = products.length > 0 ? Math.min(...products.map(f => Math.min(...Object.values(f.prices).map(p => parseInt(String(p.price).replace(/[^\d]/g, ''), 10))))) : 0;
 
-    const [maxPrice, setMaxPrice] = useState(maxAvailablePrice);
+    const [maxPrice, setMaxPrice] = useState(10000); // initial default, will be overridden by useEffect if needed
 
-    const brands = [...new Set(fragrances.map(f => f.brand))].sort();
+    useEffect(() => {
+        if (products.length > 0) {
+            setMaxPrice(maxAvailablePrice);
+        }
+    }, [products, maxAvailablePrice]);
+
+    const brands = [...new Set(products.map(f => f.brand))].sort();
 
     const toggleBrand = (brand) => {
         setSelectedBrands(prev =>
@@ -235,9 +188,9 @@ export default function CatalogSection({ favorites = [], toggleFavorite = () => 
         );
     };
 
-    const filteredFragrances = fragrances.filter(product => {
+    const filteredFragrances = products.filter(product => {
         const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(product.brand);
-        const productMinPrice = Math.min(...Object.values(product.prices).map(p => parseInt(p.price.replace(/[^\d]/g, ''), 10)));
+        const productMinPrice = Math.min(...Object.values(product.prices).map(p => parseInt(String(p.price).replace(/[^\d]/g, ''), 10)));
         const matchesPrice = productMinPrice <= maxPrice;
 
         return matchesBrand && matchesPrice;
@@ -308,13 +261,18 @@ export default function CatalogSection({ favorites = [], toggleFavorite = () => 
                 gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
                 gap: '2.5rem'
             }}>
-                {filteredFragrances.length > 0 ? (
-                    filteredFragrances.map(product => (
+                {loading ? (
+                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 1rem' }}>
+                        <p style={{ color: 'var(--color-text-muted)' }}>Загрузка ароматов...</p>
+                    </div>
+                ) : filteredFragrances.length > 0 ? (
+                    filteredFragrances.slice(0, visibleCount).map(product => (
                         <ProductCard
                             key={product.id}
                             product={product}
                             isFavorite={favorites.includes(product.id)}
                             onToggleFavorite={toggleFavorite}
+                            onAddToCart={addToCart}
                         />
                     ))
                 ) : (
@@ -325,11 +283,13 @@ export default function CatalogSection({ favorites = [], toggleFavorite = () => 
                 )}
             </div>
 
-            <div style={{ textAlign: 'center', marginTop: '4rem' }}>
-                <button className="btn-secondary" style={{ padding: '16px 40px', fontSize: '1.1rem' }}>
-                    Смотреть весь каталог <ChevronDown size={20} style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
-                </button>
-            </div>
+            {visibleCount < filteredFragrances.length && (
+                <div style={{ textAlign: 'center', marginTop: '4rem' }}>
+                    <button onClick={() => setVisibleCount(filteredFragrances.length)} className="btn-secondary" style={{ padding: '16px 40px', fontSize: '1.1rem' }}>
+                        Смотреть весь каталог <ChevronDown size={20} style={{ marginLeft: '8px', verticalAlign: 'middle' }} />
+                    </button>
+                </div>
+            )}
         </section>
     );
 }

@@ -1,0 +1,149 @@
+import React, { useState, useEffect } from 'react';
+import { Save } from 'lucide-react';
+
+export default function AdminSettings() {
+    const [settings, setSettings] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        fetchSettings();
+    }, []);
+
+    const fetchSettings = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch('/api/settings');
+            if (res.ok) {
+                const data = await res.json();
+                // Convert array to object key-value map for easier form binding
+                const settingsMap = {};
+                data.forEach(item => {
+                    settingsMap[item.setting_key] = item.setting_value;
+                });
+                setSettings(settingsMap);
+            }
+        } catch (error) {
+            console.error('Error fetching settings:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+        setSaving(true);
+        try {
+            // Convert back to array of updates
+            const updates = Object.keys(settings).map(key => ({
+                key,
+                value: settings[key]
+            }));
+
+            const res = await fetch('/api/settings/batch', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ updates })
+            });
+
+            if (res.ok) {
+                alert('Настройки успешно сохранены!');
+            } else {
+                alert('Ошибка при сохранении настроек');
+            }
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            alert('Ошибка сети при сохранении настроек');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleChange = (key, value) => {
+        setSettings(prev => ({ ...prev, [key]: value }));
+    };
+
+    if (loading) return <div className="text-white">Загрузка настроек...</div>;
+
+    return (
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h2 className="text-2xl text-white">Общие настройки (Футер)</h2>
+            </div>
+
+            <div className="admin-card" style={{ maxWidth: '800px' }}>
+                <form onSubmit={handleSave}>
+
+                    <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', fontSize: '1.1rem' }}>Контактная информация</h3>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                        <div className="form-group">
+                            <label>Номер телефона</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={settings.contact_phone || ''}
+                                onChange={(e) => handleChange('contact_phone', e.target.value)}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Часы работы</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={settings.contact_hours || ''}
+                                onChange={(e) => handleChange('contact_hours', e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label>Адрес магазина</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={settings.contact_address || ''}
+                            onChange={(e) => handleChange('contact_address', e.target.value)}
+                        />
+                    </div>
+
+                    <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Социальные сети</h3>
+
+                    <div className="form-group">
+                        <label>Ссылка на Telegram</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={settings.social_telegram || ''}
+                            onChange={(e) => handleChange('social_telegram', e.target.value)}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Ссылка на Instagram</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={settings.social_instagram || ''}
+                            onChange={(e) => handleChange('social_instagram', e.target.value)}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Ссылка на VKontakte</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={settings.social_vk || ''}
+                            onChange={(e) => handleChange('social_vk', e.target.value)}
+                        />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '3rem' }}>
+                        <button type="submit" className="btn-primary" disabled={saving} style={{ padding: '12px 32px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Save size={18} /> {saving ? 'Сохранение...' : 'Сохранить изменения'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
