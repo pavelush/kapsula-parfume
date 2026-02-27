@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
+const multer = require('multer');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -8,6 +10,31 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve uploaded images statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Configure Multer for image uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    }
+});
+const upload = multer({ storage });
+
+app.post('/api/upload', upload.single('image'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+    // Return the URL where the image can be accessed
+    const imageUrl = `/uploads/${req.file.filename}`;
+    res.json({ url: imageUrl });
+});
 
 // --- PRODUCTS ---
 app.get('/api/products', async (req, res) => {
@@ -22,10 +49,10 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
     try {
-        const { name, brand, description, imgUrl, colorTheme, prices } = req.body;
+        const { name, brand, description, fullDescription, imgUrl, colorTheme, prices } = req.body;
         const result = await pool.query(
-            'INSERT INTO products (name, brand, description, "imgUrl", "colorTheme", prices) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [name, brand, description, imgUrl, colorTheme, prices]
+            'INSERT INTO products (name, brand, description, "fullDescription", "imgUrl", "colorTheme", prices) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+            [name, brand, description, fullDescription, imgUrl, colorTheme, prices]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -37,10 +64,10 @@ app.post('/api/products', async (req, res) => {
 app.put('/api/products/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, brand, description, imgUrl, colorTheme, prices } = req.body;
+        const { name, brand, description, fullDescription, imgUrl, colorTheme, prices } = req.body;
         const result = await pool.query(
-            'UPDATE products SET name = $1, brand = $2, description = $3, "imgUrl" = $4, "colorTheme" = $5, prices = $6 WHERE id = $7 RETURNING *',
-            [name, brand, description, imgUrl, colorTheme, prices, id]
+            'UPDATE products SET name = $1, brand = $2, description = $3, "fullDescription" = $4, "imgUrl" = $5, "colorTheme" = $6, prices = $7 WHERE id = $8 RETURNING *',
+            [name, brand, description, fullDescription, imgUrl, colorTheme, prices, id]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Product not found' });
         res.json(result.rows[0]);

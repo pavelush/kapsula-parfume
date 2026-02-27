@@ -10,7 +10,7 @@ export default function AdminProducts() {
 
     // Form state
     const initialProductState = {
-        name: '', description: '', brand: '', colorTheme: 'rgba(251, 191, 36, 0.15)', imgUrl: '',
+        name: '', description: '', fullDescription: '', brand: '', colorTheme: 'rgba(251, 191, 36, 0.15)', imgUrl: '',
         price_3: '', price_5: '', price_10: '', price_100: ''
     };
     const [currentProduct, setCurrentProduct] = useState(initialProductState);
@@ -53,6 +53,7 @@ export default function AdminProducts() {
         const payload = {
             name: currentProduct.name,
             description: currentProduct.description,
+            fullDescription: currentProduct.fullDescription,
             brand: currentProduct.brand,
             colorTheme: currentProduct.colorTheme,
             prices: pricesJson,
@@ -92,6 +93,7 @@ export default function AdminProducts() {
     const openEditModal = (product) => {
         setCurrentProduct({
             ...product,
+            fullDescription: product.fullDescription || '',
             price_3: product.prices['3']?.price || '',
             price_5: product.prices['5']?.price || '',
             price_10: product.prices['10']?.price || '',
@@ -109,6 +111,30 @@ export default function AdminProducts() {
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()))
     );
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setCurrentProduct(prev => ({ ...prev, imgUrl: data.url }));
+            } else {
+                alert('Ошибка при загрузке изображения');
+            }
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            alert('Ошибка при загрузке изображения');
+        }
+    };
 
     return (
         <div>
@@ -215,24 +241,40 @@ export default function AdminProducts() {
                             </div>
 
                             <div className="form-group">
-                                <label>Описание</label>
+                                <label>Краткое описание</label>
                                 <textarea
                                     className="form-control"
-                                    rows="3"
-                                    value={currentProduct.description}
+                                    rows="2"
+                                    value={currentProduct.description || ''}
                                     onChange={(e) => setCurrentProduct({ ...currentProduct, description: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Полное описание</label>
+                                <textarea
+                                    className="form-control"
+                                    rows="4"
+                                    value={currentProduct.fullDescription || ''}
+                                    onChange={(e) => setCurrentProduct({ ...currentProduct, fullDescription: e.target.value })}
                                 />
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                 <div className="form-group">
-                                    <label>URL изображения (/images/products/...)</label>
+                                    <label>Изображение товара (загрузить файл)</label>
                                     <input
-                                        type="text"
+                                        type="file"
+                                        accept="image/*"
                                         className="form-control"
-                                        value={currentProduct.imgUrl}
-                                        onChange={(e) => setCurrentProduct({ ...currentProduct, imgUrl: e.target.value })}
+                                        style={{ padding: '6px' }}
+                                        onChange={handleImageUpload}
                                     />
+                                    {currentProduct.imgUrl && (
+                                        <div style={{ marginTop: '10px', width: '80px', height: '80px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', overflow: 'hidden' }}>
+                                            <img src={currentProduct.imgUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="form-group">
                                     <label>Цветовая тема (RGBA свечение)</label>
