@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, Image as ImageIcon, X, Check } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Image as ImageIcon, X, Check, Eye, EyeOff } from 'lucide-react';
 
 const PRESET_COLORS = [
     { name: 'Золотой', value: 'rgba(251, 191, 36, 0.15)' },
@@ -22,7 +22,7 @@ export default function AdminProducts() {
     // Form state
     const initialProductState = {
         name: '', description: '', fullDescription: '', brand: '', colorTheme: 'rgba(251, 191, 36, 0.15)', imgUrl: '',
-        price_3: '', price_5: '', price_10: '', price_100: ''
+        price_3: '', price_5: '', price_10: '', price_100: '', is_active: true
     };
     const [currentProduct, setCurrentProduct] = useState(initialProductState);
 
@@ -34,7 +34,7 @@ export default function AdminProducts() {
     const fetchProducts = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/products');
+            const res = await fetch('/api/products?all=true');
             if (res.ok) setProducts(await res.json());
         } catch (error) {
             console.error('Error fetching products:', error);
@@ -68,7 +68,8 @@ export default function AdminProducts() {
             brand: currentProduct.brand,
             colorTheme: currentProduct.colorTheme,
             prices: pricesJson,
-            imgUrl: currentProduct.imgUrl
+            imgUrl: currentProduct.imgUrl,
+            is_active: currentProduct.is_active
         };
 
         try {
@@ -109,8 +110,26 @@ export default function AdminProducts() {
             price_5: product.prices['5']?.price || '',
             price_10: product.prices['10']?.price || '',
             price_100: product.prices['100']?.price || '',
+            is_active: product.is_active !== undefined ? product.is_active : true,
         });
         setIsModalOpen(true);
+    };
+
+    const handleToggleActive = async (product) => {
+        const payload = {
+            ...product,
+            is_active: !product.is_active
+        };
+        try {
+            const res = await fetch(`/api/products/${product.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) fetchProducts();
+        } catch (error) {
+            console.error('Error toggling product status:', error);
+        }
     };
 
     const openAddModal = () => {
@@ -190,12 +209,18 @@ export default function AdminProducts() {
                                     </td>
                                     <td>
                                         <div style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>{product.brand}</div>
-                                        <div style={{ fontWeight: 500, color: 'white' }}>{product.name}</div>
+                                        <div style={{ fontWeight: 500, color: 'white', opacity: product.is_active ? 1 : 0.5, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            {product.name}
+                                            {!product.is_active && <span style={{ fontSize: '0.7rem', padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>Скрыт</span>}
+                                        </div>
                                     </td>
                                     <td style={{ color: 'var(--color-text-muted)' }}>
                                         {product.prices['3']?.price || '-'} / {product.prices['5']?.price || '-'} / {product.prices['10']?.price || '-'} / {product.prices['100']?.price || '-'} ₽
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
+                                        <button onClick={() => handleToggleActive(product)} className="admin-action-btn" title={product.is_active ? "Скрыть из каталога" : "Показать в каталоге"} style={{ marginRight: '8px', color: product.is_active ? 'var(--color-text)' : 'var(--color-text-muted)' }}>
+                                            {product.is_active ? <Eye size={18} /> : <EyeOff size={18} />}
+                                        </button>
                                         <button onClick={() => openEditModal(product)} className="admin-action-btn" title="Редактировать">
                                             <Edit2 size={18} />
                                         </button>
@@ -224,6 +249,17 @@ export default function AdminProducts() {
                         </div>
 
                         <form onSubmit={handleSave}>
+                            <div className="form-group" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <input
+                                    type="checkbox"
+                                    id="is_active"
+                                    checked={currentProduct.is_active}
+                                    onChange={(e) => setCurrentProduct({ ...currentProduct, is_active: e.target.checked })}
+                                    style={{ width: '18px', height: '18px', accentColor: 'var(--color-accent-gold)' }}
+                                />
+                                <label htmlFor="is_active" style={{ marginBottom: 0, cursor: 'pointer', color: 'white' }}>Показывать этот товар в каталоге</label>
+                            </div>
+
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                 <div className="form-group">
                                     <label>Бренд</label>

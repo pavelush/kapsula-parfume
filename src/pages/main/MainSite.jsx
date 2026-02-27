@@ -8,8 +8,24 @@ import './MainSite.css';
 function MainSite() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [favorites, setFavorites] = useState([]);
-  const [cartItems, setCartItems] = useState([]);
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kapsula_favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Failed to load favorites', e);
+      return [];
+    }
+  });
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kapsula_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Failed to load cart', e);
+      return [];
+    }
+  });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [settings, setSettings] = useState({
     contact_phone: '+7 916 203 54 94',
@@ -58,6 +74,22 @@ function MainSite() {
   };
 
   const clearCart = () => setCartItems([]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('kapsula_favorites', JSON.stringify(favorites));
+    } catch (e) {
+      console.error('Failed to save favorites', e);
+    }
+  }, [favorites]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('kapsula_cart', JSON.stringify(cartItems));
+    } catch (e) {
+      console.error('Failed to save cart', e);
+    }
+  }, [cartItems]);
 
   useEffect(() => {
     const fetchSettings = async () => {

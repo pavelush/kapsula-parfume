@@ -39,7 +39,11 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 // --- PRODUCTS ---
 app.get('/api/products', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM products ORDER BY id ASC');
+        const includeAll = req.query.all === 'true';
+        const query = includeAll
+            ? 'SELECT * FROM products ORDER BY id ASC'
+            : 'SELECT * FROM products WHERE is_active = true ORDER BY id ASC';
+        const result = await pool.query(query);
         res.json(result.rows);
     } catch (err) {
         console.error(err);
@@ -49,10 +53,10 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
     try {
-        const { name, brand, description, fullDescription, imgUrl, colorTheme, prices } = req.body;
+        const { name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active } = req.body;
         const result = await pool.query(
-            'INSERT INTO products (name, brand, description, "fullDescription", "imgUrl", "colorTheme", prices) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-            [name, brand, description, fullDescription, imgUrl, colorTheme, prices]
+            'INSERT INTO products (name, brand, description, "fullDescription", "imgUrl", "colorTheme", prices, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+            [name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active !== undefined ? is_active : true]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -64,10 +68,11 @@ app.post('/api/products', async (req, res) => {
 app.put('/api/products/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, brand, description, fullDescription, imgUrl, colorTheme, prices } = req.body;
+        const { name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active } = req.body;
+        const activeValue = is_active !== undefined ? is_active : true;
         const result = await pool.query(
-            'UPDATE products SET name = $1, brand = $2, description = $3, "fullDescription" = $4, "imgUrl" = $5, "colorTheme" = $6, prices = $7 WHERE id = $8 RETURNING *',
-            [name, brand, description, fullDescription, imgUrl, colorTheme, prices, id]
+            'UPDATE products SET name = $1, brand = $2, description = $3, "fullDescription" = $4, "imgUrl" = $5, "colorTheme" = $6, prices = $7, is_active = $8 WHERE id = $9 RETURNING *',
+            [name, brand, description, fullDescription, imgUrl, colorTheme, prices, activeValue, id]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Product not found' });
         res.json(result.rows[0]);
