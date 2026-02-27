@@ -4,12 +4,11 @@ import { Package, LayoutList, MessageSquare, Settings, CreditCard, ShoppingCart,
 import AdminLayout from './AdminLayout';
 import AdminDashboard from './AdminDashboard';
 
-// Placeholder components for routing before implementation
-const AdminProducts = () => <div className="p-8"><h2 className="text-2xl mb-4 text-white">Товары</h2></div>;
-const AdminBrands = () => <div className="p-8"><h2 className="text-2xl mb-4 text-white">Бренды</h2></div>;
-const AdminFAQ = () => <div className="p-8"><h2 className="text-2xl mb-4 text-white">Вопросы (FAQ)</h2></div>;
-const AdminSettings = () => <div className="p-8"><h2 className="text-2xl mb-4 text-white">Настройки футера</h2></div>;
-const AdminPayments = () => <div className="p-8"><h2 className="text-2xl mb-4 text-white">Способы оплаты</h2></div>;
+import AdminProducts from './AdminProducts';
+import AdminBrands from './AdminBrands';
+import AdminFAQ from './AdminFAQ';
+import AdminSettings from './AdminSettings';
+import AdminPayments from './AdminPayments';
 
 export default function AdminApp() {
     return (

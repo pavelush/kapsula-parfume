@@ -11,7 +11,7 @@ export default function AdminProducts() {
     // Form state
     const initialProductState = {
         name: '', description: '', brand: '', colorTheme: 'rgba(251, 191, 36, 0.15)', imgUrl: '',
-        price_3: '', price_5: '', price_10: ''
+        price_3: '', price_5: '', price_10: '', price_100: ''
     };
     const [currentProduct, setCurrentProduct] = useState(initialProductState);
 
@@ -46,7 +46,8 @@ export default function AdminProducts() {
         const pricesJson = {
             3: { price: currentProduct.price_3 },
             5: { price: currentProduct.price_5 },
-            10: { price: currentProduct.price_10 }
+            10: { price: currentProduct.price_10 },
+            100: { price: currentProduct.price_100 }
         };
 
         const payload = {
@@ -94,6 +95,7 @@ export default function AdminProducts() {
             price_3: product.prices['3']?.price || '',
             price_5: product.prices['5']?.price || '',
             price_10: product.prices['10']?.price || '',
+            price_100: product.prices['100']?.price || '',
         });
         setIsModalOpen(true);
     };
@@ -137,7 +139,7 @@ export default function AdminProducts() {
                             <tr>
                                 <th style={{ width: '80px' }}>Фото</th>
                                 <th>Бренд / Название</th>
-                                <th>Цены (3 / 5 / 10 мл)</th>
+                                <th>Цены (3 / 5 / 10 / 100 мл)</th>
                                 <th style={{ width: '150px', textAlign: 'right' }}>Действия</th>
                             </tr>
                         </thead>
@@ -154,7 +156,7 @@ export default function AdminProducts() {
                                         <div style={{ fontWeight: 500, color: 'white' }}>{product.name}</div>
                                     </td>
                                     <td style={{ color: 'var(--color-text-muted)' }}>
-                                        {product.prices['3']?.price} / {product.prices['5']?.price} / {product.prices['10']?.price} ₽
+                                        {product.prices['3']?.price || '-'} / {product.prices['5']?.price || '-'} / {product.prices['10']?.price || '-'} / {product.prices['100']?.price || '-'} ₽
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
                                         <button onClick={() => openEditModal(product)} className="admin-action-btn" title="Редактировать">
@@ -267,13 +269,23 @@ export default function AdminProducts() {
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label>Цена 10 мл</label>
+                                    <label>Цена за 10 мл (₽)</label>
                                     <input
-                                        type="text"
+                                        type="number"
                                         className="form-control"
                                         value={currentProduct.price_10}
                                         onChange={(e) => setCurrentProduct({ ...currentProduct, price_10: e.target.value })}
-                                        required
+                                        placeholder="Например: 1500"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Цена за 100 мл (₽)</label>
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        value={currentProduct.price_100}
+                                        onChange={(e) => setCurrentProduct({ ...currentProduct, price_100: e.target.value })}
+                                        placeholder="Например: 10000"
                                     />
                                 </div>
                             </div>

@@ -93,7 +93,7 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
                 <div style={{ marginTop: 'auto' }}>
                     {/* Volume Selector */}
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', padding: '4px', background: 'rgba(0,0,0,0.4)', borderRadius: '30px', border: '1px solid var(--glass-border)' }}>
-                        {[3, 5, 10].map(vol => (
+                        {[3, 5, 10, 100].map(vol => (
                             <button
                                 key={vol}
                                 onClick={() => setSelectedVolume(vol)}
