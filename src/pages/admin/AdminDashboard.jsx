@@ -7,61 +7,108 @@ export default function AdminDashboard() {
         revenue: 0,
         totalProducts: 0
     });
+    const [allOrders, setAllOrders] = useState([]);
     const [recentOrders, setRecentOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState(null);
+    const [statusFilter, setStatusFilter] = useState('all');
+
+    const fetchDashboardData = async () => {
+        try {
+            // Fetch orders
+            const ordersRes = await fetch('/api/orders');
+            const ordersData = ordersRes.ok ? await ordersRes.json() : [];
+
+            // Fetch products to count them
+            const productsRes = await fetch('/api/products');
+            const productsData = productsRes.ok ? await productsRes.json() : [];
+
+            const totalRevenue = ordersData.reduce((sum, order) => sum + Number(order.total_price), 0);
+
+            setStats({
+                totalOrders: ordersData.length,
+                revenue: totalRevenue,
+                totalProducts: productsData.length
+            });
+
+            // Format orders for display
+            const formattedOrders = ordersData.map(o => ({
+                id: o.id,
+                customer: o.customer_name,
+                phone: o.customer_phone,
+                email: o.email,
+                paymentMethod: o.payment_method,
+                deliveryType: o.delivery_type,
+                deliveryAddress: o.delivery_address,
+                items: typeof o.items_json === 'string' ? JSON.parse(o.items_json) : o.items_json,
+                total: Number(o.total_price),
+                status: o.status || 'new',
+                date: new Date(o.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
+            }));
+
+            setAllOrders(formattedOrders);
+            setRecentOrders(formattedOrders);
+        } catch (error) {
+            console.error("Dashboard fetch error:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                // Fetch orders
-                const ordersRes = await fetch('/api/orders');
-                const ordersData = ordersRes.ok ? await ordersRes.json() : [];
-
-                // Fetch products to count them
-                const productsRes = await fetch('/api/products');
-                const productsData = productsRes.ok ? await productsRes.json() : [];
-
-                const totalRevenue = ordersData.reduce((sum, order) => sum + Number(order.total_price), 0);
-
-                setStats({
-                    totalOrders: ordersData.length,
-                    revenue: totalRevenue,
-                    totalProducts: productsData.length
-                });
-
-                // Format orders for display
-                const formattedOrders = ordersData.map(o => ({
-                    id: o.id,
-                    customer: o.customer_name,
-                    phone: o.customer_phone,
-                    email: o.email,
-                    paymentMethod: o.payment_method,
-                    deliveryType: o.delivery_type,
-                    deliveryAddress: o.delivery_address,
-                    items: typeof o.items_json === 'string' ? JSON.parse(o.items_json) : o.items_json,
-                    total: Number(o.total_price),
-                    status: o.status,
-                    date: new Date(o.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
-                }));
-
-                setRecentOrders(formattedOrders);
-            } catch (error) {
-                console.error("Dashboard fetch error:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchDashboardData();
     }, []);
 
+    useEffect(() => {
+        if (statusFilter === 'all') {
+            setRecentOrders(allOrders);
+        } else {
+            setRecentOrders(allOrders.filter(o => o.status === statusFilter));
+        }
+    }, [statusFilter, allOrders]);
+
+    const handleStatusChange = async (orderId, newStatus) => {
+        try {
+            const res = await fetch(`/api/orders/${orderId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (res.ok) {
+                // Update local state
+                const updatedOrders = allOrders.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
+                setAllOrders(updatedOrders);
+                if (selectedOrder && selectedOrder.id === orderId) {
+                    setSelectedOrder({ ...selectedOrder, status: newStatus });
+                }
+            } else {
+                alert('Не удалось изменить статус заказа');
+            }
+        } catch (error) {
+            console.error('Status update error', error);
+        }
+    };
+
+    const getStatusText = (status) => {
+        switch (status) {
+            case 'new': return 'Новый';
+            case 'delivered': return 'Доставлен';
+            case 'completed': return 'Выполнен';
+            case 'cancelled': return 'Отменен';
+            case 'archived': return 'Архив';
+            case 'processing': return 'В обработке'; // Fallback for old orders
+            default: return status;
+        }
+    };
+
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'new': return <span className="badge new">Новый</span>;
-            case 'processing': return <span className="badge processing">В обработке</span>;
-            case 'completed': return <span className="badge completed">Завершен</span>;
-            case 'cancelled': return <span className="badge cancelled">Отменен</span>;
+            case 'new': return <span className="badge new" style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6' }}>Новый</span>;
+            case 'delivered': return <span className="badge processing" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}>Доставлен</span>;
+            case 'completed': return <span className="badge completed" style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e' }}>Выполнен</span>;
+            case 'cancelled': return <span className="badge cancelled" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>Отменен</span>;
+            case 'archived': return <span className="badge" style={{ background: 'rgba(107, 114, 128, 0.2)', color: '#9ca3af' }}>Архив</span>;
+            case 'processing': return <span className="badge processing" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b' }}>В обработке</span>;
             default: return <span className="badge">{status}</span>;
         }
     };
@@ -104,7 +151,37 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            <h2 className="text-2xl text-white mb-4">Последние заказы</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <h2 className="text-2xl text-white m-0">Заказы</h2>
+                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                    {[
+                        { id: 'all', label: 'Все' },
+                        { id: 'new', label: 'Новые' },
+                        { id: 'delivered', label: 'В доставке' },
+                        { id: 'completed', label: 'Выполнены' },
+                        { id: 'cancelled', label: 'Отменены' },
+                        { id: 'archived', label: 'Архив' }
+                    ].map(filter => (
+                        <button
+                            key={filter.id}
+                            onClick={() => setStatusFilter(filter.id)}
+                            style={{
+                                padding: '6px 16px',
+                                borderRadius: '20px',
+                                border: '1px solid',
+                                borderColor: statusFilter === filter.id ? 'var(--color-primary)' : 'var(--glass-border)',
+                                background: statusFilter === filter.id ? 'rgba(212, 175, 55, 0.1)' : 'transparent',
+                                color: statusFilter === filter.id ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                transition: 'all 0.2s ease'
+                            }}
+                        >
+                            {filter.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
             <div className="admin-table-container">
                 <table className="admin-table">
                     <thead>
@@ -176,9 +253,31 @@ export default function AdminDashboard() {
                             </div>
                             <div style={{ gridColumn: '1 / -1' }}>
                                 <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>Дата и статус</p>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <span>{selectedOrder.date}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
+                                    <span style={{ color: 'white' }}>{selectedOrder.date}</span>
                                     {getStatusBadge(selectedOrder.status)}
+                                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <span style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Изменить статус:</span>
+                                        <select
+                                            value={selectedOrder.status}
+                                            onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value)}
+                                            style={{
+                                                padding: '8px 12px',
+                                                background: 'rgba(0,0,0,0.3)',
+                                                border: '1px solid var(--glass-border)',
+                                                borderRadius: '8px',
+                                                color: 'white',
+                                                outline: 'none',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            <option value="new" style={{ color: 'black' }}>Новый</option>
+                                            <option value="delivered" style={{ color: 'black' }}>Доставлен</option>
+                                            <option value="completed" style={{ color: 'black' }}>Выполнен</option>
+                                            <option value="cancelled" style={{ color: 'black' }}>Отменен</option>
+                                            <option value="archived" style={{ color: 'black' }}>Архив</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </div>
