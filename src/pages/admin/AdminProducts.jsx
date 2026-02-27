@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, Image as ImageIcon, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Image as ImageIcon, X, Check } from 'lucide-react';
+
+const PRESET_COLORS = [
+    { name: 'Золотой', value: 'rgba(251, 191, 36, 0.15)' },
+    { name: 'Розовый', value: 'rgba(236, 72, 153, 0.15)' },
+    { name: 'Изумрудный', value: 'rgba(16, 185, 129, 0.15)' },
+    { name: 'Голубой', value: 'rgba(14, 165, 233, 0.15)' },
+    { name: 'Пурпурный', value: 'rgba(217, 70, 239, 0.15)' },
+    { name: 'Красный', value: 'rgba(220, 38, 38, 0.15)' },
+    { name: 'Оранжевый', value: 'rgba(249, 115, 22, 0.15)' },
+    { name: 'Белый/Серебро', value: 'rgba(255, 255, 255, 0.15)' }
+];
 
 export default function AdminProducts() {
     const [products, setProducts] = useState([]);
@@ -277,13 +288,39 @@ export default function AdminProducts() {
                                     )}
                                 </div>
                                 <div className="form-group">
-                                    <label>Цветовая тема (RGBA свечение)</label>
+                                    <label>Цветовая тема (свечение)</label>
+                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                                        {PRESET_COLORS.map(color => (
+                                            <button
+                                                key={color.value}
+                                                type="button"
+                                                title={color.name}
+                                                onClick={() => setCurrentProduct({ ...currentProduct, colorTheme: color.value })}
+                                                style={{
+                                                    width: '30px',
+                                                    height: '30px',
+                                                    borderRadius: '50%',
+                                                    border: currentProduct.colorTheme === color.value ? '2px solid white' : '1px solid rgba(255,255,255,0.2)',
+                                                    background: color.value.replace('0.15', '1'), // Solid color for the button
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    transition: 'all 0.2s ease',
+                                                    transform: currentProduct.colorTheme === color.value ? 'scale(1.15)' : 'scale(1)'
+                                                }}
+                                            >
+                                                {currentProduct.colorTheme === color.value && <Check size={16} color="white" />}
+                                            </button>
+                                        ))}
+                                    </div>
                                     <input
                                         type="text"
                                         className="form-control"
                                         value={currentProduct.colorTheme}
                                         placeholder="rgba(251, 191, 36, 0.15)"
                                         onChange={(e) => setCurrentProduct({ ...currentProduct, colorTheme: e.target.value })}
+                                        style={{ fontSize: '0.8rem', opacity: 0.7 }}
                                     />
                                 </div>
                             </div>
