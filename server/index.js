@@ -24,7 +24,7 @@ app.post('/api/products', async (req, res) => {
     try {
         const { name, brand, description, imgUrl, colorTheme, prices } = req.body;
         const result = await pool.query(
-            'INSERT INTO products (name, brand, description, img_url, color_theme, prices) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            'INSERT INTO products (name, brand, description, "imgUrl", "colorTheme", prices) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
             [name, brand, description, imgUrl, colorTheme, prices]
         );
         res.status(201).json(result.rows[0]);
@@ -39,7 +39,7 @@ app.put('/api/products/:id', async (req, res) => {
         const { id } = req.params;
         const { name, brand, description, imgUrl, colorTheme, prices } = req.body;
         const result = await pool.query(
-            'UPDATE products SET name = $1, brand = $2, description = $3, img_url = $4, color_theme = $5, prices = $6 WHERE id = $7 RETURNING *',
+            'UPDATE products SET name = $1, brand = $2, description = $3, "imgUrl" = $4, "colorTheme" = $5, prices = $6 WHERE id = $7 RETURNING *',
             [name, brand, description, imgUrl, colorTheme, prices, id]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Product not found' });
