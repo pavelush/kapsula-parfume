@@ -3,6 +3,7 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Package, LayoutList, MessageSquare, Settings, CreditCard, ShoppingCart, LogOut } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import AdminDashboard from './AdminDashboard';
+import AdminDelivery from './AdminDelivery';
 
 import AdminProducts from './AdminProducts';
 import AdminBrands from './AdminBrands';
@@ -17,6 +18,7 @@ export default function AdminApp() {
                 <Route path="/" element={<AdminDashboard />} />
                 <Route path="/products" element={<AdminProducts />} />
                 <Route path="/brands" element={<AdminBrands />} />
+                <Route path="/delivery" element={<AdminDelivery />} />
                 <Route path="/faq" element={<AdminFAQ />} />
                 <Route path="/settings" element={<AdminSettings />} />
                 <Route path="/payments" element={<AdminPayments />} />

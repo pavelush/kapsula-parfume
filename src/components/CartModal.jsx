@@ -3,15 +3,40 @@ import { X, Trash2, ShoppingBag } from 'lucide-react';
 
 export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, updateQuantity, clearCart }) {
     const [paymentMethods, setPaymentMethods] = useState([]);
-    const [formData, setFormData] = useState({ name: '', phone: '', paymentMethod: '' });
+    const [pickupPoints, setPickupPoints] = useState([]);
+    const [formData, setFormData] = useState({
+        name: '',
+        phone: '',
+        email: '',
+        paymentMethod: '',
+        deliveryType: 'delivery',
+        deliveryAddress: ''
+    });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
 
     useEffect(() => {
         if (isOpen) {
             fetchPayments();
+            fetchPickupPoints();
         }
     }, [isOpen]);
+
+    const fetchPickupPoints = async () => {
+        try {
+            const res = await fetch('/api/pickup_points');
+            if (res.ok) {
+                const data = await res.json();
+                const active = data.filter(p => p.is_active);
+                setPickupPoints(active);
+                if (active.length > 0 && formData.deliveryType === 'pickup' && !formData.deliveryAddress) {
+                    setFormData(prev => ({ ...prev, deliveryAddress: active[0].address }));
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch pickup points', error);
+        }
+    };
 
     const fetchPayments = async () => {
         try {
@@ -47,9 +72,12 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                 body: JSON.stringify({
                     customer_name: formData.name,
                     customer_phone: formData.phone,
+                    email: formData.email,
                     items: cartItems,
                     total_price: totalAmount,
-                    payment_method: formData.paymentMethod
+                    payment_method: formData.paymentMethod,
+                    delivery_type: formData.deliveryType,
+                    delivery_address: formData.deliveryAddress
                 })
             });
 
@@ -59,7 +87,14 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                     clearCart();
                     onClose();
                     setSuccessMsg('');
-                    setFormData({ name: '', phone: '', paymentMethod: paymentMethods[0]?.name || '' });
+                    setFormData({
+                        name: '',
+                        phone: '',
+                        email: '',
+                        paymentMethod: paymentMethods[0]?.name || '',
+                        deliveryType: 'delivery',
+                        deliveryAddress: ''
+                    });
                 }, 3000);
             } else {
                 alert('Ошибка при оформлении заказа');
@@ -153,6 +188,77 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                                     style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white', outline: 'none' }}
                                 />
                             </div>
+                            <div>
+                                <input
+                                    type="email"
+                                    placeholder="Ваш Email"
+                                    required
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white', outline: 'none', marginBottom: '1rem' }}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: formData.deliveryType === 'delivery' ? 'white' : 'var(--color-text-muted)' }}>
+                                    <input
+                                        type="radio"
+                                        name="deliveryType"
+                                        value="delivery"
+                                        checked={formData.deliveryType === 'delivery'}
+                                        onChange={(e) => setFormData({ ...formData, deliveryType: e.target.value, deliveryAddress: '' })}
+                                    />
+                                    Доставка
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: formData.deliveryType === 'pickup' ? 'white' : 'var(--color-text-muted)' }}>
+                                    <input
+                                        type="radio"
+                                        name="deliveryType"
+                                        value="pickup"
+                                        checked={formData.deliveryType === 'pickup'}
+                                        onChange={(e) => {
+                                            setFormData({
+                                                ...formData,
+                                                deliveryType: e.target.value,
+                                                deliveryAddress: pickupPoints.length > 0 ? pickupPoints[0].address : ''
+                                            });
+                                        }}
+                                    />
+                                    Самовывоз
+                                </label>
+                            </div>
+
+                            {formData.deliveryType === 'delivery' && (
+                                <div>
+                                    <textarea
+                                        placeholder="Адрес доставки (Город, Улица, Дом, Квартира)"
+                                        required
+                                        rows="2"
+                                        value={formData.deliveryAddress}
+                                        onChange={(e) => setFormData({ ...formData, deliveryAddress: e.target.value })}
+                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white', outline: 'none', resize: 'vertical' }}
+                                    />
+                                </div>
+                            )}
+
+                            {formData.deliveryType === 'pickup' && (
+                                <div>
+                                    <select
+                                        required
+                                        value={formData.deliveryAddress}
+                                        onChange={(e) => setFormData({ ...formData, deliveryAddress: e.target.value })}
+                                        style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white', outline: 'none', appearance: 'none' }}
+                                    >
+                                        <option value="" disabled style={{ color: 'black' }}>Выберите пункт выдачи...</option>
+                                        {pickupPoints.map(point => (
+                                            <option key={point.id} value={point.address} style={{ color: 'black' }}>
+                                                {point.address}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
                             <div>
                                 <select
                                     required

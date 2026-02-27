@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Package, LayoutList, MessageSquare, Settings, CreditCard, ShoppingCart, Home } from 'lucide-react';
+import { Package, LayoutList, MessageSquare, Settings, CreditCard, ShoppingCart, Home, MapPin } from 'lucide-react';
 import './Admin.css';
 
 const navItems = [
     { name: 'Заказы', path: '/admin', icon: ShoppingCart },
     { name: 'Товары', path: '/admin/products', icon: Package },
+    { name: 'Доставка', path: '/admin/delivery', icon: MapPin },
     { name: 'Бренды', path: '/admin/brands', icon: LayoutList },
     { name: 'Вопросы (FAQ)', path: '/admin/faq', icon: MessageSquare },
     { name: 'Настройки', path: '/admin/settings', icon: Settings },

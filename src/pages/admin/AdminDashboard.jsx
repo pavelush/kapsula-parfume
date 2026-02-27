@@ -35,7 +35,10 @@ export default function AdminDashboard() {
                     id: o.id,
                     customer: o.customer_name,
                     phone: o.customer_phone,
+                    email: o.email,
                     paymentMethod: o.payment_method,
+                    deliveryType: o.delivery_type,
+                    deliveryAddress: o.delivery_address,
                     items: typeof o.items_json === 'string' ? JSON.parse(o.items_json) : o.items_json,
                     total: Number(o.total_price),
                     status: o.status,
@@ -156,19 +159,27 @@ export default function AdminDashboard() {
                                 <p style={{ fontSize: '1.1rem', color: 'white' }}>{selectedOrder.customer}</p>
                             </div>
                             <div>
-                                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>Телефон</p>
+                                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>Контакты</p>
                                 <p style={{ fontSize: '1.1rem', color: 'white' }}>{selectedOrder.phone}</p>
+                                {selectedOrder.email && <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>{selectedOrder.email}</p>}
                             </div>
                             <div>
+                                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>Доставка</p>
+                                <p style={{ fontSize: '1.1rem', color: 'white' }}>
+                                    {selectedOrder.deliveryType === 'pickup' ? 'Самовывоз' : (selectedOrder.deliveryType === 'delivery' ? 'Курьером/Почтой' : 'Не указана')}
+                                </p>
+                                {selectedOrder.deliveryAddress && <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>{selectedOrder.deliveryAddress}</p>}
+                            </div>
+                            <div>
+                                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>Оплата</p>
+                                <p style={{ fontSize: '1.1rem', color: 'white' }}>{selectedOrder.paymentMethod || 'Не указан'}</p>
+                            </div>
+                            <div style={{ gridColumn: '1 / -1' }}>
                                 <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>Дата и статус</p>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <span>{selectedOrder.date}</span>
                                     {getStatusBadge(selectedOrder.status)}
                                 </div>
-                            </div>
-                            <div>
-                                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>Способ оплаты</p>
-                                <p style={{ fontSize: '1.1rem', color: 'white' }}>{selectedOrder.paymentMethod || 'Не указан'}</p>
                             </div>
                         </div>
 

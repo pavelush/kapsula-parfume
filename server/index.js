@@ -266,13 +266,62 @@ app.delete('/api/payments/:id', async (req, res) => {
     }
 });
 
+// --- PICKUP POINTS ---
+app.get('/api/pickup_points', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM pickup_points ORDER BY id ASC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/pickup_points', async (req, res) => {
+    try {
+        const { address, is_active } = req.body;
+        const result = await pool.query(
+            'INSERT INTO pickup_points (address, is_active) VALUES ($1, $2) RETURNING *',
+            [address, is_active !== undefined ? is_active : true]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.put('/api/pickup_points/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { address, is_active } = req.body;
+        const result = await pool.query(
+            'UPDATE pickup_points SET address = $1, is_active = $2 WHERE id = $3 RETURNING *',
+            [address, is_active, id]
+        );
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Pickup point not found' });
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.delete('/api/pickup_points/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await pool.query('DELETE FROM pickup_points WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Pickup point not found' });
+        res.json({ message: 'Pickup point deleted' });
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // --- ORDERS ---
 app.post('/api/orders', async (req, res) => {
     try {
-        const { customer_name, customer_phone, items, total_price, payment_method } = req.body;
+        const { customer_name, customer_phone, email, items, total_price, payment_method, delivery_type, delivery_address } = req.body;
         const result = await pool.query(
-            'INSERT INTO orders (customer_name, customer_phone, items_json, total_price, payment_method) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [customer_name, customer_phone, JSON.stringify(items), total_price, payment_method]
+            'INSERT INTO orders (customer_name, customer_phone, email, items_json, total_price, payment_method, delivery_type, delivery_address) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+            [customer_name, customer_phone, email, JSON.stringify(items), total_price, payment_method, delivery_type, delivery_address]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
