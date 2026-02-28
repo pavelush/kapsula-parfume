@@ -35,10 +35,11 @@ export default function AdminSettings() {
         setSaving(true);
         try {
             // Convert back to array of updates
-            const updates = Object.keys(settings).map(key => ({
-                key,
-                value: settings[key]
-            }));
+            const updates = [];
+            for (const [key, value] of Object.entries(settings)) {
+                if (key === 'admin_password' && (!value || value.trim() === '')) continue;
+                updates.push({ key, value });
+            }
 
             const res = await fetch('/api/settings/batch', {
                 method: 'PUT',
@@ -189,6 +190,20 @@ export default function AdminSettings() {
                             onChange={(e) => handleChange('yandex_metrika_code', e.target.value)}
                             placeholder="<!-- Yandex.Metrika counter --> ..."
                             style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
+                        />
+                    </div>
+
+                    <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Смена пароля (Админ)</h3>
+
+                    <div className="form-group">
+                        <label>Новый пароль</label>
+                        <input
+                            type="password"
+                            className="form-control"
+                            value={settings.admin_password || ''}
+                            onChange={(e) => handleChange('admin_password', e.target.value)}
+                            placeholder="Оставьте пустым, если не хотите менять"
+                            autoComplete="new-password"
                         />
                     </div>
 

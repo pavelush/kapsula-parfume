@@ -37,18 +37,22 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 });
 
 // --- ADMIN AUTH ---
-app.post('/api/admin/login', (req, res) => {
+app.post('/api/admin/login', async (req, res) => {
     const { username, password } = req.body;
-    // In a real app, do secure hashing and avoid hardcoded creds in code.
-    // Here we use env vars or simple fallback for demonstration.
-    const adminUser = process.env.ADMIN_USER || 'admin';
-    const adminPass = process.env.ADMIN_PASS || 'admin';
+    try {
+        const passResult = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'admin_password'");
+        const adminPass = passResult.rows.length > 0 ? passResult.rows[0].setting_value : (process.env.ADMIN_PASS || 'admin');
+        const adminUser = process.env.ADMIN_USER || 'admin';
 
-    if (username === adminUser && password === adminPass) {
-        // Return a dummy token for simplicity
-        res.json({ success: true, token: 'admin-secret-token-123' });
-    } else {
-        res.status(401).json({ error: 'Неверный логин или пароль' });
+        if (username === adminUser && password === adminPass) {
+            // Return a dummy token for simplicity
+            res.json({ success: true, token: 'admin-secret-token-123' });
+        } else {
+            res.status(401).json({ error: 'Неверный логин или пароль' });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -205,7 +209,7 @@ app.delete('/api/faqs/:id', async (req, res) => {
 // --- SETTINGS ---
 app.get('/api/settings', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM settings ORDER BY id ASC');
+        const result = await pool.query("SELECT * FROM settings WHERE setting_key != 'admin_password' ORDER BY id ASC");
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: 'Internal server error' });

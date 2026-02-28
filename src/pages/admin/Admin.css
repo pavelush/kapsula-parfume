@@ -1,102 +1,132 @@
 .admin-container {
     display: flex;
+    flex-direction: column;
+    /* Changed to column since we don't have a sidebar anymore */
     min-height: 100vh;
+    width: 100%;
     background: var(--color-bg);
     color: var(--color-text);
 }
 
-.admin-container .admin-sidebar {
-    width: 280px;
-    height: 100vh;
-    position: sticky;
-    top: 0;
-    display: flex;
-    flex-direction: column;
-    padding: 1.5rem;
-    border-right: 1px solid var(--glass-border);
-    background: rgba(18, 18, 20, 0.8);
-    backdrop-filter: blur(20px);
-}
-
+/* Sidebar removed, keeping standard container properties */
 .admin-container .admin-logo {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding-bottom: 2rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    margin-bottom: 2rem;
 }
 
 .admin-container .admin-logo img {
     height: 35px;
-}
-
-.admin-container .admin-logo span {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: white;
-    letter-spacing: 1px;
+    /* slightly taller logo */
 }
 
 .admin-container .admin-nav {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 0.5rem;
-    flex-grow: 1;
+    align-items: center;
+    overflow-x: auto;
+    /* Allow scrolling if too many items on small screens */
+    scrollbar-width: none;
+    /* Hide scrollbar Firefox */
+}
+
+.admin-container .admin-nav::-webkit-scrollbar {
+    display: none;
+    /* Hide scrollbar WebKit */
 }
 
 .admin-container .admin-nav-item {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 12px 16px;
-    border-radius: 12px;
+    gap: 0.5rem;
+    padding: 10px 14px;
+    border-radius: 8px;
     color: var(--color-text-muted);
     text-decoration: none;
     border: 1px solid transparent;
+    /* default transparent border */
+    transition: none !important;
+    white-space: nowrap;
+    font-size: 0.95rem;
+    font-weight: 500;
 }
 
 .admin-container .admin-nav-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
+    color: var(--color-text-muted) !important;
+    background: transparent !important;
 }
 
 .admin-container .admin-nav-item.active {
-    background: rgba(251, 191, 36, 0.1);
-    color: var(--color-accent-gold);
-    border-color: rgba(251, 191, 36, 0.3);
+    background: transparent;
+    color: var(--color-accent-gold) !important;
+    border: 1px solid rgba(251, 191, 36, 0.4);
 }
 
-.admin-container .admin-bottom-actions {
-    margin-top: auto;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+.admin-container .admin-nav-item.active:hover {
+    background: transparent !important;
+    color: var(--color-accent-gold) !important;
 }
 
-.admin-container .admin-main {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
+.admin-container .admin-header a,
+.admin-container .admin-header button {
+    transition: none !important;
+}
+
+.admin-container .admin-header a:hover,
+.admin-container .admin-header button:hover {
+    color: inherit !important;
+    opacity: 1 !important;
 }
 
 .admin-container .admin-header {
-    height: 80px;
+    height: 70px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 2rem;
     border-bottom: 1px solid var(--glass-border);
-    background: rgba(18, 18, 20, 0.5);
-    backdrop-filter: blur(10px);
+    background: rgba(18, 18, 20, 0.8);
+    backdrop-filter: blur(20px);
     position: sticky;
     top: 0;
+    z-index: 100;
+}
+
+.admin-container .admin-header-left {
+    display: flex;
+    align-items: center;
     z-index: 10;
 }
 
-.admin-container .admin-header h1 {
-    font-size: 1.5rem;
-    margin: 0;
+.admin-container .admin-header-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    white-space: nowrap;
+    z-index: 5;
+    /* Remove any flex constraints so it auto-sizes to its content */
+}
+
+.admin-container .admin-header-right {
+    display: flex;
+    align-items: center;
+    z-index: 10;
+}
+
+/* Hide navigation text on smaller screens to save space */
+@media (max-width: 1200px) {
+    .admin-container .nav-text {
+        display: none;
+    }
+
+    .admin-container .admin-logo span {
+        display: none;
+    }
+
+    .admin-container .admin-nav-item {
+        padding: 8px;
+    }
 }
 
 .admin-container .admin-user {
@@ -107,9 +137,21 @@
     color: white;
 }
 
+.admin-container .admin-main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+}
+
 .admin-container .admin-content {
     padding: 2rem;
     flex-grow: 1;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    /* Center main content below nav */
     overflow-y: auto;
 }
 

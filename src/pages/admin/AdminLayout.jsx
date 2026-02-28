@@ -18,50 +18,48 @@ export default function AdminLayout({ children, onLogout }) {
 
     return (
         <div className="admin-container">
-            {/* Sidebar */}
-            <aside className="admin-sidebar glass-card">
-                <div className="admin-logo">
-                    <img src="/images/logo/logo.png" alt="Kapsula Admin" />
-                    <span>Admin Panel</span>
-                </div>
-
-                <nav className="admin-nav">
-                    {navItems.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path));
-
-                        return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                className={`admin-nav-item ${isActive ? 'active' : ''}`}
-                            >
-                                <Icon size={20} />
-                                <span>{item.name}</span>
-                            </Link>
-                        );
-                    })}
-                </nav>
-
-                <div className="admin-bottom-actions">
-                    <Link to="/" className="admin-nav-item" style={{ color: 'var(--color-text-muted)' }}>
-                        <Home size={20} />
-                        <span>На сайт</span>
-                    </Link>
-                    <button onClick={onLogout} className="admin-nav-item" style={{ color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit', fontSize: '1rem', marginTop: '10px' }}>
-                        <LogOut size={20} />
-                        <span>Выйти</span>
-                    </button>
-                </div>
-            </aside>
-
             {/* Main Content Area */}
             <main className="admin-main">
-                {/* Top Header */}
-                <header className="admin-header glass-card">
-                    <h1 className="text-gradient-gold">Управление магазином Kapsula</h1>
-                    <div className="admin-user">
-                        <span>С возвращением, Admin!</span>
+                {/* Top Header Navigation */}
+                <header className="admin-header">
+                    <div className="admin-header-left">
+                        <div className="admin-logo">
+                            <img src="/images/logo/logo.png" alt="Kapsula Admin" />
+
+                        </div>
+                    </div>
+
+                    <div className="admin-header-center">
+                        <nav className="admin-nav">
+                            {navItems.map((item) => {
+                                const Icon = item.icon;
+                                const isActive = location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path));
+
+                                return (
+                                    <Link
+                                        key={item.path}
+                                        to={item.path}
+                                        className={`admin-nav-item ${isActive ? 'active' : ''}`}
+                                        title={item.name}
+                                    >
+                                        <Icon size={18} />
+                                        <span className="nav-text">{item.name}</span>
+                                    </Link>
+                                );
+                            })}
+                        </nav>
+                    </div>
+
+                    <div className="admin-header-right" style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)', textDecoration: 'none' }}>
+                            <Home size={18} />
+                            <span>На сайт</span>
+                        </Link>
+                        <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)' }}></div>
+                        <button onClick={onLogout} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '1rem' }}>
+                            <LogOut size={18} color="#ef4444" />
+                            <span>Выйти</span>
+                        </button>
                     </div>
                 </header>
 
