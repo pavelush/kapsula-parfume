@@ -53,7 +53,6 @@
     border-radius: 12px;
     color: var(--color-text-muted);
     text-decoration: none;
-    transition: all 0.3s ease;
     border: 1px solid transparent;
 }
 

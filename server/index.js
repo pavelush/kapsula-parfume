@@ -36,6 +36,22 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
     res.json({ url: imageUrl });
 });
 
+// --- ADMIN AUTH ---
+app.post('/api/admin/login', (req, res) => {
+    const { username, password } = req.body;
+    // In a real app, do secure hashing and avoid hardcoded creds in code.
+    // Here we use env vars or simple fallback for demonstration.
+    const adminUser = process.env.ADMIN_USER || 'admin';
+    const adminPass = process.env.ADMIN_PASS || 'admin';
+
+    if (username === adminUser && password === adminPass) {
+        // Return a dummy token for simplicity
+        res.json({ success: true, token: 'admin-secret-token-123' });
+    } else {
+        res.status(401).json({ error: 'Неверный логин или пароль' });
+    }
+});
+
 // --- PRODUCTS ---
 app.get('/api/products', async (req, res) => {
     try {

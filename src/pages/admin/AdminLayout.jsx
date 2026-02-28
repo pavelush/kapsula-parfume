@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Package, LayoutList, MessageSquare, Settings, CreditCard, ShoppingCart, Home, MapPin } from 'lucide-react';
+import { Package, LayoutList, MessageSquare, Settings, CreditCard, ShoppingCart, Home, MapPin, LogOut } from 'lucide-react';
 import './Admin.css';
 
 const navItems = [
@@ -13,7 +13,7 @@ const navItems = [
     { name: 'Настройки', path: '/admin/settings', icon: Settings },
 ];
 
-export default function AdminLayout({ children }) {
+export default function AdminLayout({ children, onLogout }) {
     const location = useLocation();
 
     return (
@@ -48,6 +48,10 @@ export default function AdminLayout({ children }) {
                         <Home size={20} />
                         <span>На сайт</span>
                     </Link>
+                    <button onClick={onLogout} className="admin-nav-item" style={{ color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit', fontSize: '1rem', marginTop: '10px' }}>
+                        <LogOut size={20} />
+                        <span>Выйти</span>
+                    </button>
                 </div>
             </aside>
 
