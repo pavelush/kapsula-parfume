@@ -156,6 +156,43 @@ export default function AdminSettings() {
                         />
                     </div>
 
+
+
+                    <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>SEO и Аналитика</h3>
+
+                    <div className="form-group">
+                        <label>Заголовок сайта (Title)</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={settings.seo_title || ''}
+                            onChange={(e) => handleChange('seo_title', e.target.value)}
+                            placeholder="Например: Kapsula Parfume - Селективная парфюмерия"
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Описание сайта (Description)</label>
+                        <textarea
+                            className="form-control"
+                            rows="2"
+                            value={settings.seo_description || ''}
+                            onChange={(e) => handleChange('seo_description', e.target.value)}
+                            placeholder="Короткое описание сайта для поисковиков..."
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Код Яндекс Метрики (или других счетчиков)</label>
+                        <textarea
+                            className="form-control"
+                            rows="6"
+                            value={settings.yandex_metrika_code || ''}
+                            onChange={(e) => handleChange('yandex_metrika_code', e.target.value)}
+                            placeholder="<!-- Yandex.Metrika counter --> ..."
+                            style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
+                        />
+                    </div>
+
+
                     <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '3rem' }}>
                         <button type="submit" className="btn-primary" disabled={saving} style={{ padding: '12px 32px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <Save size={18} /> {saving ? 'Сохранение...' : 'Сохранить изменения'}
