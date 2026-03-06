@@ -348,12 +348,7 @@ nav {
   width: 100%;
 }
 
-@media (max-width: 768px) {
-  .nav-links {
-    display: none;
-    /* Add mobile menu later */
-  }
-}
+/* Removed conflicting .nav-links mobile display rule here */
 
 /* Hero Section */
 .hero {

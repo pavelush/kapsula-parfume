@@ -193,6 +193,60 @@ export default function AdminSettings() {
                         />
                     </div>
 
+                    <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Интеграция с МойСклад</h3>
+
+                    <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <input
+                            type="checkbox"
+                            id="moysklad_sync"
+                            checked={settings.moysklad_sync_enabled === 'true'}
+                            onChange={(e) => handleChange('moysklad_sync_enabled', e.target.checked ? 'true' : 'false')}
+                            style={{ width: '20px', height: '20px', accentColor: 'var(--color-accent-gold)' }}
+                        />
+                        <label htmlFor="moysklad_sync" style={{ margin: 0, cursor: 'pointer' }}>Включить синхронизацию с МойСклад</label>
+                    </div>
+
+                    <div className="form-group">
+                        <label>Токен авторизации (Bearer Token)</label>
+                        <input
+                            type="password"
+                            className="form-control"
+                            value={settings.moysklad_token || ''}
+                            onChange={(e) => handleChange('moysklad_token', e.target.value)}
+                            placeholder="Начинается с Bearer..."
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Процентное изменение выгружаемой цены (%)</label>
+                        <input
+                            type="number"
+                            className="form-control"
+                            value={settings.moysklad_price_modifier || '0'}
+                            onChange={(e) => handleChange('moysklad_price_modifier', e.target.value)}
+                            placeholder="Например: -5"
+                            style={{ maxWidth: '200px' }}
+                        />
+                        <small style={{ display: 'block', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                            Укажите отрицательное число (-5) для скидки или положительное (5) для наценки. Выгружаемые цены будут скорректированы на этот процент перед показом на сайте.
+                        </small>
+                    </div>
+
+                    <div className="form-group">
+                        <label>Интервал обновления (в минутах)</label>
+                        <input
+                            type="number"
+                            className="form-control"
+                            value={settings.moysklad_sync_interval || '15'}
+                            onChange={(e) => handleChange('moysklad_sync_interval', e.target.value)}
+                            placeholder="Например: 15"
+                            style={{ maxWidth: '200px' }}
+                        />
+                        <small style={{ display: 'block', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                            Как часто сервер будет синхронизировать остатки и цены с МойСклад.
+                        </small>
+                    </div>
+
                     <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Смена пароля (Админ)</h3>
 
                     <div className="form-group">

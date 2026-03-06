@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ShoppingBag, ChevronLeft, Heart } from 'lucide-react';
+import WhyUsSection from '../../components/WhyUsSection';
+import FAQSection from '../../components/FAQSection';
+import Footer from '../../components/Footer';
 
 export default function ProductPage({ favorites = [], toggleFavorite = () => { }, addToCart = () => { } }) {
     const { slug } = useParams();
@@ -30,7 +33,15 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                         }
                         metaDesc.content = found.seoDescription || found.description;
 
-                        const vols = [3, 5, 10, 100].filter(vol => found.prices && found.prices[vol] && found.prices[vol].price && String(found.prices[vol].price).trim() !== "");
+                        const vols = [3, 5, 10, 100].filter(vol => {
+                            const pData = found.prices && found.prices[vol];
+                            if (!pData) return false;
+                            if (!pData.price || String(pData.price).trim() === "") return false;
+                            if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
+                                if (Number(pData.stock) <= 0) return false;
+                            }
+                            return true;
+                        });
                         setAvailableVolumes(vols);
                         if (vols.length > 0) setSelectedVolume(vols[0]);
                     } else {
@@ -61,8 +72,8 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
     const isFavorite = favorites.includes(product.id);
 
     return (
-        <div style={{ minHeight: '100vh', background: 'var(--color-bg)', paddingTop: '80px', paddingBottom: '4rem' }}>
-            <div className="container">
+        <div style={{ minHeight: '100vh', background: 'var(--color-bg)', paddingTop: '80px', display: 'flex', flexDirection: 'column' }}>
+            <div className="container" style={{ flexGrow: 1, paddingBottom: '4rem', paddingLeft: '5%', paddingRight: '5%' }}>
                 <button
                     onClick={() => navigate(-1)}
                     style={{
@@ -84,7 +95,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                 <div className="product-page-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 1fr', gap: '4rem', alignItems: 'start' }}>
 
                     {/* Image Section */}
-                    <div style={{ position: 'relative', background: 'rgba(0,0,0,0.2)', borderRadius: '24px', padding: '2rem', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid var(--glass-border)' }}>
+                    <div className="product-image-container" style={{ position: 'relative', background: 'rgba(0,0,0,0.2)', borderRadius: '24px', padding: '2rem', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid var(--glass-border)' }}>
                         <div style={{
                             position: 'absolute',
                             top: '50%',
@@ -124,12 +135,13 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                         <img
                             src={product.imgUrl}
                             alt={product.name}
+                            className="product-image"
                             style={{ width: '100%', maxWidth: '400px', height: 'auto', objectFit: 'contain', position: 'relative', zIndex: 1, mixBlendMode: 'lighten' }}
                         />
                     </div>
 
                     {/* Details Section */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <div className="product-details-container" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                         <div>
                             <p style={{ color: 'var(--color-accent-gold)', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '0.5rem', fontWeight: 600 }}>
                                 {product.brand}
@@ -139,7 +151,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                             </h1>
                         </div>
 
-                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--glass-border)' }}>
+                        <div className="product-description-container" style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--glass-border)' }}>
                             <h3 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.2rem' }}>Описание</h3>
                             <p style={{ color: 'var(--color-text-muted)', lineHeight: 1.8, fontSize: '1rem', whiteSpace: 'pre-line' }}>
                                 {product.fullDescription || "Полное описание скоро появится"}
@@ -148,11 +160,12 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
 
                         <div>
                             <h3 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.2rem' }}>Выберите объем</h3>
-                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                            <div className="product-volumes-container" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                 {availableVolumes.map(vol => (
                                     <button
                                         key={vol}
                                         onClick={() => setSelectedVolume(vol)}
+                                        className="volume-button"
                                         style={{
                                             padding: '12px 24px',
                                             borderRadius: '30px',
@@ -172,7 +185,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginTop: '1rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div className="product-action-container" style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginTop: '1rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                             <div>
                                 {currentPrice.oldPrice && (
                                     <span style={{ display: 'block', fontSize: '1rem', color: 'var(--color-text-muted)', textDecoration: 'line-through', marginBottom: '-5px' }}>
@@ -197,15 +210,51 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                 </div>
             </div>
 
+            <div style={{ marginTop: '0' }}>
+                <WhyUsSection />
+                <FAQSection />
+            </div>
+
+            <Footer />
+
             <style dangerouslySetInnerHTML={{
                 __html: `
                 @media (max-width: 768px) {
                     .product-page-grid {
                         grid-template-columns: 1fr !important;
-                        gap: 2rem !important;
+                        gap: 1.5rem !important;
                     }
                     .product-page-grid h1 {
-                        fontSize: 2rem !important;
+                        font-size: 1.75rem !important;
+                    }
+                    .product-image-container {
+                        padding: 1.5rem !important;
+                        border-radius: 20px !important;
+                    }
+                    .product-image {
+                        max-width: 280px !important;
+                    }
+                    .product-details-container {
+                        gap: 1.5rem !important;
+                    }
+                    .product-description-container {
+                        padding: 1rem !important;
+                    }
+                    .product-volumes-container {
+                        gap: 0.5rem !important;
+                    }
+                    .volume-button {
+                        padding: 10px 18px !important;
+                        font-size: 0.95rem !important;
+                    }
+                    .product-action-container {
+                        flex-direction: column !important;
+                        align-items: stretch !important;
+                        gap: 1.5rem !important;
+                        text-align: center;
+                    }
+                    .product-action-container button {
+                        width: 100% !important;
                     }
                 }
             `}} />

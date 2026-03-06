@@ -5,7 +5,15 @@ import { Link } from 'react-router-dom';
 // Removed mock data, we fetch it now :)
 
 const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => {
-    const availableVolumes = [3, 5, 10, 100].filter(vol => product.prices && product.prices[vol] && product.prices[vol].price && String(product.prices[vol].price).trim() !== "");
+    const availableVolumes = [3, 5, 10, 100].filter(vol => {
+        const pData = product.prices && product.prices[vol];
+        if (!pData) return false;
+        if (!pData.price || String(pData.price).trim() === "") return false;
+        if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
+            if (Number(pData.stock) <= 0) return false;
+        }
+        return true;
+    });
     const [selectedVolume, setSelectedVolume] = useState(availableVolumes.length > 0 ? availableVolumes[0] : 3);
     const [isHovered, setIsHovered] = useState(false);
     const currentPrice = product.prices[selectedVolume] || { price: "0" };
@@ -232,7 +240,7 @@ export default function CatalogSection({ favorites = [], toggleFavorite = () => 
 
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
                 gap: '2.5rem'
             }}>
                 {loading ? (

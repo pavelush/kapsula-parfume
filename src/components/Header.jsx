@@ -23,6 +23,14 @@ export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIs
                     </div>
 
                     <div className={`nav-links ${mobileMenuOpen ? 'mobile-active' : ''}`}>
+                        <div className="mobile-menu-header">
+                            <div className="logo" style={{ display: 'flex', alignItems: 'center' }}>
+                                <img src="/images/logo/logo.png" alt="Kapsula Parfume Logo" style={{ height: '35px', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))' }} />
+                            </div>
+                            <button onClick={() => setMobileMenuOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
+                                <X size={28} />
+                            </button>
+                        </div>
                         <a href="/#catalog" onClick={() => setMobileMenuOpen(false)}>Каталог</a>
                         <a href="/#faq" onClick={() => setMobileMenuOpen(false)}>Вопросы</a>
                         <a href="/#contacts" onClick={() => setMobileMenuOpen(false)}>Контакты</a>
@@ -53,7 +61,21 @@ export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIs
             </header>
             <style dangerouslySetInnerHTML={{
                 __html: `
+        .mobile-menu-header {
+          display: none;
+        }
         @media (max-width: 768px) {
+          .mobile-menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 20px 5%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+          }
           .nav-links {
             position: fixed;
             top: 0;
@@ -63,6 +85,7 @@ export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIs
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
+            display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
@@ -75,7 +98,6 @@ export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIs
           }
           .menu-toggle {
             display: block !important;
-            }
           }
         }
       `}} />

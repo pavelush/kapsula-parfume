@@ -64,7 +64,51 @@ app.get('/api/products', async (req, res) => {
             ? 'SELECT * FROM products ORDER BY id ASC'
             : 'SELECT * FROM products WHERE is_active = true ORDER BY id ASC';
         const result = await pool.query(query);
-        res.json(result.rows);
+        let products = result.rows;
+
+        // Fetch MoySklad price modifier
+        const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'moysklad_price_modifier'");
+        const modifierStr = settingsRes.rows.length > 0 ? settingsRes.rows[0].setting_value : '0';
+        const modifier = parseFloat(modifierStr) || 0;
+
+        // Apply modifier if it's not 0
+        if (modifier !== 0) {
+            products = products.map(product => {
+                if (!product.prices || typeof product.prices !== 'object') return product;
+
+                const modifiedPrices = { ...product.prices };
+                for (const [vol, data] of Object.entries(modifiedPrices)) {
+                    // It can be just the string/number price, or an object { price: 1000, sku: '...', stock: 0 }
+                    let currentPrice = null;
+                    if (typeof data === 'object' && data !== null && data.price) {
+                        currentPrice = parseFloat(String(data.price).replace(/\s/g, ''));
+                    } else if (typeof data === 'string' || typeof data === 'number') {
+                        currentPrice = parseFloat(String(data).replace(/\s/g, ''));
+                    }
+
+                    if (currentPrice && !isNaN(currentPrice)) {
+                        // Math: originalPrice * (1 + modifier / 100)
+                        // If modifier is -5, it's originalPrice * 0.95
+                        let newPrice = currentPrice * (1 + (modifier / 100));
+                        newPrice = Math.round(newPrice); // Round to nearest whole number
+
+                        // Add nice formatting (spaces)
+                        const formattedNewPrice = newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
+                        // Update object structure if it was primitive
+                        if (typeof data === 'object' && data !== null) {
+                            modifiedPrices[vol] = { ...data, price: formattedNewPrice };
+                        } else {
+                            // If it was just "1500" or 1500, we'll keep the object structure for future
+                            modifiedPrices[vol] = { price: formattedNewPrice };
+                        }
+                    }
+                }
+                return { ...product, prices: modifiedPrices };
+            });
+        }
+
+        res.json(products);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal server error' });
@@ -232,6 +276,14 @@ app.put('/api/settings/batch', async (req, res) => {
         }
 
         await client.query('COMMIT');
+
+        // If sync interval or sync enabled was changed, restart the schedule
+        if (updates.some(u => u.key === 'moysklad_sync_interval' || u.key === 'moysklad_sync_enabled')) {
+            if (global.restartMoySkladSync) {
+                global.restartMoySkladSync();
+            }
+        }
+
         res.json({ message: 'Settings updated successfully' });
     } catch (err) {
         await client.query('ROLLBACK');
@@ -381,6 +433,44 @@ app.put('/api/orders/:id/status', async (req, res) => {
     }
 });
 
+const syncWithMoySklad = require('./sync_moysklad');
+
+let syncTimeout = null;
+
+const scheduleNextSync = async () => {
+    try {
+        const res = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'moysklad_sync_interval'");
+        let intervalMinutes = 15;
+        if (res.rows.length > 0 && res.rows[0].setting_value) {
+            intervalMinutes = parseInt(res.rows[0].setting_value, 10) || 15;
+        }
+        if (intervalMinutes < 1) intervalMinutes = 1; // min 1 minute
+
+        console.log(`[MoySklad Sync] Следующая синхронизация запланирована через ${intervalMinutes} мин.`);
+
+        syncTimeout = setTimeout(async () => {
+            await syncWithMoySklad();
+            scheduleNextSync();
+        }, intervalMinutes * 60 * 1000);
+    } catch (err) {
+        console.error("Error scheduling MoySklad sync:", err);
+        syncTimeout = setTimeout(scheduleNextSync, 15 * 60 * 1000);
+    }
+};
+
+global.restartMoySkladSync = async () => {
+    console.log('[MoySklad Sync] Перезапуск расписания синхронизации...');
+    if (syncTimeout) clearTimeout(syncTimeout);
+    await syncWithMoySklad();
+    scheduleNextSync();
+};
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+
+    // Запускаем первый раз через 5 секунд после старта
+    setTimeout(async () => {
+        await syncWithMoySklad();
+        scheduleNextSync();
+    }, 5000);
 });

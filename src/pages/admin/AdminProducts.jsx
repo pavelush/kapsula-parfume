@@ -19,10 +19,18 @@ export default function AdminProducts() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
+    const [activeVolumeTab, setActiveVolumeTab] = useState('3');
+
     // Form state
     const initialProductState = {
         name: '', description: '', fullDescription: '', brand: '', colorTheme: 'rgba(251, 191, 36, 0.15)', imgUrl: '',
-        price_3: '', price_5: '', price_10: '', price_100: '', is_active: true,
+        volumes: {
+            3: { price: '', sku: '', stock: '' },
+            5: { price: '', sku: '', stock: '' },
+            10: { price: '', sku: '', stock: '' },
+            100: { price: '', sku: '', stock: '' }
+        },
+        is_active: true,
         slug: '', seoTitle: '', seoDescription: ''
     };
     const [currentProduct, setCurrentProduct] = useState(initialProductState);
@@ -55,12 +63,7 @@ export default function AdminProducts() {
         e.preventDefault();
 
         // Format prices back to JSON
-        const pricesJson = {
-            3: { price: currentProduct.price_3 },
-            5: { price: currentProduct.price_5 },
-            10: { price: currentProduct.price_10 },
-            100: { price: currentProduct.price_100 }
-        };
+        const pricesJson = currentProduct.volumes;
 
         const transliterate = (text) => {
             const ru = {
@@ -125,15 +128,18 @@ export default function AdminProducts() {
         setCurrentProduct({
             ...product,
             fullDescription: product.fullDescription || '',
-            price_3: product.prices['3']?.price || '',
-            price_5: product.prices['5']?.price || '',
-            price_10: product.prices['10']?.price || '',
-            price_100: product.prices['100']?.price || '',
+            volumes: {
+                3: { price: product.prices['3']?.price || '', sku: product.prices['3']?.sku || '', stock: product.prices['3']?.stock ?? '' },
+                5: { price: product.prices['5']?.price || '', sku: product.prices['5']?.sku || '', stock: product.prices['5']?.stock ?? '' },
+                10: { price: product.prices['10']?.price || '', sku: product.prices['10']?.sku || '', stock: product.prices['10']?.stock ?? '' },
+                100: { price: product.prices['100']?.price || '', sku: product.prices['100']?.sku || '', stock: product.prices['100']?.stock ?? '' }
+            },
             is_active: product.is_active !== undefined ? product.is_active : true,
             slug: product.slug || '',
             seoTitle: product.seoTitle || '',
             seoDescription: product.seoDescription || ''
         });
+        setActiveVolumeTab('3');
         setIsModalOpen(true);
     };
 
@@ -156,6 +162,7 @@ export default function AdminProducts() {
 
     const openAddModal = () => {
         setCurrentProduct(initialProductState);
+        setActiveVolumeTab('3');
         setIsModalOpen(true);
     };
 
@@ -415,47 +422,78 @@ export default function AdminProducts() {
                                 />
                             </div>
 
-                            <h4 style={{ color: 'white', marginBottom: '1rem', marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>Цены</h4>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                                <div className="form-group">
-                                    <label>Цена за 3 мл (₽)</label>
+                            <h4 style={{ color: 'white', marginBottom: '1rem', marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>Настройка объемов и цен (МойСклад)</h4>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+                                {['3', '5', '10', '100'].map(vol => (
+                                    <button
+                                        key={vol}
+                                        type="button"
+                                        onClick={() => setActiveVolumeTab(vol)}
+                                        style={{
+                                            padding: '8px 16px',
+                                            background: activeVolumeTab === vol ? 'var(--color-accent-gold)' : 'transparent',
+                                            color: activeVolumeTab === vol ? 'black' : 'white',
+                                            border: 'none',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                            fontWeight: activeVolumeTab === vol ? '600' : '400',
+                                            transition: 'all 0.2s',
+                                        }}
+                                    >
+                                        {vol} мл
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label>Цена (₽)</label>
                                     <input
                                         type="text"
                                         className="form-control"
-                                        value={currentProduct.price_3}
-                                        onChange={(e) => setCurrentProduct({ ...currentProduct, price_3: e.target.value })}
+                                        value={currentProduct.volumes[activeVolumeTab].price}
+                                        onChange={(e) => setCurrentProduct({
+                                            ...currentProduct,
+                                            volumes: {
+                                                ...currentProduct.volumes,
+                                                [activeVolumeTab]: { ...currentProduct.volumes[activeVolumeTab], price: e.target.value }
+                                            }
+                                        })}
                                         placeholder="Например: 1 500"
                                     />
                                 </div>
-                                <div className="form-group">
-                                    <label>Цена за 5 мл (₽)</label>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label>Код товара (MS SKU)</label>
                                     <input
                                         type="text"
                                         className="form-control"
-                                        value={currentProduct.price_5}
-                                        onChange={(e) => setCurrentProduct({ ...currentProduct, price_5: e.target.value })}
-                                        placeholder="Например: 2 450"
+                                        value={currentProduct.volumes[activeVolumeTab].sku}
+                                        onChange={(e) => setCurrentProduct({
+                                            ...currentProduct,
+                                            volumes: {
+                                                ...currentProduct.volumes,
+                                                [activeVolumeTab]: { ...currentProduct.volumes[activeVolumeTab], sku: e.target.value }
+                                            }
+                                        })}
+                                        placeholder="Например: ART-123"
                                     />
                                 </div>
-                                <div className="form-group">
-                                    <label>Цена за 10 мл (₽)</label>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label>Остаток на складе</label>
                                     <input
-                                        type="text"
+                                        type="number"
                                         className="form-control"
-                                        value={currentProduct.price_10}
-                                        onChange={(e) => setCurrentProduct({ ...currentProduct, price_10: e.target.value })}
-                                        placeholder="Например: 4 900"
+                                        value={currentProduct.volumes[activeVolumeTab].stock}
+                                        onChange={(e) => setCurrentProduct({
+                                            ...currentProduct,
+                                            volumes: {
+                                                ...currentProduct.volumes,
+                                                [activeVolumeTab]: { ...currentProduct.volumes[activeVolumeTab], stock: e.target.value }
+                                            }
+                                        })}
+                                        placeholder="Например: 10"
                                     />
-                                </div>
-                                <div className="form-group">
-                                    <label>Цена за 100 мл (₽)</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={currentProduct.price_100}
-                                        onChange={(e) => setCurrentProduct({ ...currentProduct, price_100: e.target.value })}
-                                        placeholder="Например: 35 000"
-                                    />
+                                    <small style={{ color: 'var(--color-text-muted)', display: 'block', marginTop: '0.4rem', fontSize: '0.75rem' }}>Если остаток 0, кнопка скроется на сайте.</small>
                                 </div>
                             </div>
 

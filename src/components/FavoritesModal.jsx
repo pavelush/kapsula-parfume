@@ -1,7 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, Trash2, ShoppingBag } from 'lucide-react';
 
 export default function FavoritesModal({ isOpen, onClose, favoriteIds, products = [], toggleFavorite, addToCart }) {
+    const navigate = useNavigate();
+
     if (!isOpen) return null;
 
     // Map the favorite IDs to their full product objects
@@ -71,13 +74,20 @@ export default function FavoritesModal({ isOpen, onClose, favoriteIds, products 
                                         padding: '10px',
                                         borderRadius: '12px'
                                     }}>
-                                        <div style={{ width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', background: 'rgba(0,0,0,0.5)' }}>
-                                            <img src={product.imgUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                        </div>
-                                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--color-accent-gold)', textTransform: 'uppercase' }}>{product.brand}</span>
-                                            <h4 style={{ fontSize: '1rem', margin: '2px 0 5px 0' }}>{product.name}</h4>
-
+                                        <div
+                                            style={{ display: 'flex', flex: 1, gap: '15px', cursor: 'pointer' }}
+                                            onClick={() => {
+                                                onClose();
+                                                navigate(`/product/${product.slug || product.id}`);
+                                            }}
+                                        >
+                                            <div style={{ width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', background: 'rgba(0,0,0,0.5)', flexShrink: 0 }}>
+                                                <img src={product.imgUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                            </div>
+                                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--color-accent-gold)', textTransform: 'uppercase' }}>{product.brand}</span>
+                                                <h4 style={{ fontSize: '1rem', margin: '2px 0 5px 0', transition: 'color 0.3s ease' }} onMouseOver={(e) => e.target.style.color = 'var(--color-accent-gold)'} onMouseOut={(e) => e.target.style.color = 'white'}>{product.name}</h4>
+                                            </div>
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                                             <button
@@ -91,6 +101,7 @@ export default function FavoritesModal({ isOpen, onClose, favoriteIds, products 
                                             <button
                                                 onClick={() => {
                                                     addToCart(product, defaultVolume, defaultPrice);
+                                                    onClose();
                                                 }}
                                                 style={{
                                                     background: 'var(--gradient-primary)',
