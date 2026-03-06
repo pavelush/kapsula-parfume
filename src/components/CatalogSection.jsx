@@ -169,17 +169,7 @@ export default function CatalogSection({ favorites = [], toggleFavorite = () => 
         fetchProducts();
     }, []);
 
-    // Calculate max price and min price from products based on their minimal variation
-    const maxAvailablePrice = products.length > 0 ? Math.max(...products.map(f => Math.max(...Object.values(f.prices).map(p => parseInt(String(p.price).replace(/[^\d]/g, ''), 10))))) : 10000;
-    const minAvailablePrice = products.length > 0 ? Math.min(...products.map(f => Math.min(...Object.values(f.prices).map(p => parseInt(String(p.price).replace(/[^\d]/g, ''), 10))))) : 0;
 
-    const [maxPrice, setMaxPrice] = useState(10000); // initial default, will be overridden by useEffect if needed
-
-    useEffect(() => {
-        if (products.length > 0) {
-            setMaxPrice(maxAvailablePrice);
-        }
-    }, [products, maxAvailablePrice]);
 
     const brands = [...new Set(products.map(f => f.brand))].sort();
 
@@ -191,10 +181,7 @@ export default function CatalogSection({ favorites = [], toggleFavorite = () => 
 
     const filteredFragrances = products.filter(product => {
         const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(product.brand);
-        const productMinPrice = Math.min(...Object.values(product.prices).map(p => parseInt(String(p.price).replace(/[^\d]/g, ''), 10)));
-        const matchesPrice = productMinPrice <= maxPrice;
-
-        return matchesBrand && matchesPrice;
+        return matchesBrand;
     });
 
     return (
@@ -236,25 +223,7 @@ export default function CatalogSection({ favorites = [], toggleFavorite = () => 
                     </div>
                 </div>
 
-                <div style={{ flex: '1 1 280px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <h4 style={{ color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>Цена до:</h4>
-                        <span style={{ color: 'var(--color-accent-gold)', fontWeight: 'bold', fontSize: '1.1rem' }}>{maxPrice.toLocaleString('ru-RU')} ₽</span>
-                    </div>
-                    <input
-                        type="range"
-                        min={minAvailablePrice}
-                        max={maxAvailablePrice}
-                        step="100"
-                        value={maxPrice}
-                        onChange={(e) => setMaxPrice(parseInt(e.target.value, 10))}
-                        style={{ width: '100%', accentColor: 'var(--color-accent-gold)', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px', outline: 'none', cursor: 'pointer' }}
-                    />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.8rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                        <span>{minAvailablePrice.toLocaleString('ru-RU')} ₽</span>
-                        <span>{maxAvailablePrice.toLocaleString('ru-RU')} ₽</span>
-                    </div>
-                </div>
+
             </div>
 
             <div style={{
@@ -279,7 +248,7 @@ export default function CatalogSection({ favorites = [], toggleFavorite = () => 
                 ) : (
                     <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '20px', border: '1px dashed var(--glass-border)' }}>
                         <p style={{ color: 'var(--color-text-muted)', fontSize: '1.2rem', marginBottom: '1rem' }}>Ничего не найдено по вашим фильтрам.</p>
-                        <button onClick={() => { setSelectedBrands([]); setMaxPrice(maxAvailablePrice); }} className="btn-secondary" style={{ padding: '10px 24px' }}>Сбросить фильтры</button>
+                        <button onClick={() => setSelectedBrands([])} className="btn-secondary" style={{ padding: '10px 24px' }}>Сбросить фильтры</button>
                     </div>
                 )}
             </div>

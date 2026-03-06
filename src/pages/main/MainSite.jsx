@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import CatalogSection from '../../components/CatalogSection';
 import FAQSection from '../../components/FAQSection';
 import CartModal from '../../components/CartModal';
+import FavoritesModal from '../../components/FavoritesModal';
 import { ShoppingBag, ChevronRight, Menu, X, Star, Droplets, ShieldCheck, Heart } from 'lucide-react';
 import './MainSite.css';
 
@@ -27,6 +28,8 @@ function MainSite() {
     }
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
+  const [products, setProducts] = useState([]);
   const [settings, setSettings] = useState({
     contact_phone: '+7 916 203 54 94',
     contact_address: 'Россия, Москва, ТЦ Авиапарк (1 этаж)',
@@ -107,6 +110,19 @@ function MainSite() {
     };
     fetchSettings();
 
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch('/api/products');
+        if (res.ok) {
+          const data = await res.json();
+          setProducts(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch products for favorites modal", error);
+      }
+    };
+    fetchProducts();
+
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
     };
@@ -119,7 +135,7 @@ function MainSite() {
       {/* Navigation */}
       <header className={`header ${scrolled ? 'scrolled' : ''}`}>
         <nav>
-          <div className="logo" style={{ display: 'flex', alignItems: 'center' }}>
+          <div className="logo" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => window.location.href = '/'}>
             <img src="/images/logo/logo.png" alt="Kapsula Parfume Logo" style={{ height: '45px', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))', transition: 'all 0.3s ease' }} />
           </div>
 
@@ -130,7 +146,7 @@ function MainSite() {
           </div>
 
           <div className="nav-actions" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <button className="btn-icon" style={{ position: 'relative' }} title="Избранное">
+            <button className="btn-icon" style={{ position: 'relative' }} title="Избранное" onClick={() => setIsFavoritesOpen(true)}>
               <Heart size={20} fill={favorites.length > 0 ? "var(--color-accent-gold, #fbbf24)" : "none"} color={favorites.length > 0 ? "var(--color-accent-gold, #fbbf24)" : "currentColor"} />
               {favorites.length > 0 && (
                 <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: 'var(--gradient-primary)', color: 'white', fontSize: '10px', fontWeight: 'bold', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -223,7 +239,7 @@ function MainSite() {
         <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '1px', background: 'var(--gradient-primary)' }}></div>
         <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '4rem', marginBottom: '4rem' }}>
           <div>
-            <div className="logo" style={{ marginBottom: '1.5rem' }}>
+            <div className="logo" style={{ marginBottom: '1.5rem', cursor: 'pointer' }} onClick={() => window.location.href = '/'}>
               <img src="/images/logo/logo.png" alt="Kapsula Parfume Logo" style={{ height: '55px', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))', transition: 'all 0.3s ease' }} />
             </div>
             <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem', lineHeight: 1.6, maxWidth: '300px' }}>
@@ -325,6 +341,15 @@ function MainSite() {
         removeFromCart={removeFromCart}
         updateQuantity={updateQuantity}
         clearCart={clearCart}
+      />
+
+      <FavoritesModal
+        isOpen={isFavoritesOpen}
+        onClose={() => setIsFavoritesOpen(false)}
+        favoriteIds={favorites}
+        products={products}
+        toggleFavorite={toggleFavorite}
+        addToCart={addToCart}
       />
     </div>
   );
