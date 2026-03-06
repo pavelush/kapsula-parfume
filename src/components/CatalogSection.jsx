@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, ChevronDown, Heart, Filter, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 // Removed mock data, we fetch it now :)
 
@@ -67,11 +68,12 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
                 >
                     <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
                 </button>
-                <div style={{
+                <Link to={`/product/${product.slug}`} style={{
                     width: '100%',
                     height: '100%',
                     transform: isHovered ? 'scale(1.05)' : 'scale(1)',
-                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    display: 'block'
                 }}>
                     <img
                         src={product.imgUrl}
@@ -80,14 +82,16 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
                         onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
                     />
                     <div style={{ display: 'none', width: '100%', height: '100%', background: `linear-gradient(135deg, transparent, ${product.colorTheme})`, opacity: 0.5, borderRadius: '10px' }}></div>
-                </div>
+                </Link>
             </div>
 
             {/* Details Area (Bottom Half) */}
             <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flexGrow: 1, zIndex: 1 }}>
                 <div style={{ marginBottom: '1rem' }}>
                     <p style={{ color: 'var(--color-accent-gold)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.2rem', fontWeight: 600 }}>{product.brand}</p>
-                    <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', lineHeight: 1.3 }}>{product.name}</h3>
+                    <Link to={`/product/${product.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                        <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', lineHeight: 1.3, transition: 'color 0.3s' }} onMouseEnter={(e) => e.target.style.color = 'var(--color-accent-gold)'} onMouseLeave={(e) => e.target.style.color = 'inherit'}>{product.name}</h3>
+                    </Link>
                     <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{product.description}</p>
                 </div>
 

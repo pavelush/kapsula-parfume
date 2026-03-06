@@ -1,10 +1,17 @@
-import React, { useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import MainSite from './pages/main/MainSite';
 import AdminApp from './pages/admin/AdminApp';
 import PrivacyPolicyPage from './pages/main/PrivacyPolicyPage';
+import ProductPage from './pages/main/ProductPage';
+import Header from './components/Header';
+import CartModal from './components/CartModal';
+import FavoritesModal from './components/FavoritesModal';
 
 function App() {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
   useEffect(() => {
     const fetchSeoSettings = async () => {
       try {
@@ -51,12 +58,155 @@ function App() {
     fetchSeoSettings();
   }, []);
 
+  // Moved cart and favorites state logic to App.jsx to be shared across routes
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kapsula_favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Failed to load favorites', e);
+      return [];
+    }
+  });
+
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kapsula_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Failed to load cart', e);
+      return [];
+    }
+  });
+
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    if (isAdminRoute) return;
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch('/api/products');
+        if (res.ok) {
+          const data = await res.json();
+          setProducts(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch products", error);
+      }
+    };
+    fetchProducts();
+  }, [isAdminRoute]);
+
+  const toggleFavorite = (id) => {
+    setFavorites(prev =>
+      prev.includes(id) ? prev.filter(fId => fId !== id) : [...prev, id]
+    );
+  };
+
+  const addToCart = (product, volume, price) => {
+    setCartItems(prev => {
+      const existing = prev.find(item => item.id === product.id && item.volume === volume);
+      if (existing) {
+        return prev.map(item =>
+          item.id === product.id && item.volume === volume
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prev, { ...product, volume, price, quantity: 1 }];
+    });
+    setIsCartOpen(true);
+  };
+
+  const removeFromCart = (index) => {
+    setCartItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateQuantity = (index, delta) => {
+    setCartItems(prev => prev.map((item, i) => {
+      if (i === index) {
+        const newQ = item.quantity + delta;
+        return newQ > 0 ? { ...item, quantity: newQ } : item;
+      }
+      return item;
+    }));
+  };
+
+  const clearCart = () => setCartItems([]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('kapsula_favorites', JSON.stringify(favorites));
+    } catch (e) {
+      console.error('Failed to save favorites', e);
+    }
+  }, [favorites]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('kapsula_cart', JSON.stringify(cartItems));
+    } catch (e) {
+      console.error('Failed to save cart', e);
+    }
+  }, [cartItems]);
+
   return (
-    <Routes>
-      <Route path="/admin/*" element={<AdminApp />} />
-      <Route path="/privacy" element={<PrivacyPolicyPage />} />
-      <Route path="/*" element={<MainSite />} />
-    </Routes>
+    <>
+      {!isAdminRoute && (
+        <>
+          <Header
+            favorites={favorites}
+            cartItems={cartItems}
+            setIsFavoritesOpen={setIsFavoritesOpen}
+            setIsCartOpen={setIsCartOpen}
+          />
+          <CartModal
+            isOpen={isCartOpen}
+            onClose={() => setIsCartOpen(false)}
+            cartItems={cartItems}
+            removeFromCart={removeFromCart}
+            updateQuantity={updateQuantity}
+            clearCart={clearCart}
+          />
+          <FavoritesModal
+            isOpen={isFavoritesOpen}
+            onClose={() => setIsFavoritesOpen(false)}
+            favoriteIds={favorites}
+            products={products}
+            toggleFavorite={toggleFavorite}
+            addToCart={addToCart}
+          />
+        </>
+      )}
+      <Routes>
+        <Route path="/admin/*" element={<AdminApp />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/product/:slug" element={
+          <ProductPage
+            favorites={favorites}
+            toggleFavorite={toggleFavorite}
+            addToCart={addToCart}
+            cartItems={cartItems}
+            setCartItems={setCartItems}
+            isCartOpen={isCartOpen}
+            setIsCartOpen={setIsCartOpen}
+          />
+        } />
+        <Route path="/*" element={
+          <MainSite
+            favorites={favorites}
+            toggleFavorite={toggleFavorite}
+            addToCart={addToCart}
+            cartItems={cartItems}
+            setCartItems={setCartItems}
+            isCartOpen={isCartOpen}
+            setIsCartOpen={setIsCartOpen}
+          />
+        } />
+      </Routes>
+    </>
   );
 }
 

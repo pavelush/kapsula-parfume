@@ -1,35 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import CatalogSection from '../../components/CatalogSection';
 import FAQSection from '../../components/FAQSection';
-import CartModal from '../../components/CartModal';
-import FavoritesModal from '../../components/FavoritesModal';
-import { ShoppingBag, ChevronRight, Menu, X, Star, Droplets, ShieldCheck, Heart } from 'lucide-react';
+import { ChevronRight, Star, Droplets, ShieldCheck } from 'lucide-react';
 import './MainSite.css';
 
-function MainSite() {
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [favorites, setFavorites] = useState(() => {
-    try {
-      const saved = localStorage.getItem('kapsula_favorites');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error('Failed to load favorites', e);
-      return [];
-    }
-  });
-  const [cartItems, setCartItems] = useState(() => {
-    try {
-      const saved = localStorage.getItem('kapsula_cart');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error('Failed to load cart', e);
-      return [];
-    }
-  });
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
-  const [products, setProducts] = useState([]);
+function MainSite({ favorites, toggleFavorite, addToCart, cartItems, setCartItems, isCartOpen, setIsCartOpen }) {
+  // Header and Modal states moved to App.jsx
   const [settings, setSettings] = useState({
     contact_phone: '+7 916 203 54 94',
     contact_address: 'Россия, Москва, ТЦ Авиапарк (1 этаж)',
@@ -41,58 +17,7 @@ function MainSite() {
     social_tiktok: 'https://www.tiktok.com/@kapsulaparfum?_r=1&_t=ZS-93gqFKeHXou'
   });
 
-  const toggleFavorite = (id) => {
-    setFavorites(prev =>
-      prev.includes(id) ? prev.filter(fId => fId !== id) : [...prev, id]
-    );
-  };
 
-  const addToCart = (product, volume, price) => {
-    setCartItems(prev => {
-      const existing = prev.find(item => item.id === product.id && item.volume === volume);
-      if (existing) {
-        return prev.map(item =>
-          item.id === product.id && item.volume === volume
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prev, { ...product, volume, price, quantity: 1 }];
-    });
-    setIsCartOpen(true);
-  };
-
-  const removeFromCart = (index) => {
-    setCartItems(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const updateQuantity = (index, delta) => {
-    setCartItems(prev => prev.map((item, i) => {
-      if (i === index) {
-        const newQ = item.quantity + delta;
-        return newQ > 0 ? { ...item, quantity: newQ } : item;
-      }
-      return item;
-    }));
-  };
-
-  const clearCart = () => setCartItems([]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('kapsula_favorites', JSON.stringify(favorites));
-    } catch (e) {
-      console.error('Failed to save favorites', e);
-    }
-  }, [favorites]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('kapsula_cart', JSON.stringify(cartItems));
-    } catch (e) {
-      console.error('Failed to save cart', e);
-    }
-  }, [cartItems]);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -110,65 +35,12 @@ function MainSite() {
     };
     fetchSettings();
 
-    const fetchProducts = async () => {
-      try {
-        const res = await fetch('/api/products');
-        if (res.ok) {
-          const data = await res.json();
-          setProducts(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch products for favorites modal", error);
-      }
-    };
-    fetchProducts();
 
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
     <div className="app-container">
-      {/* Navigation */}
-      <header className={`header ${scrolled ? 'scrolled' : ''}`}>
-        <nav>
-          <div className="logo" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => window.location.href = '/'}>
-            <img src="/images/logo/logo.png" alt="Kapsula Parfume Logo" style={{ height: '45px', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))', transition: 'all 0.3s ease' }} />
-          </div>
 
-          <div className={`nav-links ${mobileMenuOpen ? 'mobile-active' : ''}`}>
-            <a href="#catalog" onClick={() => setMobileMenuOpen(false)}>Каталог</a>
-            <a href="#faq" onClick={() => setMobileMenuOpen(false)}>Вопросы</a>
-            <a href="#contacts" onClick={() => setMobileMenuOpen(false)}>Контакты</a>
-          </div>
-
-          <div className="nav-actions" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <button className="btn-icon" style={{ position: 'relative' }} title="Избранное" onClick={() => setIsFavoritesOpen(true)}>
-              <Heart size={20} fill={favorites.length > 0 ? "var(--color-accent-gold, #fbbf24)" : "none"} color={favorites.length > 0 ? "var(--color-accent-gold, #fbbf24)" : "currentColor"} />
-              {favorites.length > 0 && (
-                <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: 'var(--gradient-primary)', color: 'white', fontSize: '10px', fontWeight: 'bold', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {favorites.length}
-                </span>
-              )}
-            </button>
-            <button className="btn-icon" style={{ position: 'relative' }} onClick={() => setIsCartOpen(true)}>
-              <ShoppingBag size={20} />
-              {cartItems.length > 0 && (
-                <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: 'var(--color-accent-blue)', color: 'white', fontSize: '10px', fontWeight: 'bold', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {cartItems.reduce((acc, item) => acc + item.quantity, 0)}
-                </span>
-              )}
-            </button>
-            <button className="menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ background: 'transparent', border: 'none', color: 'var(--color-text)', cursor: 'pointer', display: 'none' }}>
-              {mobileMenuOpen ? <X /> : <Menu />}
-            </button>
-            <button className="btn-primary" style={{ display: 'none' }}>В корзину</button>
-          </div>
-        </nav>
-      </header>
 
       <main>
         {/* Hero Section */}
@@ -305,52 +177,7 @@ function MainSite() {
         </div>
       </footer>
 
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        @media (max-width: 768px) {
-          .nav-links {
-            position: fixed;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100vh;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.5rem;
-            transition: left 0.3s ease;
-            z-index: 99;
-          }
-          .nav-links.mobile-active {
-            left: 0;
-          }
-          .menu-toggle {
-            display: block !important;
-            }
-          }
-        }
-      `}} />
 
-      <CartModal
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        cartItems={cartItems}
-        removeFromCart={removeFromCart}
-        updateQuantity={updateQuantity}
-        clearCart={clearCart}
-      />
-
-      <FavoritesModal
-        isOpen={isFavoritesOpen}
-        onClose={() => setIsFavoritesOpen(false)}
-        favoriteIds={favorites}
-        products={products}
-        toggleFavorite={toggleFavorite}
-        addToCart={addToCart}
-      />
     </div>
   );
 }

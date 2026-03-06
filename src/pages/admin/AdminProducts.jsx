@@ -22,7 +22,8 @@ export default function AdminProducts() {
     // Form state
     const initialProductState = {
         name: '', description: '', fullDescription: '', brand: '', colorTheme: 'rgba(251, 191, 36, 0.15)', imgUrl: '',
-        price_3: '', price_5: '', price_10: '', price_100: '', is_active: true
+        price_3: '', price_5: '', price_10: '', price_100: '', is_active: true,
+        slug: '', seoTitle: '', seoDescription: ''
     };
     const [currentProduct, setCurrentProduct] = useState(initialProductState);
 
@@ -61,6 +62,21 @@ export default function AdminProducts() {
             100: { price: currentProduct.price_100 }
         };
 
+        const transliterate = (text) => {
+            const ru = {
+                'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh',
+                'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
+                'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts',
+                'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu',
+                'я': 'ya'
+            };
+            return text.toLowerCase().split('').map(char => ru[char] || char).join('').replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        };
+
+        const finalSlug = currentProduct.slug || transliterate(currentProduct.name);
+        const finalSeoTitle = currentProduct.seoTitle || `${currentProduct.name} - ${currentProduct.brand}`;
+        const finalSeoDescription = currentProduct.seoDescription || currentProduct.description;
+
         const payload = {
             name: currentProduct.name,
             description: currentProduct.description,
@@ -69,7 +85,10 @@ export default function AdminProducts() {
             colorTheme: currentProduct.colorTheme,
             prices: pricesJson,
             imgUrl: currentProduct.imgUrl,
-            is_active: currentProduct.is_active
+            is_active: currentProduct.is_active,
+            slug: finalSlug,
+            seoTitle: finalSeoTitle,
+            seoDescription: finalSeoDescription
         };
 
         try {
@@ -111,6 +130,9 @@ export default function AdminProducts() {
             price_10: product.prices['10']?.price || '',
             price_100: product.prices['100']?.price || '',
             is_active: product.is_active !== undefined ? product.is_active : true,
+            slug: product.slug || '',
+            seoTitle: product.seoTitle || '',
+            seoDescription: product.seoDescription || ''
         });
         setIsModalOpen(true);
     };
@@ -359,6 +381,38 @@ export default function AdminProducts() {
                                         style={{ fontSize: '0.8rem', opacity: 0.7 }}
                                     />
                                 </div>
+                            </div>
+
+                            <h4 style={{ color: 'white', marginBottom: '1rem', marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>SEO настройки</h4>
+                            <div className="form-group">
+                                <label>URL (slug)</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    value={currentProduct.slug || ''}
+                                    onChange={(e) => setCurrentProduct({ ...currentProduct, slug: e.target.value })}
+                                    placeholder="nazvanie-tovara (оставьте пустым для автогенерации)"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>SEO Title</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    value={currentProduct.seoTitle || ''}
+                                    onChange={(e) => setCurrentProduct({ ...currentProduct, seoTitle: e.target.value })}
+                                    placeholder="Заголовок для поисковиков (оставьте пустым для автозаполнения)"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>SEO Description</label>
+                                <textarea
+                                    className="form-control"
+                                    rows="2"
+                                    value={currentProduct.seoDescription || ''}
+                                    onChange={(e) => setCurrentProduct({ ...currentProduct, seoDescription: e.target.value })}
+                                    placeholder="Описание для поисковиков (оставьте пустым для автозаполнения из краткого описания)"
+                                />
                             </div>
 
                             <h4 style={{ color: 'white', marginBottom: '1rem', marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>Цены</h4>
