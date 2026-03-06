@@ -8,25 +8,31 @@ export default function FavoritesModal({ isOpen, onClose, favoriteIds, products 
     const favoriteProducts = favoriteIds.map(id => products.find(p => p.id === id)).filter(Boolean);
 
     return (
-        <div style={{
-            position: 'fixed',
-            top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.8)',
-            backdropFilter: 'blur(5px)',
-            zIndex: 1000,
-            display: 'flex',
-            justifyContent: 'flex-end'
-        }}>
-            <div style={{
-                width: '100%',
-                maxWidth: '450px',
-                height: '100%',
-                background: 'var(--color-bg-secondary)',
-                borderLeft: '1px solid var(--glass-border)',
+        <div
+            onClick={onClose}
+            style={{
+                position: 'fixed',
+                top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(0,0,0,0.8)',
+                backdropFilter: 'blur(5px)',
+                zIndex: 1000,
                 display: 'flex',
-                flexDirection: 'column',
-                animation: 'slideInRight 0.3s ease'
-            }}>
+                justifyContent: 'flex-end'
+            }}
+        >
+            <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                    width: '100%',
+                    maxWidth: '450px',
+                    height: '100%',
+                    background: 'var(--color-bg-secondary)',
+                    borderLeft: '1px solid var(--glass-border)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    animation: 'slideInRight 0.3s ease'
+                }}
+            >
                 <div style={{
                     padding: '20px',
                     borderBottom: '1px solid var(--glass-border)',

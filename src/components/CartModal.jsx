@@ -112,8 +112,8 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
     if (!isOpen) return null;
 
     return (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }}>
-            <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', height: '100vh', display: 'flex', flexDirection: 'column', animation: 'slideInRight 0.3s forwards' }}>
+        <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', justifyContent: 'flex-end' }}>
+            <div onClick={(e) => e.stopPropagation()} className="glass-panel" style={{ width: '100%', maxWidth: '400px', height: '100vh', display: 'flex', flexDirection: 'column', animation: 'slideInRight 0.3s forwards' }}>
 
                 <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ fontSize: '1.5rem', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
