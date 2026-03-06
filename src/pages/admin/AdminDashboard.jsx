@@ -31,6 +31,19 @@ export default function AdminDashboard() {
                 totalProducts: productsData.length
             });
 
+            // Normalize Russian DB statuses to English internal state keys
+            const normalizeStatus = (statusStr) => {
+                if (!statusStr) return 'new';
+                const s = statusStr.toLowerCase();
+                if (s === 'новый') return 'new';
+                if (s === 'доставлен') return 'delivered';
+                if (s === 'выполнен') return 'completed';
+                if (s === 'отменен') return 'cancelled';
+                if (s === 'архив') return 'archived';
+                if (s === 'в обработке') return 'processing';
+                return statusStr;
+            };
+
             // Format orders for display
             const formattedOrders = ordersData.map(o => ({
                 id: o.id,
@@ -42,7 +55,8 @@ export default function AdminDashboard() {
                 deliveryAddress: o.delivery_address,
                 items: typeof o.items_json === 'string' ? JSON.parse(o.items_json) : o.items_json,
                 total: Number(o.total_price),
-                status: o.status || 'new',
+                status: normalizeStatus(o.status),
+                paymentStatus: o.payment_status || 'Не оплачен',
                 date: new Date(o.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
             }));
 
@@ -67,6 +81,22 @@ export default function AdminDashboard() {
         }
     }, [statusFilter, allOrders]);
 
+    const handleDeleteOrder = async (orderId) => {
+        if (!window.confirm('Вы уверены, что хотите удалить этот заказ? Это действие необратимо.')) return;
+        try {
+            const res = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
+            if (res.ok) {
+                setAllOrders(prev => prev.filter(o => o.id !== orderId));
+                setSelectedOrder(null);
+            } else {
+                alert('Не удалось удалить заказ');
+            }
+        } catch (error) {
+            console.error('Error deleting order', error);
+            alert('Сетевая ошибка при удалении заказа');
+        }
+    };
+
     const handleStatusChange = async (orderId, newStatus) => {
         try {
             const res = await fetch(`/api/orders/${orderId}/status`, {
@@ -86,6 +116,27 @@ export default function AdminDashboard() {
             }
         } catch (error) {
             console.error('Status update error', error);
+        }
+    };
+
+    const handlePaymentStatusChange = async (orderId, newPaymentStatus) => {
+        try {
+            const res = await fetch(`/api/orders/${orderId}/payment_status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ payment_status: newPaymentStatus })
+            });
+            if (res.ok) {
+                const updatedOrders = allOrders.map(o => o.id === orderId ? { ...o, paymentStatus: newPaymentStatus } : o);
+                setAllOrders(updatedOrders);
+                if (selectedOrder && selectedOrder.id === orderId) {
+                    setSelectedOrder({ ...selectedOrder, paymentStatus: newPaymentStatus });
+                }
+            } else {
+                alert('Не удалось изменить статус оплаты');
+            }
+        } catch (error) {
+            console.error('Payment status update error', error);
         }
     };
 
@@ -110,6 +161,17 @@ export default function AdminDashboard() {
             case 'archived': return <span className="badge" style={{ background: 'rgba(107, 114, 128, 0.2)', color: '#9ca3af' }}>Архив</span>;
             case 'processing': return <span className="badge processing" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b' }}>В обработке</span>;
             default: return <span className="badge">{status}</span>;
+        }
+    };
+
+    const getPaymentStatusBadge = (status) => {
+        switch (status) {
+            case 'Оплачен': return <span className="badge completed" style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e' }}>Оплачен</span>;
+            case 'Ожидает оплаты': return <span className="badge processing" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b' }}>Ожидает</span>;
+            case 'Отменен': return <span className="badge cancelled" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>Отменен</span>;
+            case 'Ошибка': return <span className="badge cancelled" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>Ошибка</span>;
+            case 'Не оплачен':
+            default: return <span className="badge" style={{ background: 'rgba(107, 114, 128, 0.2)', color: '#9ca3af' }}>Не оплачен</span>;
         }
     };
 
@@ -191,6 +253,7 @@ export default function AdminDashboard() {
                             <th>Дата</th>
                             <th>Сумма</th>
                             <th>Статус</th>
+                            <th>Оплата</th>
                             <th>Действия</th>
                         </tr>
                     </thead>
@@ -202,6 +265,7 @@ export default function AdminDashboard() {
                                 <td>{order.date}</td>
                                 <td style={{ fontWeight: 'bold' }}>{order.total.toLocaleString('ru-RU')} ₽</td>
                                 <td>{getStatusBadge(order.status)}</td>
+                                <td>{getPaymentStatusBadge(order.paymentStatus)}</td>
                                 <td>
                                     <button
                                         className="btn-secondary"
@@ -248,8 +312,21 @@ export default function AdminDashboard() {
                                 {selectedOrder.deliveryAddress && <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>{selectedOrder.deliveryAddress}</p>}
                             </div>
                             <div>
-                                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>Оплата</p>
-                                <p style={{ fontSize: '1.1rem', color: 'white' }}>{selectedOrder.paymentMethod || 'Не указан'}</p>
+                                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>Оплата ({selectedOrder.paymentMethod || 'Не указан'})</p>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    {getPaymentStatusBadge(selectedOrder.paymentStatus)}
+                                    <select
+                                        value={selectedOrder.paymentStatus}
+                                        onChange={(e) => handlePaymentStatusChange(selectedOrder.id, e.target.value)}
+                                        style={{ padding: '4px 8px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '6px', color: 'white', outline: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                                    >
+                                        <option value="Не оплачен" style={{ color: 'black' }}>Не оплачен</option>
+                                        <option value="Ожидает оплаты" style={{ color: 'black' }}>Ожидает оплаты</option>
+                                        <option value="Оплачен" style={{ color: 'black' }}>Оплачен</option>
+                                        <option value="Отменен" style={{ color: 'black' }}>Отменен</option>
+                                        <option value="Ошибка" style={{ color: 'black' }}>Ошибка</option>
+                                    </select>
+                                </div>
                             </div>
                             <div style={{ gridColumn: '1 / -1' }}>
                                 <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '4px' }}>Дата и статус</p>
@@ -310,6 +387,16 @@ export default function AdminDashboard() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)' }}>
                             <span style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)' }}>Итого:</span>
                             <span style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--color-accent-gold)' }}>{selectedOrder.total.toLocaleString('ru-RU')} ₽</span>
+                        </div>
+                        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => handleDeleteOrder(selectedOrder.id)}
+                                style={{ padding: '10px 20px', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }}
+                                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'; }}
+                                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'; }}
+                            >
+                                <X size={18} /> Удалить заказ
+                            </button>
                         </div>
                     </div>
                 </div>

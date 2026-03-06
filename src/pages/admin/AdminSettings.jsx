@@ -69,7 +69,7 @@ export default function AdminSettings() {
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <h2 className="text-2xl text-white">Общие настройки (Футер)</h2>
+                <h2 className="text-2xl text-white">Общие настройки</h2>
             </div>
 
             <div className="admin-card" style={{ maxWidth: '800px' }}>
@@ -246,6 +246,109 @@ export default function AdminSettings() {
                             Как часто сервер будет синхронизировать остатки и цены с МойСклад.
                         </small>
                     </div>
+
+                    <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Цифровая касса Эвотор (СБП / QR)</h3>
+
+                    <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <input
+                            type="checkbox"
+                            id="evotor_enabled"
+                            checked={settings.evotor_enabled === 'true'}
+                            onChange={(e) => handleChange('evotor_enabled', e.target.checked ? 'true' : 'false')}
+                            style={{ width: '20px', height: '20px', accentColor: 'var(--color-accent-gold)' }}
+                        />
+                        <label htmlFor="evotor_enabled" style={{ margin: 0, cursor: 'pointer' }}>Включить оплату через Эвотор</label>
+                    </div>
+
+                    <div className="form-group">
+                        <label>Токен авторизации Эвотор (Bearer Token)</label>
+                        <input
+                            type="password"
+                            className="form-control"
+                            value={settings.evotor_token || ''}
+                            onChange={(e) => handleChange('evotor_token', e.target.value)}
+                            placeholder="Токен из личного кабинета Эвотор"
+                        />
+                        <small style={{ display: 'block', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                            Получите токен на <a href="https://dev.evotor.ru" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent-gold)' }}>dev.evotor.ru</a> → Личный кабинет → Токены.
+                        </small>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                        <div className="form-group">
+                            <label>ID магазина (Store UUID)</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={settings.evotor_store_id || ''}
+                                onChange={(e) => handleChange('evotor_store_id', e.target.value)}
+                                placeholder="UUID магазина"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>ID товарной группы (Group UUID)</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={settings.evotor_group_id || ''}
+                                onChange={(e) => handleChange('evotor_group_id', e.target.value)}
+                                placeholder="UUID группы (необязательно)"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label>ID терминала (Device UUID)</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={settings.evotor_device_id || ''}
+                            onChange={(e) => handleChange('evotor_device_id', e.target.value)}
+                            placeholder="UUID смарт-терминала или Мобильного кассира"
+                        />
+                        <small style={{ display: 'block', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                            Укажите ID терминала, на который будут приходить заказы для оплаты по QR-коду (СБП).
+                        </small>
+                    </div>
+
+                    <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>ЮKassa (Онлайн-оплата)</h3>
+
+                    <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <input
+                            type="checkbox"
+                            id="yookassa_enabled"
+                            checked={settings.yookassa_enabled === 'true'}
+                            onChange={(e) => handleChange('yookassa_enabled', e.target.checked ? 'true' : 'false')}
+                            style={{ width: '20px', height: '20px', accentColor: 'var(--color-accent-gold)' }}
+                        />
+                        <label htmlFor="yookassa_enabled" style={{ margin: 0, cursor: 'pointer' }}>Включить эквайринг ЮKassa</label>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                        <div className="form-group">
+                            <label>Shop ID</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={settings.yookassa_shop_id || ''}
+                                onChange={(e) => handleChange('yookassa_shop_id', e.target.value)}
+                                placeholder="Например: 123456"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Secret Key (Секретный ключ)</label>
+                            <input
+                                type="password"
+                                className="form-control"
+                                value={settings.yookassa_secret_key || ''}
+                                onChange={(e) => handleChange('yookassa_secret_key', e.target.value)}
+                                placeholder="Например: test_..."
+                            />
+                        </div>
+                    </div>
+                    <small style={{ display: 'block', color: 'var(--color-text-muted)', marginBottom: '1.5rem' }}>
+                        Данные можно получить в <a href="https://yookassa.ru/my" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent-gold)' }}>личном кабинете ЮKassa</a> в разделе "Интеграция -&gt; Ключи API".
+                    </small>
 
                     <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Смена пароля (Админ)</h3>
 

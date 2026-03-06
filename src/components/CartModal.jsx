@@ -85,6 +85,14 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
             });
 
             if (res.ok) {
+                const responseData = await res.json();
+
+                if (responseData.confirmation_url) {
+                    clearCart();
+                    window.location.href = responseData.confirmation_url;
+                    return; // Stop execution to let the browser navigate
+                }
+
                 setSuccessMsg('Заказ успешно оформлен! Мы свяжемся с вами в ближайшее время.');
                 setTimeout(() => {
                     clearCart();

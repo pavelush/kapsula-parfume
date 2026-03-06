@@ -6,6 +6,7 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy (essential for correct req.protocol behind Nginx)
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -396,13 +397,76 @@ app.delete('/api/pickup_points/:id', async (req, res) => {
 app.post('/api/orders', async (req, res) => {
     try {
         const { customer_name, customer_phone, email, items, total_price, payment_method, delivery_type, delivery_address } = req.body;
+
+        let finalStatus = 'Новый';
+        let paymentStatus = 'Не оплачен';
+        let yookassaPaymentId = null;
+        let confirmationUrl = null;
+
+        // Check if Yookassa is selected
+        if (payment_method && payment_method.toLowerCase().includes('yookassa') || payment_method.toLowerCase().includes('юkassa')) {
+            // Fetch Yookassa config from DB
+            const settingsRes = await pool.query("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('yookassa_enabled', 'yookassa_shop_id', 'yookassa_secret_key')");
+            const config = {};
+            settingsRes.rows.forEach(r => { config[r.setting_key] = r.setting_value; });
+
+            if (config.yookassa_enabled === 'true' && config.yookassa_shop_id && config.yookassa_secret_key) {
+                // Create payment in Yookassa
+                // Using standard fetch since Node 18+ has it built-in
+                const authHeader = 'Basic ' + Buffer.from(`${config.yookassa_shop_id}:${config.yookassa_secret_key}`).toString('base64');
+                const idempotenceKey = Date.now().toString() + '_' + Math.random().toString(36).substring(7);
+
+                const yooRes = await fetch('https://api.yookassa.ru/v3/payments', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': authHeader,
+                        'Idempotence-Key': idempotenceKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        amount: {
+                            value: total_price.toFixed(2),
+                            currency: "RUB"
+                        },
+                        capture: true,
+                        confirmation: {
+                            type: "redirect",
+                            return_url: req.headers.referer || "https://kapsula.irouter.keenetic.link/"
+                        },
+                        description: `Заказ от ${customer_name}`,
+                        metadata: {
+                            customer_phone,
+                            email
+                        }
+                    })
+                });
+
+                if (yooRes.ok) {
+                    const paymentData = await yooRes.json();
+                    yookassaPaymentId = paymentData.id;
+                    confirmationUrl = paymentData.confirmation?.confirmation_url;
+                    paymentStatus = 'Ожидает оплаты';
+                } else {
+                    const errorText = await yooRes.text();
+                    console.error('YooKassa Error:', errorText);
+                    // Fallback to normal order creation if Yookassa fails
+                }
+            }
+        }
+
         const result = await pool.query(
-            'INSERT INTO orders (customer_name, customer_phone, email, items_json, total_price, payment_method, delivery_type, delivery_address) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-            [customer_name, customer_phone, email, JSON.stringify(items), total_price, payment_method, delivery_type, delivery_address]
+            'INSERT INTO orders (customer_name, customer_phone, email, items_json, total_price, payment_method, delivery_type, delivery_address, status, payment_status, yookassa_payment_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
+            [customer_name, customer_phone, email, JSON.stringify(items), total_price, payment_method, delivery_type, delivery_address, finalStatus, paymentStatus, yookassaPaymentId]
         );
-        res.status(201).json(result.rows[0]);
+
+        const responseData = result.rows[0];
+        if (confirmationUrl) {
+            responseData.confirmation_url = confirmationUrl;
+        }
+
+        res.status(201).json(responseData);
     } catch (err) {
-        console.error(err);
+        console.error('Order creation error:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -413,6 +477,18 @@ app.get('/api/orders', async (req, res) => {
         res.json(result.rows);
     } catch (err) {
         console.error(err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.delete('/api/orders/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await pool.query('DELETE FROM orders WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Order not found' });
+        res.json({ message: 'Order deleted' });
+    } catch (err) {
+        console.error('Delete order error:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -430,6 +506,53 @@ app.put('/api/orders/:id/status', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.put('/api/orders/:id/payment_status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { payment_status } = req.body;
+        const result = await pool.query(
+            'UPDATE orders SET payment_status = $1 WHERE id = $2 RETURNING *',
+            [payment_status, id]
+        );
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Order not found' });
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/yookassa/webhook', async (req, res) => {
+    try {
+        const event = req.body;
+        const eventType = event.event;
+        const paymentData = event.object;
+
+        if (!paymentData || !paymentData.id) {
+            return res.status(400).send('Invalid webhook data');
+        }
+
+        if (eventType === 'payment.succeeded') {
+            await pool.query(
+                "UPDATE orders SET payment_status = 'Оплачен' WHERE yookassa_payment_id = $1",
+                [paymentData.id]
+            );
+            console.log(`[YooKassa Webhook] Order with payment ID ${paymentData.id} marked as Оплачен`);
+        } else if (eventType === 'payment.canceled') {
+            await pool.query(
+                "UPDATE orders SET payment_status = 'Отменен' WHERE yookassa_payment_id = $1 AND payment_status = 'Ожидает оплаты'",
+                [paymentData.id]
+            );
+            console.log(`[YooKassa Webhook] Order with payment ID ${paymentData.id} marked as Отменен`);
+        }
+
+        res.status(200).send('OK');
+    } catch (error) {
+        console.error('[YooKassa Webhook] Error processing webhook:', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 
@@ -464,6 +587,16 @@ global.restartMoySkladSync = async () => {
     await syncWithMoySklad();
     scheduleNextSync();
 };
+
+// Serve static React frontend
+app.use(express.static(path.join(__dirname, '../dist')));
+app.use((req, res, next) => {
+    // Avoid serving index.html for API routes
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+        return next();
+    }
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
