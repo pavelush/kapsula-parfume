@@ -83,7 +83,7 @@ function MainSite({ favorites, toggleFavorite, addToCart, cartItems, setCartItem
                 <p style={{ color: 'var(--color-text-muted)' }}>Мы дорожим репутацией. Только подлинная селективная и нишевая парфюмерия из проверенных источников.</p>
               </div>
 
-              <div className="glass-card" style={{ padding: '3rem 2rem', textAlign: 'center', transform: 'translateY(-15px)' }}>
+              <div className="glass-card" style={{ padding: '3rem 2rem', textAlign: 'center', marginTop: '-15px' }}>
                 <div className="btn-icon" style={{ width: '80px', height: '80px', margin: '0 auto 1.5rem', background: 'var(--gradient-glass)', border: '1px solid rgba(14, 165, 233, 0.3)', boxShadow: '0 0 20px rgba(14, 165, 233, 0.1)' }}>
                   <Droplets size={36} color="var(--color-accent-blue)" />
                 </div>

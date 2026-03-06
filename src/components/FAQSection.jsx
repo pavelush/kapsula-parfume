@@ -85,21 +85,23 @@ export default function FAQSection() {
 
                                 <div
                                     style={{
-                                        maxHeight: isOpen ? '500px' : '0',
+                                        display: 'grid',
+                                        gridTemplateRows: isOpen ? '1fr' : '0fr',
                                         opacity: isOpen ? 1 : 0,
-                                        overflow: 'hidden',
                                         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                                     }}
                                 >
-                                    <div style={{
-                                        padding: '0 1.5rem 1.5rem',
-                                        color: 'var(--color-text-muted)',
-                                        lineHeight: 1.7,
-                                        borderTop: isOpen ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                                        marginTop: isOpen ? '0.5rem' : '0',
-                                        paddingTop: isOpen ? '1rem' : '0'
-                                    }}>
-                                        {faq.answer}
+                                    <div style={{ overflow: 'hidden' }}>
+                                        <div style={{
+                                            padding: '0 1.5rem 1.5rem',
+                                            color: 'var(--color-text-muted)',
+                                            lineHeight: 1.7,
+                                            borderTop: isOpen ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                                            marginTop: isOpen ? '0.5rem' : '0',
+                                            paddingTop: isOpen ? '1rem' : '0'
+                                        }}>
+                                            {faq.answer}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
