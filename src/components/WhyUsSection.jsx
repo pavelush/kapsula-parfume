@@ -9,7 +9,7 @@ export default function WhyUsSection() {
                     <h2>Почему <span className="text-gradient-gold">Kapsula Parfume?</span></h2>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '3rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '3rem', alignItems: 'stretch' }}>
                     <div className="glass-card" style={{ padding: '3rem 2rem', textAlign: 'center' }}>
                         <div className="btn-icon" style={{ width: '80px', height: '80px', margin: '0 auto 1.5rem', background: 'var(--gradient-glass)', border: '1px solid rgba(251, 191, 36, 0.3)', boxShadow: '0 0 20px rgba(251, 191, 36, 0.1)' }}>
                             <Star size={36} color="var(--color-accent-gold)" />
@@ -18,7 +18,7 @@ export default function WhyUsSection() {
                         <p style={{ color: 'var(--color-text-muted)' }}>Мы дорожим репутацией. Только подлинная селективная и нишевая парфюмерия из проверенных источников.</p>
                     </div>
 
-                    <div className="glass-card" style={{ padding: '3rem 2rem', textAlign: 'center', marginTop: '-15px' }}>
+                    <div className="glass-card" style={{ padding: '3rem 2rem', textAlign: 'center' }}>
                         <div className="btn-icon" style={{ width: '80px', height: '80px', margin: '0 auto 1.5rem', background: 'var(--gradient-glass)', border: '1px solid rgba(14, 165, 233, 0.3)', boxShadow: '0 0 20px rgba(14, 165, 233, 0.1)' }}>
                             <Droplets size={36} color="var(--color-accent-blue)" />
                         </div>

@@ -228,7 +228,7 @@ export default function AdminSettings() {
                             style={{ maxWidth: '200px' }}
                         />
                         <small style={{ display: 'block', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
-                            Укажите отрицательное число (-5) для скидки или положительное (5) для наценки. Выгружаемые цены будут скорректированы на этот процент перед показом на сайте.
+                            Укажите положительное число (например: 5) для применения скидки ко всем товарам из МойСклад на сайте, или отрицательное (-5) для наценки.
                         </small>
                     </div>
 
@@ -371,7 +371,7 @@ export default function AdminSettings() {
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

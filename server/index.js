@@ -88,9 +88,9 @@ app.get('/api/products', async (req, res) => {
                     }
 
                     if (currentPrice && !isNaN(currentPrice)) {
-                        // Math: originalPrice * (1 + modifier / 100)
-                        // If modifier is -5, it's originalPrice * 0.95
-                        let newPrice = currentPrice * (1 + (modifier / 100));
+                        // Math: originalPrice * (1 - modifier / 100)
+                        // If modifier is 5, it's originalPrice * 0.95 (5% discount)
+                        let newPrice = currentPrice * (1 - (modifier / 100));
                         newPrice = Math.round(newPrice); // Round to nearest whole number
 
                         // Add nice formatting (spaces)
