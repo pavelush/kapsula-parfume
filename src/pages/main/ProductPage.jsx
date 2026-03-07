@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ShoppingBag, ChevronLeft, Heart } from 'lucide-react';
-import WhyUsSection from '../../components/WhyUsSection';
-import FAQSection from '../../components/FAQSection';
+import ProductCard from '../../components/ProductCard';
 import Footer from '../../components/Footer';
 
 export default function ProductPage({ favorites = [], toggleFavorite = () => { }, addToCart = () => { } }) {
@@ -12,6 +11,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
     const [loading, setLoading] = useState(true);
     const [selectedVolume, setSelectedVolume] = useState(null);
     const [availableVolumes, setAvailableVolumes] = useState([]);
+    const [recommendedProducts, setRecommendedProducts] = useState([]);
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -44,6 +44,10 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                         });
                         setAvailableVolumes(vols);
                         if (vols.length > 0) setSelectedVolume(vols[0]);
+
+                        const sameBrand = data.filter(p => p.brand === found.brand && p.id !== found.id);
+                        const shuffled = sameBrand.sort(() => 0.5 - Math.random());
+                        setRecommendedProducts(shuffled.slice(0, 3));
                     } else {
                         navigate('/'); // redirect if not found
                     }
@@ -210,10 +214,22 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                 </div>
             </div>
 
-            <div style={{ marginTop: '0' }}>
-                <WhyUsSection />
-                <FAQSection />
-            </div>
+            {recommendedProducts.length > 0 && (
+                <div style={{ padding: '4rem 5%', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid var(--glass-border)' }}>
+                    <h2 style={{ fontSize: '2rem', color: 'white', marginBottom: '2rem', textAlign: 'center' }}>Больше от {product.brand}</h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+                        {recommendedProducts.map(p => (
+                            <ProductCard
+                                key={p.id}
+                                product={p}
+                                isFavorite={favorites.includes(p.id)}
+                                onToggleFavorite={toggleFavorite}
+                                onAddToCart={addToCart}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <Footer />
 
