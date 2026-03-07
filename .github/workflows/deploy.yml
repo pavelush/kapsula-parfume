@@ -42,6 +42,7 @@ jobs:
           
           # Sync frontend build
           rsync -avz --delete \
+            --exclude 'uploads' \
             ./dist/ $SERVER_USER@$SERVER_HOST:/var/www/kapsula/data/www/test.kapsula-parfume.ru/
 
       - name: Deploy Backend via Rsync
@@ -57,10 +58,16 @@ jobs:
             --exclude 'uploads' \
             ./server/ $SERVER_USER@$SERVER_HOST:/var/www/kapsula/data/www/api-server/
             
-      - name: Restart Backend with PM2
+      - name: Ensure Uploads Symlink
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_HOST: 85.209.135.87
           SERVER_USER: kapsula
         run: |
-          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "export NVM_DIR=\"\$HOME/.nvm\" && [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\" && cd /var/www/kapsula/data/www/api-server && npm ci && pm2 restart kapsula-backend || pm2 start index.js --name kapsula-backend"
+          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "ln -sfn /var/www/kapsula/data/www/api-server/uploads /var/www/kapsula/data/www/test.kapsula-parfume.ru/uploads"
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_HOST: 85.209.135.87
+          SERVER_USER: kapsula
+        run: |
+          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "export NVM_DIR=\"\$HOME/.nvm\" && [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\" && cd /var/www/kapsula/data/www/api-server && npm ci && pm2 restart kapsula-backend --update-env || pm2 start index.js --name kapsula-backend --update-env"
