@@ -54,6 +54,7 @@ jobs:
           rsync -avz --delete \
             --exclude 'node_modules' \
             --exclude '.env' \
+            --exclude 'uploads' \
             ./server/ $SERVER_USER@$SERVER_HOST:/var/www/kapsula/data/www/api-server/
             
       - name: Restart Backend with PM2
