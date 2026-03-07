@@ -65,6 +65,8 @@ jobs:
           SERVER_USER: kapsula
         run: |
           ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "ln -sfn /var/www/kapsula/data/www/api-server/uploads /var/www/kapsula/data/www/test.kapsula-parfume.ru/uploads"
+
+      - name: Restart Backend with PM2
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_HOST: 85.209.135.87
