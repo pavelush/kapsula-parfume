@@ -29,7 +29,7 @@ jobs:
           cd server
           npm ci
 
-      - name: Deploy to Server via Rsync
+      - name: Deploy Frontend via Rsync
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_HOST: 85.209.135.87
@@ -40,13 +40,21 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H $SERVER_HOST >> ~/.ssh/known_hosts
           
-          # Sync all files except node_modules and .git
+          # Sync frontend build
           rsync -avz --delete \
-            --exclude '.git' \
+            ./dist/ $SERVER_USER@$SERVER_HOST:/var/www/kapsula/data/www/test.kapsula-parfume.ru/
+
+      - name: Deploy Backend via Rsync
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_HOST: 85.209.135.87
+          SERVER_USER: kapsula
+        run: |
+          # Sync backend files
+          rsync -avz --delete \
             --exclude 'node_modules' \
-            --exclude 'server/node_modules' \
             --exclude '.env' \
-            ./ $SERVER_USER@$SERVER_HOST:/var/www/kapsula/data/www/test.kapsula-parfume.ru/
+            ./server/ $SERVER_USER@$SERVER_HOST:/var/www/kapsula/data/www/api-server/
             
       - name: Restart Backend with PM2
         env:
@@ -54,4 +62,4 @@ jobs:
           SERVER_HOST: 85.209.135.87
           SERVER_USER: kapsula
         run: |
-          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "cd /var/www/kapsula/data/www/test.kapsula-parfume.ru/server && npm ci && pm2 restart kapsula-backend || pm2 start index.js --name kapsula-backend"
+          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "cd /var/www/kapsula/data/www/api-server && npm ci && pm2 restart kapsula-backend || pm2 start index.js --name kapsula-backend"
