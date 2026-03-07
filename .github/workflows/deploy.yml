@@ -46,7 +46,7 @@ jobs:
             --exclude 'node_modules' \
             --exclude 'server/node_modules' \
             --exclude '.env' \
-            ./ $SERVER_USER@$SERVER_HOST:/var/www/kapsula/data/test.kapsula-parfume.ru/
+            ./ $SERVER_USER@$SERVER_HOST:/var/www/kapsula/data/www/test.kapsula-parfume.ru/
             
       - name: Restart Backend with PM2
         env:
@@ -54,4 +54,4 @@ jobs:
           SERVER_HOST: 85.209.135.87
           SERVER_USER: kapsula
         run: |
-          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "cd /var/www/kapsula/data/test.kapsula-parfume.ru/server && npm ci && pm2 restart kapsula-backend || pm2 start index.js --name kapsula-backend"
+          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "cd /var/www/kapsula/data/www/test.kapsula-parfume.ru/server && npm ci && pm2 restart kapsula-backend || pm2 start index.js --name kapsula-backend"
