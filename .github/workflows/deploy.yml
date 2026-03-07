@@ -62,4 +62,4 @@ jobs:
           SERVER_HOST: 85.209.135.87
           SERVER_USER: kapsula
         run: |
-          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "cd /var/www/kapsula/data/www/api-server && npm ci && pm2 restart kapsula-backend || pm2 start index.js --name kapsula-backend"
+          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "export NVM_DIR=\"\$HOME/.nvm\" && [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\" && cd /var/www/kapsula/data/www/api-server && npm ci && pm2 restart kapsula-backend || pm2 start index.js --name kapsula-backend"
