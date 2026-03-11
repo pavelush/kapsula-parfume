@@ -424,16 +424,16 @@ async function sendTelegramNotification(order) {
             // Price might be a string with spaces like "1 500"
             const priceStr = String(item.price || '0').replace(/\s+/g, '');
             const priceNum = parseInt(priceStr, 10) || 0;
-            
+
             // Extract SKU from the prices object if available
             let sku = '';
             if (item.prices && item.prices[item.volume] && item.prices[item.volume].sku) {
                 sku = item.prices[item.volume].sku;
             }
-            
+
             // Format SKU as a link if it exists
             const skuString = sku ? `[<a href="https://online.moysklad.ru/app/#good?global_codeFilter=${sku}">${sku}</a>] ` : '';
-            
+
             return `  ${skuString}• ${item.name} (${item.volume} мл.) x${item.quantity} — ${priceNum * item.quantity} руб.`;
         }).join('\n');
 
@@ -557,7 +557,7 @@ async function sendCustomerEmail(order, type) {
 
                 <!-- Header (Logo) -->
                 <div style="padding: 40px 30px 20px; text-align: center;">
-                    <img src="https://kapsula-parfume.ru/images/logo/logo.png" alt="KAPSULA PARFUME" style="width: 100%; display: block; margin: 0 auto;" />
+                    <img src="https://kapsula-parfume.ru/images/logo/logo.png" alt="KAPSULA PARFUME" style="width: 100px; display: block; margin: 0 auto;" />
                 </div>
                 
                 <!-- Body -->
@@ -760,7 +760,7 @@ app.put('/api/orders/:id/status', async (req, res) => {
             [status, id]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Order not found' });
-        
+
         const order = result.rows[0];
         // Send email notification on status change
         sendCustomerEmail(order, 'status_update');
@@ -804,7 +804,7 @@ app.post('/api/yookassa/webhook', async (req, res) => {
                 [paymentData.id]
             );
             console.log(`[YooKassa Webhook] Order with payment ID ${paymentData.id} marked as Оплачен`);
-            
+
             if (updateRes.rows.length > 0) {
                 const order = updateRes.rows[0];
                 sendTelegramNotification(order);
