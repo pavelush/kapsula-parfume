@@ -513,7 +513,7 @@ app.post('/api/orders', async (req, res) => {
                         capture: true,
                         confirmation: {
                             type: "redirect",
-                            return_url: req.headers.referer || "https://kapsula-parfume.ru/"
+                            return_url: `${req.headers.referer || "https://kapsula-parfume.ru/"}?success_order=${order.id}`
                         },
                         description: `Номер заказа #${order.id}`,
                         metadata: {
@@ -582,6 +582,24 @@ app.delete('/api/orders/:id', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+// Public endpoint to get basic order status for the success modal
+app.get('/api/order_status/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Only return non-sensitive info needed for the receipt
+        const result = await pool.query(
+            'SELECT id, items_json, delivery_type, delivery_address, total_price, payment_status, created_at FROM orders WHERE id = $1',
+            [id]
+        );
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Order not found' });
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Fetch order status error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 
 app.put('/api/orders/:id/status', async (req, res) => {
     try {

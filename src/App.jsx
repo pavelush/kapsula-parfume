@@ -7,10 +7,38 @@ import ProductPage from './pages/main/ProductPage';
 import Header from './components/Header';
 import CartModal from './components/CartModal';
 import FavoritesModal from './components/FavoritesModal';
+import { Phone } from 'lucide-react';
+import MobileMenu from './components/MobileMenu';
+import SuccessOrderModal from './components/SuccessOrderModal';
 
 function App() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
+
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kapsula_favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Failed to load favorites', e);
+      return [];
+    }
+  });
+
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kapsula_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Failed to load cart', e);
+      return [];
+    }
+  });
+
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [successOrderId, setSuccessOrderId] = useState(null);
 
   useEffect(() => {
     const fetchSeoSettings = async () => {
@@ -56,32 +84,16 @@ function App() {
     };
 
     fetchSeoSettings();
+
+    // Check for success payment redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    const successId = urlParams.get('success_order');
+    if (successId) {
+        setSuccessOrderId(successId);
+        // Clean URL to prevent showing modal on reload
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
-
-  // Moved cart and favorites state logic to App.jsx to be shared across routes
-  const [favorites, setFavorites] = useState(() => {
-    try {
-      const saved = localStorage.getItem('kapsula_favorites');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error('Failed to load favorites', e);
-      return [];
-    }
-  });
-
-  const [cartItems, setCartItems] = useState(() => {
-    try {
-      const saved = localStorage.getItem('kapsula_cart');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error('Failed to load cart', e);
-      return [];
-    }
-  });
-
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
-  const [products, setProducts] = useState([]);
 
   useEffect(() => {
     if (isAdminRoute) return;
@@ -180,6 +192,14 @@ function App() {
           />
         </>
       )}
+
+      {successOrderId && (
+        <SuccessOrderModal 
+          orderId={successOrderId} 
+          onClose={() => setSuccessOrderId(null)} 
+        />
+      )}
+
       <Routes>
         <Route path="/admin/*" element={<AdminApp />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
