@@ -419,13 +419,16 @@ async function sendTelegramNotification(order) {
         }
 
         const items = typeof order.items_json === 'string' ? JSON.parse(order.items_json) : order.items_json;
-        const itemsList = items.map(item =>
-            `  • ${item.name} (${item.volume}) x${item.quantity} — ${item.price * item.quantity} руб.`
-        ).join('\n');
+        const itemsList = items.map(item => {
+            // Price might be a string with spaces like "1 500"
+            const priceStr = String(item.price || '0').replace(/\s+/g, '');
+            const priceNum = parseInt(priceStr, 10) || 0;
+            return `  • ${item.name} (${item.volume}) x${item.quantity} — ${priceNum * item.quantity} руб.`;
+        }).join('\n');
 
         const deliveryInfo = order.delivery_type === 'delivery'
-            ? `Доставка: ${order.delivery_address || 'Не указан'}`
-            : 'Самовывоз';
+            ? `Доставка (Курьером/Почтой): ${order.delivery_address || 'Не указан'}`
+            : `Пункт выдачи (Самовывоз): ${order.delivery_address || 'Не указан'}`;
 
         const message =
             `🛍 <b>Новый заказ #${order.id}</b>\n\n` +
