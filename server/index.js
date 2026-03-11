@@ -599,11 +599,45 @@ global.restartMoySkladSync = async () => {
     scheduleNextSync();
 };
 
+// --- DYNAMIC SITEMAP ---
+app.get('/sitemap.xml', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT slug, name FROM products WHERE is_active = true ORDER BY id ASC');
+        const products = result.rows;
+        const baseUrl = 'https://kapsula-parfume.ru';
+        const today = new Date().toISOString().split('T')[0];
+
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+        xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+        // Main page
+        xml += `  <url>\n    <loc>${baseUrl}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n    <lastmod>${today}</lastmod>\n  </url>\n`;
+
+        // Privacy page
+        xml += `  <url>\n    <loc>${baseUrl}/privacy</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.3</priority>\n  </url>\n`;
+
+        // Product pages
+        for (const product of products) {
+            if (product.slug) {
+                xml += `  <url>\n    <loc>${baseUrl}/product/${encodeURIComponent(product.slug)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n    <lastmod>${today}</lastmod>\n  </url>\n`;
+            }
+        }
+
+        xml += '</urlset>';
+
+        res.set('Content-Type', 'application/xml');
+        res.send(xml);
+    } catch (err) {
+        console.error('Error generating sitemap:', err);
+        res.status(500).send('Error generating sitemap');
+    }
+});
+
 // Serve static React frontend
 app.use(express.static(path.join(__dirname, '../dist')));
 app.use((req, res, next) => {
-    // Avoid serving index.html for API routes
-    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+    // Avoid serving index.html for API routes, uploads, and sitemap
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path === '/sitemap.xml') {
         return next();
     }
     res.sendFile(path.join(__dirname, '../dist/index.html'));
