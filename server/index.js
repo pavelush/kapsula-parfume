@@ -557,7 +557,7 @@ async function sendCustomerEmail(order, type) {
 
                 <!-- Header (Logo) -->
                 <div style="padding: 40px 30px 20px; text-align: center;">
-                    <img src="https://kapsula-parfume.ru/images/logo/logo.png" alt="KAPSULA PARFUME" style="height: 135px; display: block; margin: 0 auto;" />
+                    <img src="https://kapsula-parfume.ru/images/logo/logo.png" alt="KAPSULA PARFUME" style="width: 100%; display: block; margin: 0 auto;" />
                 </div>
                 
                 <!-- Body -->
@@ -587,11 +587,7 @@ async function sendCustomerEmail(order, type) {
                     <div style="background-color: #242429; border-radius: 12px; padding: 25px;">
                         <p style="margin: 0 0 12px 0; font-size: 14px;">
                             <strong style="color: #ffffff; display: inline-block; width: 130px;">Получатель:</strong> 
-                            <span style="color: #cccccc;">${order.customer_name || 'Не указан'} (${order.customer_phone || 'Не указан'})</span>
-                        </p>
-                        <p style="margin: 0 0 12px 0; font-size: 14px;">
-                            <strong style="color: #ffffff; display: inline-block; width: 130px;">Способ оплаты:</strong> 
-                            <span style="color: #cccccc;">${order.payment_method || 'Не указан'}</span>
+                            <span style="color: #cccccc;">${order.customer_name || 'Не указан'} ${order.customer_phone || 'Не указан'}</span>
                         </p>
                         <p style="margin: 0; font-size: 14px;">
                             <strong style="color: #ffffff; display: inline-block; width: 130px;">${deliveryTypeLabel}</strong> 
