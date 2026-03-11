@@ -491,10 +491,13 @@ async function sendCustomerEmail(order, type) {
         const transporter = nodemailer.createTransport({
             host: config.smtp_host,
             port: parseInt(config.smtp_port, 10) || 465,
-            secure: parseInt(config.smtp_port, 10) === 465, // true for 465, false for other ports
+            secure: parseInt(config.smtp_port, 10) === 465,
             auth: {
                 user: config.smtp_user,
                 pass: config.smtp_pass
+            },
+            tls: {
+                rejectUnauthorized: false // Allow self-signed certificates
             }
         });
 
