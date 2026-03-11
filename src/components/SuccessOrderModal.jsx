@@ -107,10 +107,23 @@ export default function SuccessOrderModal({ orderId, onClose }) {
                                 {(() => {
                                     const items = typeof order.items_json === 'string' ? JSON.parse(order.items_json) : order.items_json;
                                     return items.map((item, idx) => (
-                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', marginBottom: '4px', color: 'white' }}>
-                                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '70%' }}>
-                                                {item.name} ({item.volume} мл) x{item.quantity}
-                                            </span>
+                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px', color: 'white', padding: '8px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.02)' }}>
+                                            {item.imgUrl ? (
+                                                <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                                                    <img src={item.imgUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                </div>
+                                            ) : (
+                                                <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                    <Package size={20} color="var(--color-text-muted)" />
+                                                </div>
+                                            )}
+                                            <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                                                <span style={{ fontSize: '0.95rem', fontWeight: 500, lineHeight: 1.2 }}>{item.name}</span>
+                                                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{item.volume} мл</span>
+                                            </div>
+                                            <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--color-accent-gold)', marginLeft: '10px' }}>
+                                                x{item.quantity}
+                                            </div>
                                         </div>
                                     ));
                                 })()}
