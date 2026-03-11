@@ -527,9 +527,18 @@ async function sendCustomerEmail(order, type) {
             title = 'Заказ успешно оплачен!';
             subtitle = 'Спасибо за покупку. Мы уже начали подготовку к отправке.';
         } else if (type === 'status_update') {
+            const statusMap = {
+                'new': 'Новый',
+                'delivered': 'Доставлен',
+                'completed': 'Выполнен',
+                'cancelled': 'Отменен',
+                'archived': 'Архив',
+                'processing': 'В обработке'
+            };
+            const displayStatus = statusMap[order.status] || order.status;
             subject = `Обновление статуса заказа #${order.id}`;
             title = 'Статус вашего заказа изменился';
-            subtitle = `Новый статус: <strong style="color: #E5B25D;">${order.status}</strong>`;
+            subtitle = `Новый статус: <strong style="color: #E5B25D;">${displayStatus}</strong>`;
         } else {
             return;
         }
@@ -543,7 +552,7 @@ async function sendCustomerEmail(order, type) {
             <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a1a; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
                 <!-- Header -->
                 <div style="background-color: #000; padding: 30px; text-align: center; border-bottom: 2px solid #E5B25D;">
-                    <h1 style="margin: 0; color: #fff; font-size: 24px; font-weight: normal; letter-spacing: 2px;">KAPSULA <span style="color: #E5B25D;">PARFUME</span></h1>
+                    <img src="https://kapsula-parfume.ru/images/logo/logo.png" alt="KAPSULA PARFUME" style="height: 45px; display: block; margin: 0 auto; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));" />
                 </div>
                 
                 <!-- Body -->
