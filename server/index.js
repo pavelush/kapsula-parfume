@@ -411,19 +411,23 @@ app.post('/api/orders', async (req, res) => {
 
         let finalStatus = 'Новый';
         let paymentStatus = 'Не оплачен';
-        let yookassaPaymentId = null;
+
+        // 1. First, create the order in the DB to get the order ID
+        const result = await pool.query(
+            'INSERT INTO orders (customer_name, customer_phone, email, items_json, total_price, payment_method, delivery_type, delivery_address, status, payment_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
+            [customer_name, customer_phone, email, JSON.stringify(items), total_price, payment_method, delivery_type, delivery_address, finalStatus, paymentStatus]
+        );
+
+        const order = result.rows[0];
         let confirmationUrl = null;
 
-        // Check if Yookassa is selected
-        if (payment_method && payment_method.toLowerCase().includes('yookassa') || payment_method.toLowerCase().includes('юkassa')) {
-            // Fetch Yookassa config from DB
+        // 2. Then, create YooKassa payment using the order ID
+        if (payment_method && (payment_method.toLowerCase().includes('yookassa') || payment_method.toLowerCase().includes('юkassa'))) {
             const settingsRes = await pool.query("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('yookassa_enabled', 'yookassa_shop_id', 'yookassa_secret_key')");
             const config = {};
             settingsRes.rows.forEach(r => { config[r.setting_key] = r.setting_value; });
 
             if (config.yookassa_enabled === 'true' && config.yookassa_shop_id && config.yookassa_secret_key) {
-                // Create payment in Yookassa
-                // Using standard fetch since Node 18+ has it built-in
                 const authHeader = 'Basic ' + Buffer.from(`${config.yookassa_shop_id}:${config.yookassa_secret_key}`).toString('base64');
                 const idempotenceKey = Date.now().toString() + '_' + Math.random().toString(36).substring(7);
 
@@ -442,10 +446,11 @@ app.post('/api/orders', async (req, res) => {
                         capture: true,
                         confirmation: {
                             type: "redirect",
-                            return_url: req.headers.referer || "https://kapsula.irouter.keenetic.link/"
+                            return_url: req.headers.referer || "https://kapsula-parfume.ru/"
                         },
-                        description: `Заказ от ${customer_name}`,
+                        description: `Номер заказа #${order.id}`,
                         metadata: {
+                            order_id: order.id,
                             customer_phone,
                             email
                         }
@@ -454,28 +459,27 @@ app.post('/api/orders', async (req, res) => {
 
                 if (yooRes.ok) {
                     const paymentData = await yooRes.json();
-                    yookassaPaymentId = paymentData.id;
                     confirmationUrl = paymentData.confirmation?.confirmation_url;
-                    paymentStatus = 'Ожидает оплаты';
+
+                    // 3. Update the order with YooKassa payment ID and status
+                    await pool.query(
+                        'UPDATE orders SET yookassa_payment_id = $1, payment_status = $2 WHERE id = $3',
+                        [paymentData.id, 'Ожидает оплаты', order.id]
+                    );
+                    order.yookassa_payment_id = paymentData.id;
+                    order.payment_status = 'Ожидает оплаты';
                 } else {
                     const errorText = await yooRes.text();
                     console.error('YooKassa Error:', errorText);
-                    // Fallback to normal order creation if Yookassa fails
                 }
             }
         }
 
-        const result = await pool.query(
-            'INSERT INTO orders (customer_name, customer_phone, email, items_json, total_price, payment_method, delivery_type, delivery_address, status, payment_status, yookassa_payment_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
-            [customer_name, customer_phone, email, JSON.stringify(items), total_price, payment_method, delivery_type, delivery_address, finalStatus, paymentStatus, yookassaPaymentId]
-        );
-
-        const responseData = result.rows[0];
         if (confirmationUrl) {
-            responseData.confirmation_url = confirmationUrl;
+            order.confirmation_url = confirmationUrl;
         }
 
-        res.status(201).json(responseData);
+        res.status(201).json(order);
     } catch (err) {
         console.error('Order creation error:', err);
         res.status(500).json({ error: 'Internal server error' });
