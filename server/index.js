@@ -414,44 +414,48 @@ async function sendTelegramNotification(order) {
         settingsRes.rows.forEach(r => { config[r.setting_key] = r.setting_value; });
 
         if (config.telegram_notifications_enabled !== 'true' || !config.telegram_bot_token || !config.telegram_chat_id) {
-            return; // Notifications not configured
+            console.log('[Telegram] Notifications disabled or not configured');
+            return;
         }
 
         const items = typeof order.items_json === 'string' ? JSON.parse(order.items_json) : order.items_json;
         const itemsList = items.map(item =>
-            `  • ${item.name} (${item.volume}) × ${item.quantity} — ${item.price * item.quantity} ₽`
+            `  • ${item.name} (${item.volume}) x${item.quantity} — ${item.price * item.quantity} руб.`
         ).join('\n');
 
         const deliveryInfo = order.delivery_type === 'delivery'
-            ? `🚚 Доставка: ${order.delivery_address || 'Не указан'}`
-            : '🏪 Самовывоз';
+            ? `Доставка: ${order.delivery_address || 'Не указан'}`
+            : 'Самовывоз';
 
-        const message = `🛍 *Новый заказ \\#${order.id}*\n\n` +
-            `👤 ${escapeMarkdown(order.customer_name)}\n` +
-            `📞 ${escapeMarkdown(order.customer_phone)}\n` +
-            `${order.email ? '📧 ' + escapeMarkdown(order.email) + '\n' : ''}` +
-            `\n📦 *Товары:*\n${escapeMarkdown(itemsList)}\n\n` +
-            `💰 *Итого: ${order.total_price} ₽*\n` +
-            `💳 ${escapeMarkdown(order.payment_method || 'Не указан')}\n` +
-            `${deliveryInfo}`;
+        const message =
+            `🛍 <b>Новый заказ #${order.id}</b>\n\n` +
+            `👤 ${order.customer_name || ''}\n` +
+            `📞 ${order.customer_phone || ''}\n` +
+            `${order.email ? '📧 ' + order.email + '\n' : ''}` +
+            `\n📦 <b>Товары:</b>\n${itemsList}\n\n` +
+            `💰 <b>Итого: ${order.total_price} руб.</b>\n` +
+            `💳 ${order.payment_method || 'Не указан'}\n` +
+            `🚚 ${deliveryInfo}`;
 
-        await fetch(`https://api.telegram.org/bot${config.telegram_bot_token}/sendMessage`, {
+        const tgRes = await fetch(`https://api.telegram.org/bot${config.telegram_bot_token}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 chat_id: config.telegram_chat_id,
                 text: message,
-                parse_mode: 'MarkdownV2'
+                parse_mode: 'HTML'
             })
         });
-    } catch (err) {
-        console.error('Telegram notification error:', err);
-    }
-}
 
-function escapeMarkdown(text) {
-    if (!text) return '';
-    return String(text).replace(/[_*\[\]()~`>#+\-=|{}.!]/g, '\\$&');
+        const tgData = await tgRes.json();
+        if (!tgData.ok) {
+            console.error('[Telegram] API error:', tgData.description);
+        } else {
+            console.log('[Telegram] Notification sent for order #' + order.id);
+        }
+    } catch (err) {
+        console.error('[Telegram] Notification error:', err.message);
+    }
 }
 
 // --- ORDERS ---
