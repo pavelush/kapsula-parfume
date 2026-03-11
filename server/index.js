@@ -502,14 +502,15 @@ async function sendCustomerEmail(order, type) {
         });
 
         const items = typeof order.items_json === 'string' ? JSON.parse(order.items_json) : order.items_json;
-        let itemsHtml = items.map(item => {
+        let itemsHtml = items.map((item, idx) => {
             const priceStr = String(item.price || '0').replace(/\s+/g, '');
             const priceNum = parseInt(priceStr, 10) || 0;
+            const borderStyle = idx < items.length - 1 ? 'border-bottom: 1px solid rgba(255,255,255,0.05);' : '';
             return `
                 <tr>
-                    <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;">${item.name} (${item.volume} мл)</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #333; text-align: center; color: #fff;">${item.quantity}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #333; text-align: right; color: #E5B25D;">${priceNum * item.quantity} руб.</td>
+                    <td style="padding: 15px 0; ${borderStyle} color: #fff; font-size: 15px;">${item.name} <span style="color: #888; font-size: 13px;">(${item.volume} мл)</span></td>
+                    <td style="padding: 15px 0; ${borderStyle} text-align: center; color: #fff; font-weight: 600; font-size: 15px;">${item.quantity}</td>
+                    <td style="padding: 15px 0; ${borderStyle} text-align: right; color: #E5B25D; font-weight: 600; font-size: 15px;">${priceNum * item.quantity} руб.</td>
                 </tr>
             `;
         }).join('');
@@ -543,44 +544,65 @@ async function sendCustomerEmail(order, type) {
             return;
         }
 
-        const deliveryInfo = order.delivery_type === 'delivery'
-            ? `<b>Адрес доставки:</b><br/>${order.delivery_address || 'Не указан'}`
-            : `<b>Пункт выдачи:</b><br/>${order.delivery_address || 'Не указан'}`;
+        const deliveryTypeLabel = order.delivery_type === 'delivery' ? 'Адрес доставки:' : 'Пункт выдачи:';
+        const deliveryValue = order.delivery_address || 'Не указан';
 
+        // Using a solid dark background #1a1a1c since linear-gradient support in emails is spotty
         const htmlTemplate = `
-        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #111; color: #eee; padding: 40px 20px; line-height: 1.6;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a1a; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-                <!-- Header -->
-                <div style="background-color: #000; padding: 30px; text-align: center; border-bottom: 2px solid #E5B25D;">
-                    <img src="https://kapsula-parfume.ru/images/logo/logo.png" alt="KAPSULA PARFUME" style="height: 45px; display: block; margin: 0 auto; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));" />
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #111111; padding: 40px 20px; line-height: 1.5; color: #eeeeee;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a1c; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
+                
+                <!-- Gold Top Border -->
+                <div style="height: 3px; background-color: #E5B25D; width: 100%;"></div>
+
+                <!-- Header (Logo) -->
+                <div style="padding: 40px 30px 20px; text-align: center;">
+                    <img src="https://kapsula-parfume.ru/images/logo/logo.png" alt="KAPSULA PARFUME" style="height: 135px; display: block; margin: 0 auto;" />
                 </div>
                 
                 <!-- Body -->
-                <div style="padding: 40px 30px;">
-                    <h2 style="color: #fff; margin-top: 0; margin-bottom: 10px; font-size: 22px;">${title}</h2>
-                    <p style="color: #aaa; margin-bottom: 30px; font-size: 16px;">${subtitle}</p>
+                <div style="padding: 10px 40px 40px;">
+                    <h2 style="color: #ffffff; margin: 0 0 10px 0; font-size: 26px; font-weight: 600; text-align: center;">${title}</h2>
+                    <p style="color: #aaaaaa; margin: 0 0 35px 0; font-size: 16px; text-align: center;">${subtitle}</p>
                     
-                    <div style="background-color: #222; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
-                        <h3 style="color: #E5B25D; margin-top: 0; margin-bottom: 15px; font-size: 16px; text-transform: uppercase;">Детали заказа #${order.id}</h3>
-                        <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+                    <!-- Order Items Card -->
+                    <div style="background-color: #242429; border-radius: 12px; padding: 25px; margin-bottom: 25px;">
+                        <h3 style="color: #E5B25D; margin: 0 0 15px 0; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">ДЕТАЛИ ЗАКАЗА #${order.id}</h3>
+                        <table style="width: 100%; border-collapse: collapse;">
                             ${itemsHtml}
                             <tr>
-                                <td colspan="2" style="padding: 15px 10px 5px; text-align: right; color: #aaa;">Итого:</td>
-                                <td style="padding: 15px 10px 5px; text-align: right; font-weight: bold; font-size: 18px; color: #E5B25D;">${order.total_price} руб.</td>
+                                <td colspan="3" style="padding-top: 15px;">
+                                    <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+                                        <div style="color: #888; font-size: 15px; text-align: right; width: 100%;">
+                                            <span style="margin-right: 15px;">Итого:</span>
+                                            <span style="font-weight: 700; font-size: 18px; color: #E5B25D;">${order.total_price} руб.</span>
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
                         </table>
                     </div>
                     
-                    <div style="background-color: #222; border-radius: 8px; padding: 20px;">
-                        <p style="margin: 0 0 10px 0; color: #ddd;"><b>Получатель:</b> ${order.customer_name || 'Не указан'} (${order.customer_phone || 'Не указан'})</p>
-                        <p style="margin: 0 0 10px 0; color: #ddd;"><b>Способ оплаты:</b> ${order.payment_method || 'Не указан'}</p>
-                        <p style="margin: 0; color: #ddd;">${deliveryInfo}</p>
+                    <!-- Customer Details Card -->
+                    <div style="background-color: #242429; border-radius: 12px; padding: 25px;">
+                        <p style="margin: 0 0 12px 0; font-size: 14px;">
+                            <strong style="color: #ffffff; display: inline-block; width: 130px;">Получатель:</strong> 
+                            <span style="color: #cccccc;">${order.customer_name || 'Не указан'} (${order.customer_phone || 'Не указан'})</span>
+                        </p>
+                        <p style="margin: 0 0 12px 0; font-size: 14px;">
+                            <strong style="color: #ffffff; display: inline-block; width: 130px;">Способ оплаты:</strong> 
+                            <span style="color: #cccccc;">${order.payment_method || 'Не указан'}</span>
+                        </p>
+                        <p style="margin: 0; font-size: 14px;">
+                            <strong style="color: #ffffff; display: inline-block; width: 130px;">${deliveryTypeLabel}</strong> 
+                            <span style="color: #cccccc;">${deliveryValue}</span>
+                        </p>
                     </div>
                 </div>
                 
                 <!-- Footer -->
-                <div style="background-color: #111; padding: 20px; text-align: center; color: #666; font-size: 13px;">
-                    <p style="margin: 0 0 5px 0;">Вы получили это письмо, потому что оформили заказ на сайте kapsula-parfume.ru</p>
+                <div style="background-color: #111111; padding: 30px; text-align: center; color: #666666; font-size: 13px; border-top: 1px solid rgba(255,255,255,0.05);">
+                    <p style="margin: 0 0 8px 0;">Вы получили это письмо, потому что оформили заказ на сайте <a href="https://kapsula-parfume.ru" style="color: #0ea5e9; text-decoration: none;">kapsula-parfume.ru</a></p>
                     <p style="margin: 0;">&copy; ${new Date().getFullYear()} Kapsula Parfume. Все права защищены.</p>
                 </div>
             </div>
