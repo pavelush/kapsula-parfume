@@ -9,4 +9,12 @@ const pool = new Pool({
     port: process.env.DB_PORT,
 });
 
+pool.on('error', (err, client) => {
+    console.error('Unexpected error on idle client', err);
+});
+
+pool.on('connect', () => {
+    console.log('New database connection established');
+});
+
 module.exports = pool;

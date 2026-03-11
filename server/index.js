@@ -57,6 +57,17 @@ app.post('/api/admin/login', async (req, res) => {
     }
 });
 
+// --- HEALTH CHECK ---
+app.get('/api/health', async (req, res) => {
+    try {
+        await pool.query('SELECT 1');
+        res.json({ status: 'OK', database: 'connected' });
+    } catch (err) {
+        console.error('Health check failed:', err);
+        res.status(500).json({ status: 'ERROR', database: 'disconnected', error: err.message });
+    }
+});
+
 // --- PRODUCTS ---
 app.get('/api/products', async (req, res) => {
     try {
@@ -111,8 +122,8 @@ app.get('/api/products', async (req, res) => {
 
         res.json(products);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error fetching products from DB:', err);
+        res.status(500).json({ error: 'Internal server error', details: err.message });
     }
 });
 
