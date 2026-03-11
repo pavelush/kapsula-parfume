@@ -546,8 +546,13 @@ app.post('/api/orders', async (req, res) => {
             order.confirmation_url = confirmationUrl;
         }
 
-        // Send Telegram notification (fire-and-forget)
-        sendTelegramNotification(order);
+        const isYookassa = payment_method && (payment_method.toLowerCase().includes('yookassa') || payment_method.toLowerCase().includes('юkassa'));
+
+        // Send Telegram notification (fire-and-forget) if NOT YooKassa
+        // YooKassa orders will send notification from the webhook after successful payment
+        if (!isYookassa) {
+            sendTelegramNotification(order);
+        }
 
         res.status(201).json(order);
     } catch (err) {
@@ -621,11 +626,16 @@ app.post('/api/yookassa/webhook', async (req, res) => {
         }
 
         if (eventType === 'payment.succeeded') {
-            await pool.query(
-                "UPDATE orders SET payment_status = 'Оплачен' WHERE yookassa_payment_id = $1",
+            const updateRes = await pool.query(
+                "UPDATE orders SET payment_status = 'Оплачен' WHERE yookassa_payment_id = $1 RETURNING *",
                 [paymentData.id]
             );
             console.log(`[YooKassa Webhook] Order with payment ID ${paymentData.id} marked as Оплачен`);
+            
+            if (updateRes.rows.length > 0) {
+                const order = updateRes.rows[0];
+                sendTelegramNotification(order);
+            }
         } else if (eventType === 'payment.canceled') {
             await pool.query(
                 "UPDATE orders SET payment_status = 'Отменен' WHERE yookassa_payment_id = $1 AND payment_status = 'Ожидает оплаты'",
