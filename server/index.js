@@ -404,6 +404,56 @@ app.delete('/api/pickup_points/:id', async (req, res) => {
     }
 });
 
+// --- TELEGRAM NOTIFICATIONS ---
+async function sendTelegramNotification(order) {
+    try {
+        const settingsRes = await pool.query(
+            "SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('telegram_bot_token', 'telegram_chat_id', 'telegram_notifications_enabled')"
+        );
+        const config = {};
+        settingsRes.rows.forEach(r => { config[r.setting_key] = r.setting_value; });
+
+        if (config.telegram_notifications_enabled !== 'true' || !config.telegram_bot_token || !config.telegram_chat_id) {
+            return; // Notifications not configured
+        }
+
+        const items = typeof order.items_json === 'string' ? JSON.parse(order.items_json) : order.items_json;
+        const itemsList = items.map(item =>
+            `  • ${item.name} (${item.volume}) × ${item.quantity} — ${item.price * item.quantity} ₽`
+        ).join('\n');
+
+        const deliveryInfo = order.delivery_type === 'delivery'
+            ? `🚚 Доставка: ${order.delivery_address || 'Не указан'}`
+            : '🏪 Самовывоз';
+
+        const message = `🛍 *Новый заказ \\#${order.id}*\n\n` +
+            `👤 ${escapeMarkdown(order.customer_name)}\n` +
+            `📞 ${escapeMarkdown(order.customer_phone)}\n` +
+            `${order.email ? '📧 ' + escapeMarkdown(order.email) + '\n' : ''}` +
+            `\n📦 *Товары:*\n${escapeMarkdown(itemsList)}\n\n` +
+            `💰 *Итого: ${order.total_price} ₽*\n` +
+            `💳 ${escapeMarkdown(order.payment_method || 'Не указан')}\n` +
+            `${deliveryInfo}`;
+
+        await fetch(`https://api.telegram.org/bot${config.telegram_bot_token}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: config.telegram_chat_id,
+                text: message,
+                parse_mode: 'MarkdownV2'
+            })
+        });
+    } catch (err) {
+        console.error('Telegram notification error:', err);
+    }
+}
+
+function escapeMarkdown(text) {
+    if (!text) return '';
+    return String(text).replace(/[_*\[\]()~`>#+\-=|{}.!]/g, '\\$&');
+}
+
 // --- ORDERS ---
 app.post('/api/orders', async (req, res) => {
     try {
@@ -478,6 +528,9 @@ app.post('/api/orders', async (req, res) => {
         if (confirmationUrl) {
             order.confirmation_url = confirmationUrl;
         }
+
+        // Send Telegram notification (fire-and-forget)
+        sendTelegramNotification(order);
 
         res.status(201).json(order);
     } catch (err) {

@@ -350,6 +350,47 @@ export default function AdminSettings() {
                         Данные можно получить в <a href="https://yookassa.ru/my" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent-gold)' }}>личном кабинете ЮKassa</a> в разделе "Интеграция -&gt; Ключи API".
                     </small>
 
+                    <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Telegram-уведомления о заказах</h3>
+
+                    <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <input
+                            type="checkbox"
+                            id="telegram_notifications_enabled"
+                            checked={settings.telegram_notifications_enabled === 'true'}
+                            onChange={(e) => handleChange('telegram_notifications_enabled', e.target.checked ? 'true' : 'false')}
+                            style={{ width: '20px', height: '20px', accentColor: 'var(--color-accent-gold)' }}
+                        />
+                        <label htmlFor="telegram_notifications_enabled" style={{ margin: 0, cursor: 'pointer' }}>Включить уведомления в Telegram</label>
+                    </div>
+
+                    <div className="form-group">
+                        <label>Токен бота (Bot Token)</label>
+                        <input
+                            type="password"
+                            className="form-control"
+                            value={settings.telegram_bot_token || ''}
+                            onChange={(e) => handleChange('telegram_bot_token', e.target.value)}
+                            placeholder="Например: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+                        />
+                        <small style={{ display: 'block', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                            Создайте бота через <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent-gold)' }}>@BotFather</a> в Telegram и скопируйте токен.
+                        </small>
+                    </div>
+
+                    <div className="form-group">
+                        <label>ID чата (Chat ID)</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={settings.telegram_chat_id || ''}
+                            onChange={(e) => handleChange('telegram_chat_id', e.target.value)}
+                            placeholder="Например: -1001234567890 или 123456789"
+                        />
+                        <small style={{ display: 'block', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
+                            Для личных уведомлений используйте ваш ID (получите через <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent-gold)' }}>@userinfobot</a>). Для группы — добавьте бота в группу и используйте ID группы.
+                        </small>
+                    </div>
+
                     <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Смена пароля (Админ)</h3>
 
                     <div className="form-group">
