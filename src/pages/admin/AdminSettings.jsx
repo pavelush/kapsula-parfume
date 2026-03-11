@@ -391,6 +391,89 @@ export default function AdminSettings() {
                         </small>
                     </div>
 
+                    <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Email-уведомления (SMTP)</h3>
+
+                    <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <input
+                            type="checkbox"
+                            id="email_notifications_enabled"
+                            checked={settings.email_notifications_enabled === 'true'}
+                            onChange={(e) => handleChange('email_notifications_enabled', e.target.checked ? 'true' : 'false')}
+                            style={{ width: '20px', height: '20px', accentColor: 'var(--color-accent-gold)' }}
+                        />
+                        <label htmlFor="email_notifications_enabled" style={{ margin: 0, cursor: 'pointer' }}>Включить email-уведомления для клиентов</label>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="form-group">
+                            <label>SMTP Сервер (Host)</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={settings.smtp_host || ''}
+                                onChange={(e) => handleChange('smtp_host', e.target.value)}
+                                placeholder="Например: smtp.yandex.ru"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>SMTP Порт</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={settings.smtp_port || ''}
+                                onChange={(e) => handleChange('smtp_port', e.target.value)}
+                                placeholder="Например: 465"
+                            />
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="form-group">
+                            <label>Почта (User)</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={settings.smtp_user || ''}
+                                onChange={(e) => handleChange('smtp_user', e.target.value)}
+                                placeholder="Например: info@kapsula-parfume.ru"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Пароль приложения (Password)</label>
+                            <input
+                                type="password"
+                                className="form-control"
+                                value={settings.smtp_pass || ''}
+                                onChange={(e) => handleChange('smtp_pass', e.target.value)}
+                                placeholder="Пароль приложения (не от аккаунта)"
+                                autoComplete="new-password"
+                            />
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="form-group">
+                            <label>Email отправителя (From Email)</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={settings.smtp_from_email || ''}
+                                onChange={(e) => handleChange('smtp_from_email', e.target.value)}
+                                placeholder="Обычно совпадает с почтой (User)"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Имя отправителя (From Name)</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={settings.smtp_from_name || ''}
+                                onChange={(e) => handleChange('smtp_from_name', e.target.value)}
+                                placeholder="Например: Kapsula Parfume"
+                            />
+                        </div>
+                    </div>
+
                     <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Смена пароля (Админ)</h3>
 
                     <div className="form-group">

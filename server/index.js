@@ -3,6 +3,7 @@ const cors = require('cors');
 const pool = require('./db');
 const multer = require('multer');
 const path = require('path');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
@@ -471,6 +472,124 @@ async function sendTelegramNotification(order) {
     }
 }
 
+// --- EMAIL NOTIFICATIONS (NODEMAILER) ---
+async function sendCustomerEmail(order, type) {
+    try {
+        if (!order.email) return; // No email provided by customer
+
+        const settingsRes = await pool.query(
+            "SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('email_notifications_enabled', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from_email', 'smtp_from_name')"
+        );
+        const config = {};
+        settingsRes.rows.forEach(r => { config[r.setting_key] = r.setting_value; });
+
+        if (config.email_notifications_enabled !== 'true' || !config.smtp_host || !config.smtp_user || !config.smtp_pass) {
+            console.log(`[Email] Notifications disabled or missing SMTP config for order #${order.id}`);
+            return;
+        }
+
+        const transporter = nodemailer.createTransport({
+            host: config.smtp_host,
+            port: parseInt(config.smtp_port, 10) || 465,
+            secure: parseInt(config.smtp_port, 10) === 465, // true for 465, false for other ports
+            auth: {
+                user: config.smtp_user,
+                pass: config.smtp_pass
+            }
+        });
+
+        const items = typeof order.items_json === 'string' ? JSON.parse(order.items_json) : order.items_json;
+        let itemsHtml = items.map(item => {
+            const priceStr = String(item.price || '0').replace(/\s+/g, '');
+            const priceNum = parseInt(priceStr, 10) || 0;
+            return `
+                <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;">${item.name} (${item.volume} мл)</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #333; text-align: center; color: #fff;">${item.quantity}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #333; text-align: right; color: #E5B25D;">${priceNum * item.quantity} руб.</td>
+                </tr>
+            `;
+        }).join('');
+
+        let subject = '';
+        let title = '';
+        let subtitle = '';
+
+        if (type === 'created') {
+            subject = `Ваш заказ #${order.id} принят`;
+            title = 'Спасибо за заказ!';
+            subtitle = 'Мы получили ваш заказ и скоро начнем его собирать.';
+        } else if (type === 'payment_success') {
+            subject = `Оплата заказа #${order.id} прошла успешно`;
+            title = 'Заказ успешно оплачен!';
+            subtitle = 'Спасибо за покупку. Мы уже начали подготовку к отправке.';
+        } else if (type === 'status_update') {
+            subject = `Обновление статуса заказа #${order.id}`;
+            title = 'Статус вашего заказа изменился';
+            subtitle = `Новый статус: <strong style="color: #E5B25D;">${order.status}</strong>`;
+        } else {
+            return;
+        }
+
+        const deliveryInfo = order.delivery_type === 'delivery'
+            ? `<b>Адрес доставки:</b><br/>${order.delivery_address || 'Не указан'}`
+            : `<b>Пункт выдачи:</b><br/>${order.delivery_address || 'Не указан'}`;
+
+        const htmlTemplate = `
+        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #111; color: #eee; padding: 40px 20px; line-height: 1.6;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #1a1a1a; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                <!-- Header -->
+                <div style="background-color: #000; padding: 30px; text-align: center; border-bottom: 2px solid #E5B25D;">
+                    <h1 style="margin: 0; color: #fff; font-size: 24px; font-weight: normal; letter-spacing: 2px;">KAPSULA <span style="color: #E5B25D;">PARFUME</span></h1>
+                </div>
+                
+                <!-- Body -->
+                <div style="padding: 40px 30px;">
+                    <h2 style="color: #fff; margin-top: 0; margin-bottom: 10px; font-size: 22px;">${title}</h2>
+                    <p style="color: #aaa; margin-bottom: 30px; font-size: 16px;">${subtitle}</p>
+                    
+                    <div style="background-color: #222; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+                        <h3 style="color: #E5B25D; margin-top: 0; margin-bottom: 15px; font-size: 16px; text-transform: uppercase;">Детали заказа #${order.id}</h3>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+                            ${itemsHtml}
+                            <tr>
+                                <td colspan="2" style="padding: 15px 10px 5px; text-align: right; color: #aaa;">Итого:</td>
+                                <td style="padding: 15px 10px 5px; text-align: right; font-weight: bold; font-size: 18px; color: #E5B25D;">${order.total_price} руб.</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div style="background-color: #222; border-radius: 8px; padding: 20px;">
+                        <p style="margin: 0 0 10px 0; color: #ddd;"><b>Получатель:</b> ${order.customer_name || 'Не указан'} (${order.customer_phone || 'Не указан'})</p>
+                        <p style="margin: 0 0 10px 0; color: #ddd;"><b>Способ оплаты:</b> ${order.payment_method || 'Не указан'}</p>
+                        <p style="margin: 0; color: #ddd;">${deliveryInfo}</p>
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <div style="background-color: #111; padding: 20px; text-align: center; color: #666; font-size: 13px;">
+                    <p style="margin: 0 0 5px 0;">Вы получили это письмо, потому что оформили заказ на сайте kapsula-parfume.ru</p>
+                    <p style="margin: 0;">&copy; ${new Date().getFullYear()} Kapsula Parfume. Все права защищены.</p>
+                </div>
+            </div>
+        </div>
+        `;
+
+        const fromString = config.smtp_from_name ? `"${config.smtp_from_name}" <${config.smtp_from_email || config.smtp_user}>` : config.smtp_user;
+
+        const info = await transporter.sendMail({
+            from: fromString,
+            to: order.email,
+            subject: subject,
+            html: htmlTemplate
+        });
+
+        console.log(`[Email] Notification sent to ${order.email} for order #${order.id}. MessageId: ${info.messageId}`);
+    } catch (err) {
+        console.error(`[Email] Notification error for order #${order.id}:`, err);
+    }
+}
+
 // --- ORDERS ---
 app.post('/api/orders', async (req, res) => {
     try {
@@ -548,10 +667,11 @@ app.post('/api/orders', async (req, res) => {
 
         const isYookassa = payment_method && (payment_method.toLowerCase().includes('yookassa') || payment_method.toLowerCase().includes('юkassa'));
 
-        // Send Telegram notification (fire-and-forget) if NOT YooKassa
+        // Send notifications (fire-and-forget) if NOT YooKassa
         // YooKassa orders will send notification from the webhook after successful payment
         if (!isYookassa) {
             sendTelegramNotification(order);
+            sendCustomerEmail(order, 'created');
         }
 
         res.status(201).json(order);
@@ -610,7 +730,12 @@ app.put('/api/orders/:id/status', async (req, res) => {
             [status, id]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Order not found' });
-        res.json(result.rows[0]);
+        
+        const order = result.rows[0];
+        // Send email notification on status change
+        sendCustomerEmail(order, 'status_update');
+
+        res.json(order);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal server error' });
@@ -653,6 +778,7 @@ app.post('/api/yookassa/webhook', async (req, res) => {
             if (updateRes.rows.length > 0) {
                 const order = updateRes.rows[0];
                 sendTelegramNotification(order);
+                sendCustomerEmail(order, 'payment_success');
             }
         } else if (eventType === 'payment.canceled') {
             await pool.query(
