@@ -57,6 +57,38 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
         }
     };
 
+    const handlePhoneChange = (e) => {
+        const value = e.target.value;
+        const numbers = value.replace(/\D/g, ''); // Extract only digits
+        
+        if (!numbers) {
+            setFormData({ ...formData, phone: '' });
+            return;
+        }
+
+        let formatted = '+7';
+        // If the user starts typing '9' (which is common in Russia)
+        let rest = numbers;
+        if (numbers[0] === '7' || numbers[0] === '8') {
+            rest = numbers.substring(1);
+        }
+        
+        if (rest.length > 0) {
+            formatted += ' (' + rest.substring(0, 3);
+        }
+        if (rest.length >= 4) {
+            formatted += ') ' + rest.substring(3, 6);
+        }
+        if (rest.length >= 7) {
+            formatted += '-' + rest.substring(6, 8);
+        }
+        if (rest.length >= 9) {
+            formatted += '-' + rest.substring(8, 10);
+        }
+        
+        setFormData({ ...formData, phone: formatted });
+    };
+
     const totalAmount = cartItems.reduce((acc, item) => {
         // Parse "1 500" format to integer
         const price = parseInt(item.price.replace(/\s+/g, ''), 10) || 0;
@@ -192,10 +224,10 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                             <div>
                                 <input
                                     type="tel"
-                                    placeholder="Ваш телефон"
+                                    placeholder="+7 (999) 000-00-00"
                                     required
                                     value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    onChange={handlePhoneChange}
                                     style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white', outline: 'none' }}
                                 />
                             </div>
