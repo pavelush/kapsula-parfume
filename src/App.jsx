@@ -7,8 +7,6 @@ import ProductPage from './pages/main/ProductPage';
 import Header from './components/Header';
 import CartModal from './components/CartModal';
 import FavoritesModal from './components/FavoritesModal';
-import { Phone } from 'lucide-react';
-import MobileMenu from './components/MobileMenu';
 import SuccessOrderModal from './components/SuccessOrderModal';
 
 function App() {
