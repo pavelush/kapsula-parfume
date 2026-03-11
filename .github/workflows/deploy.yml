@@ -1,4 +1,4 @@
-name: Deploy to Test Server
+name: Deploy to Production Server
 
 on:
   push:
@@ -43,7 +43,7 @@ jobs:
           # Sync frontend build
           rsync -avz --delete \
             --exclude 'uploads' \
-            ./dist/ $SERVER_USER@$SERVER_HOST:/var/www/kapsula/data/www/test.kapsula-parfume.ru/
+            ./dist/ $SERVER_USER@$SERVER_HOST:/var/www/kapsula/data/www/kapsula-parfume.ru/
 
       - name: Deploy Backend via Rsync
         env:
@@ -64,7 +64,7 @@ jobs:
           SERVER_HOST: 85.209.135.87
           SERVER_USER: kapsula
         run: |
-          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "ln -sfn /var/www/kapsula/data/www/api-server/uploads /var/www/kapsula/data/www/test.kapsula-parfume.ru/uploads"
+          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "ln -sfn /var/www/kapsula/data/www/api-server/uploads /var/www/kapsula/data/www/kapsula-parfume.ru/uploads"
 
       - name: Restart Backend with PM2
         env:
