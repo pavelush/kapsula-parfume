@@ -423,7 +423,17 @@ async function sendTelegramNotification(order) {
             // Price might be a string with spaces like "1 500"
             const priceStr = String(item.price || '0').replace(/\s+/g, '');
             const priceNum = parseInt(priceStr, 10) || 0;
-            return `  • ${item.name} (${item.volume}) x${item.quantity} — ${priceNum * item.quantity} руб.`;
+            
+            // Extract SKU from the prices object if available
+            let sku = '';
+            if (item.prices && item.prices[item.volume] && item.prices[item.volume].sku) {
+                sku = item.prices[item.volume].sku;
+            }
+            
+            // Format SKU as a link if it exists
+            const skuString = sku ? `[<a href="https://online.moysklad.ru/app/#good?global_codeFilter=${sku}">${sku}</a>] ` : '';
+            
+            return `  ${skuString}• ${item.name} (${item.volume} мл.) x${item.quantity} — ${priceNum * item.quantity} руб.`;
         }).join('\n');
 
         const deliveryInfo = order.delivery_type === 'delivery'
