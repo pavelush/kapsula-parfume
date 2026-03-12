@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import MainSite from './pages/main/MainSite';
 import AdminApp from './pages/admin/AdminApp';
 import PrivacyPolicyPage from './pages/main/PrivacyPolicyPage';
+import OfferPage from './pages/main/OfferPage';
 import ProductPage from './pages/main/ProductPage';
 import Header from './components/Header';
 import CartModal from './components/CartModal';
@@ -201,6 +202,7 @@ function App() {
       <Routes>
         <Route path="/admin/*" element={<AdminApp />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/oferta" element={<OfferPage />} />
         <Route path="/product/:slug" element={
           <ProductPage
             favorites={favorites}

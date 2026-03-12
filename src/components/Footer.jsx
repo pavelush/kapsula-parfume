@@ -105,7 +105,10 @@ export default function Footer() {
             <div style={{ paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                 <div className="container" style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
                     <span>© {new Date().getFullYear()} Kapsula Parfume. Все права защищены.</span>
-                    <Link to="/privacy" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Политика конфиденциальности</Link>
+                    <div style={{ display: 'flex', gap: '1.5rem' }}>
+                        <Link to="/privacy" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Политика конфиденциальности</Link>
+                        <Link to="/oferta" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Публичная оферта</Link>
+                    </div>
                 </div>
             </div>
         </footer>
