@@ -171,17 +171,6 @@ export default function AdminSettings() {
                             style={{ fontSize: '0.9rem', lineHeight: '1.5' }}
                         />
                     </div>
-                    <div className="form-group">
-                        <label>Публичная оферта (страница /oferta)</label>
-                        <textarea
-                            className="form-control"
-                            rows="15"
-                            value={settings.public_offer || ''}
-                            onChange={(e) => handleChange('public_offer', e.target.value)}
-                            placeholder="1. Общие положения..."
-                            style={{ fontSize: '0.85rem', lineHeight: '1.4' }}
-                        />
-                    </div>
 
                     <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Социальные сети</h3>
 
