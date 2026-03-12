@@ -39,7 +39,7 @@ export default function Footer() {
         <footer id="contacts" style={{ background: 'var(--color-bg-secondary)', padding: '5rem 5% 2rem', borderTop: '1px solid var(--glass-border)', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '1px', background: 'var(--gradient-primary)' }}></div>
             <div className="container" style={{ display: 'flex', flexWrap: 'wrap', gap: '4rem', marginBottom: '2rem' }}>
-                <div style={{ flex: '1 1 300px', maxWidth: '400px' }}>
+                <div style={{ flex: '1 1 250px', maxWidth: '300px' }}>
                     <div className="logo" style={{ marginBottom: '1.5rem', cursor: 'pointer' }} onClick={() => window.location.href = '/'}>
                         <img src="/images/logo/logo.png" alt="Kapsula Parfume Logo" style={{ height: '55px', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))', transition: 'all 0.3s ease' }} />
                     </div>
@@ -70,7 +70,7 @@ export default function Footer() {
                     </div>
                 </div>
 
-                <div style={{ flex: '2 1 600px', display: 'flex', flexWrap: 'wrap', gap: '2rem' }}>
+                <div style={{ flex: '3 1 700px', display: 'flex', flexWrap: 'wrap', gap: '2rem' }}>
                     {/* Авиапарк */}
                     <div style={{ flex: '1 1 280px', background: 'var(--glass-bg)', padding: '1.5rem', borderRadius: '20px', border: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column' }}>
                         <h4 style={{ color: 'white', fontSize: '1.2rem', marginBottom: '1rem' }}>ТЦ Авиапарк (1 этаж)</h4>
