@@ -77,6 +77,7 @@ export default function AdminSettings() {
 
                     <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', fontSize: '1.1rem' }}>Контактная информация</h3>
 
+                    <h4 style={{ color: 'white', marginTop: '1rem', marginBottom: '1rem', fontSize: '1rem' }}>ТЦ Авиапарк</h4>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                         <div className="form-group">
                             <label>Номер телефона</label>
@@ -97,8 +98,6 @@ export default function AdminSettings() {
                             />
                         </div>
                     </div>
-
-                    <h4 style={{ color: 'white', marginTop: '2rem', marginBottom: '1rem', fontSize: '1rem' }}>ТЦ Авиапарк</h4>
                     <div className="form-group">
                         <label>Адрес магазина</label>
                         <input
@@ -121,6 +120,15 @@ export default function AdminSettings() {
 
                     <h4 style={{ color: 'white', marginTop: '2rem', marginBottom: '1rem', fontSize: '1rem' }}>ТЦ Метрополис</h4>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                        <div className="form-group">
+                            <label>Номер телефона</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={settings.contact_metropolis_phone || ''}
+                                onChange={(e) => handleChange('contact_metropolis_phone', e.target.value)}
+                            />
+                        </div>
                         <div className="form-group">
                             <label>Часы работы</label>
                             <input

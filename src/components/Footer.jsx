@@ -8,6 +8,7 @@ export default function Footer() {
         contact_address: 'Россия, Москва, ТЦ Авиапарк (1 этаж)',
         contact_hours: 'Ежедневно 10:00 - 22:00',
         contact_map_url: 'https://yandex.ru/map-widget/v1/?z=12&ol=biz&oid=166160100779',
+        contact_metropolis_phone: '+7 916 203 54 94',
         contact_metropolis_address: 'Россия, Москва, ТЦ Метрополис',
         contact_metropolis_hours: 'Ежедневно 10:00 - 23:00',
         contact_metropolis_map_url: 'https://yandex.ru/map-widget/v1/?mode=search&text=Метрополис,+Москва,+Ленинградское+шоссе,+16А+стр+4',
@@ -86,7 +87,7 @@ export default function Footer() {
                     {/* Метрополис */}
                     <div style={{ flex: '1 1 280px', background: 'var(--glass-bg)', padding: '1.5rem', borderRadius: '20px', border: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column' }}>
                         <h4 style={{ color: 'white', fontSize: '1.2rem', marginBottom: '1rem' }}>ТЦ Метрополис</h4>
-                        <a href={`tel:${settings.contact_phone.replace(/[^0-9+]/g, '')}`} style={{ fontSize: '1.2rem', color: 'white', fontWeight: 600, textDecoration: 'none', marginBottom: '0.5rem', display: 'block' }}>{settings.contact_phone}</a>
+                        <a href={`tel:${settings.contact_metropolis_phone.replace(/[^0-9+]/g, '')}`} style={{ fontSize: '1.2rem', color: 'white', fontWeight: 600, textDecoration: 'none', marginBottom: '0.5rem', display: 'block' }}>{settings.contact_metropolis_phone}</a>
                         <p style={{ color: 'var(--color-text-muted)', marginBottom: '0.5rem', fontSize: '0.9rem' }}>{settings.contact_metropolis_address}</p>
                         <p style={{ display: 'inline-block', padding: '4px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: '15px', fontSize: '0.85rem', width: 'fit-content', color: 'var(--color-text-muted)', marginBottom: '1.5rem' }}>{settings.contact_metropolis_hours}</p>
                         {settings.contact_metropolis_map_url && (
