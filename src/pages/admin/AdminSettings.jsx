@@ -98,6 +98,7 @@ export default function AdminSettings() {
                         </div>
                     </div>
 
+                    <h4 style={{ color: 'white', marginTop: '2rem', marginBottom: '1rem', fontSize: '1rem' }}>ТЦ Авиапарк</h4>
                     <div className="form-group">
                         <label>Адрес магазина</label>
                         <input
@@ -114,6 +115,38 @@ export default function AdminSettings() {
                             className="form-control"
                             value={settings.contact_map_url || ''}
                             onChange={(e) => handleChange('contact_map_url', e.target.value)}
+                            placeholder="https://yandex.ru/map-widget/v1/?..."
+                        />
+                    </div>
+
+                    <h4 style={{ color: 'white', marginTop: '2rem', marginBottom: '1rem', fontSize: '1rem' }}>ТЦ Метрополис</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                        <div className="form-group">
+                            <label>Часы работы</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={settings.contact_metropolis_hours || ''}
+                                onChange={(e) => handleChange('contact_metropolis_hours', e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <div className="form-group">
+                        <label>Адрес магазина</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={settings.contact_metropolis_address || ''}
+                            onChange={(e) => handleChange('contact_metropolis_address', e.target.value)}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Ссылка на карту (Yandex/Google)</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={settings.contact_metropolis_map_url || ''}
+                            onChange={(e) => handleChange('contact_metropolis_map_url', e.target.value)}
                             placeholder="https://yandex.ru/map-widget/v1/?..."
                         />
                     </div>
