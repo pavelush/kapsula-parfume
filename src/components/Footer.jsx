@@ -44,9 +44,7 @@ export default function Footer() {
                     <div className="logo" style={{ marginBottom: '1.5rem', cursor: 'pointer' }} onClick={() => window.location.href = '/'}>
                         <img src="/images/logo/logo.png" alt="Kapsula Parfume Logo" style={{ height: '55px', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))', transition: 'all 0.3s ease' }} />
                     </div>
-                    <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem', lineHeight: 1.6, marginBottom: '2rem' }}>
-                        Расширяй свои парфюмерные горизонты с эксклюзивными отливантами ведущих мировых брендов.
-                    </p>
+
                     <div style={{ display: 'flex', gap: '1rem' }}>
                         {settings.social_telegram && (
                             <a href={settings.social_telegram} target="_blank" rel="noopener noreferrer" className="btn-icon" style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center' }} title="Telegram">
