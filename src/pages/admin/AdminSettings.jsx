@@ -159,6 +159,19 @@ export default function AdminSettings() {
                         />
                     </div>
 
+                    <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Юридическая информация</h3>
+                    <div className="form-group">
+                        <label>Юридическая информация (выводится в футере)</label>
+                        <textarea
+                            className="form-control"
+                            rows="10"
+                            value={settings.legal_information || ''}
+                            onChange={(e) => handleChange('legal_information', e.target.value)}
+                            placeholder="ООО 'КАПСУЛА'..."
+                            style={{ fontSize: '0.9rem', lineHeight: '1.5' }}
+                        />
+                    </div>
+
                     <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Социальные сети</h3>
 
                     <div className="form-group">

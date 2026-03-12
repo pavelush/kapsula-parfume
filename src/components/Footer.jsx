@@ -15,7 +15,8 @@ export default function Footer() {
         social_telegram: 'https://t.me/kapsulaparfum',
         social_instagram: 'https://www.instagram.com/kapsula.parfum',
         social_vk: 'https://vk.ru/kapsula.parfum',
-        social_tiktok: 'https://www.tiktok.com/@kapsulaparfum?_r=1&_t=ZS-93gqFKeHXou'
+        social_tiktok: 'https://www.tiktok.com/@kapsulaparfum?_r=1&_t=ZS-93gqFKeHXou',
+        legal_information: `ООО "КАПСУЛА"\nИНН: 0800028615\nОГРН: 1250800003035 от 28.03.25г.\nЮридический адрес: 358000, РОССИЯ, Респ. Калмыкия, ГОРОД ЭЛИСТА, г. Элиста, Улица ИМ ГУБАРЕВИЧА, д. д.5, квартира/офис 402\nРеквизиты Банк ВТБ (ПАО)\nБИК 044525411\nК/с 30101810145250000411\nР/с 40702810300810034409\nГенеральный директор: Зинковская Мария Алексеевна\nПочта: capsulap@yandex.ru`
     });
 
     useEffect(() => {
@@ -68,6 +69,11 @@ export default function Footer() {
                             </a>
                         )}
                     </div>
+                    {settings.legal_information && (
+                        <div style={{ marginTop: '2rem', whiteSpace: 'pre-line', fontSize: '0.75rem', color: 'var(--color-text-muted)', lineHeight: '1.6' }}>
+                            {settings.legal_information}
+                        </div>
+                    )}
                 </div>
 
                 <div style={{ flex: '3 1 700px', display: 'flex', flexWrap: 'wrap', gap: '2rem' }}>
