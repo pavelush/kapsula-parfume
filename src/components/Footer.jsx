@@ -113,11 +113,12 @@ export default function Footer() {
                         <Link to="/oferta" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Публичная оферта</Link>
                     </div>
                 </div>
-                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2rem', flexWrap: 'wrap', opacity: 0.6 }}>
-                    <img src="https://yookassa.ru/docs/payment-solutions/merchant-center/assets/logo-yookassa.png" alt="YooKassa" style={{ height: '24px', filter: 'grayscale(1) invert(1)' }} />
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" alt="Visa" style={{ height: '12px', filter: 'grayscale(1) invert(1)' }} />
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" alt="Mastercard" style={{ height: '24px', filter: 'grayscale(1) invert(1)' }} />
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Mir-logo.svg/1280px-Mir-logo.svg.png" alt="MIR" style={{ height: '14px', filter: 'grayscale(1) invert(1)' }} />
+                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2.5rem', flexWrap: 'wrap', opacity: 0.8 }}>
+                    {/* YooKassa - Using a more reliable SVG URL or high-quality PNG */}
+                    <img src="https://static.yoomoney.ru/front-pay/static-pages/v2/img/yookassa_logo_white.png" alt="YooKassa" style={{ height: '22px' }} />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/512px-Visa_Inc._logo.svg.png" alt="Visa" style={{ height: '14px', filter: 'brightness(0) invert(1)' }} />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/512px-Mastercard-logo.svg.png" alt="Mastercard" style={{ height: '24px', filter: 'brightness(0) invert(1)' }} />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Mir-logo.svg/512px-Mir-logo.svg.png" alt="MIR" style={{ height: '18px', filter: 'brightness(0) invert(1)' }} />
                 </div>
             </div>
         </footer>
