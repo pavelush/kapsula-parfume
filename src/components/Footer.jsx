@@ -114,11 +114,10 @@ export default function Footer() {
                     </div>
                 </div>
                 <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2.5rem', flexWrap: 'wrap', opacity: 0.8 }}>
-                    {/* YooKassa - Using a more reliable SVG URL or high-quality PNG */}
-                    <img src="https://static.yoomoney.ru/front-pay/static-pages/v2/img/yookassa_logo_white.png" alt="YooKassa" style={{ height: '22px' }} />
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/512px-Visa_Inc._logo.svg.png" alt="Visa" style={{ height: '14px', filter: 'brightness(0) invert(1)' }} />
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/512px-Mastercard-logo.svg.png" alt="Mastercard" style={{ height: '24px', filter: 'brightness(0) invert(1)' }} />
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Mir-logo.svg/512px-Mir-logo.svg.png" alt="MIR" style={{ height: '18px', filter: 'brightness(0) invert(1)' }} />
+                    <img src="/images/payment/yookassa.png" alt="YooKassa" style={{ height: '22px' }} />
+                    <img src="/images/payment/visa.svg" alt="Visa" style={{ height: '14px', filter: 'brightness(0) invert(1)' }} />
+                    <img src="/images/payment/mastercard.svg" alt="Mastercard" style={{ height: '24px', filter: 'brightness(0) invert(1)' }} />
+                    <img src="/images/payment/mir.svg" alt="MIR" style={{ height: '18px', filter: 'brightness(0) invert(1)' }} />
                 </div>
             </div>
         </footer>
