@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import Footer from '../../components/Footer';
 
 export default function PrivacyPolicyPage() {
     return (
@@ -90,9 +91,7 @@ export default function PrivacyPolicyPage() {
                 </div>
             </main>
 
-            <footer style={{ background: 'var(--color-bg-secondary)', padding: '2rem 5%', textAlign: 'center', borderTop: '1px solid var(--glass-border)' }}>
-                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>© {new Date().getFullYear()} Kapsula Parfume. Все права защищены.</p>
-            </footer>
+            <Footer />
         </div>
     );
 }
