@@ -34,7 +34,23 @@ export default function CatalogSection({ favorites = [], toggleFavorite = () => 
 
 
 
-    const brands = [...new Set(products.map(f => f.brand))].sort();
+    const checkHasStock = (product) => {
+        return [3, 5, 10, 100].some(vol => {
+            const pData = product.prices && product.prices[vol];
+            if (!pData) return false;
+            if (!pData.price || String(pData.price).trim() === "") return false;
+            if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
+                return Number(pData.stock) > 0;
+            }
+            return true;
+        });
+    };
+
+    const brands = [...new Set(
+        products
+            .filter(checkHasStock)
+            .map(f => f.brand)
+    )].sort();
 
     const toggleBrand = (brand) => {
         setSelectedBrands(prev =>
@@ -44,20 +60,7 @@ export default function CatalogSection({ favorites = [], toggleFavorite = () => 
 
     const filteredFragrances = products.filter(product => {
         const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(product.brand);
-
-        // Check if at least one of the specified volumes has stock > 0
-        const hasStock = [3, 5, 10, 100].some(vol => {
-            const pData = product.prices && product.prices[vol];
-            if (!pData) return false;
-            if (!pData.price || String(pData.price).trim() === "") return false;
-            // If stock is not specified, assume it's available (legacy compatibility)
-            // If stock is specified, it must be > 0
-            if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
-                return Number(pData.stock) > 0;
-            }
-            return true;
-        });
-
+        const hasStock = checkHasStock(product);
         return matchesBrand && hasStock;
     });
 
