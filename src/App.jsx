@@ -5,6 +5,7 @@ import AdminApp from './pages/admin/AdminApp';
 import PrivacyPolicyPage from './pages/main/PrivacyPolicyPage';
 import OfferPage from './pages/main/OfferPage';
 import ProductPage from './pages/main/ProductPage';
+import InfoPage from './pages/main/InfoPage';
 import Header from './components/Header';
 import CartModal from './components/CartModal';
 import FavoritesModal from './components/FavoritesModal';
@@ -203,6 +204,9 @@ function App() {
         <Route path="/admin/*" element={<AdminApp />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/oferta" element={<OfferPage />} />
+        <Route path="/payment" element={<InfoPage />} />
+        <Route path="/delivery" element={<InfoPage />} />
+        <Route path="/returns" element={<InfoPage />} />
         <Route path="/product/:slug" element={
           <ProductPage
             favorites={favorites}
