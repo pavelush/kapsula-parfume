@@ -45,7 +45,24 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                         setAvailableVolumes(vols);
                         if (vols.length > 0) setSelectedVolume(vols[0]);
 
-                        const sameBrand = data.filter(p => p.brand === found.brand && p.id !== found.id);
+                        const sameBrand = data.filter(p => {
+                            if (p.brand !== found.brand || p.id === found.id) return false;
+
+                            // Reusable stock check logic
+                            const checkHasStock = (product) => {
+                                return [3, 5, 10, 100].some(vol => {
+                                    const pData = product.prices && product.prices[vol];
+                                    if (!pData) return false;
+                                    if (!pData.price || String(pData.price).trim() === "") return false;
+                                    if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
+                                        return Number(pData.stock) > 0;
+                                    }
+                                    return true;
+                                });
+                            };
+
+                            return checkHasStock(p);
+                        });
                         const shuffled = sameBrand.sort(() => 0.5 - Math.random());
                         setRecommendedProducts(shuffled.slice(0, 3));
                     } else {
