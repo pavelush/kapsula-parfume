@@ -114,10 +114,10 @@ export default function Footer() {
                     </div>
                 </div>
                 <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2.5rem', flexWrap: 'wrap', opacity: 0.8 }}>
-                    <img src="/images/payment/yookassa.png" alt="YooKassa" style={{ height: '22px' }} />
-                    <img src="/images/payment/visa.svg" alt="Visa" style={{ height: '14px', filter: 'brightness(0) invert(1)' }} />
-                    <img src="/images/payment/mastercard.svg" alt="Mastercard" style={{ height: '24px', filter: 'brightness(0) invert(1)' }} />
-                    <img src="/images/payment/mir.svg" alt="MIR" style={{ height: '18px', filter: 'brightness(0) invert(1)' }} />
+                    <img src="/images/payment/yookassa.svg" alt="YooKassa" style={{ height: '22px' }} />
+                    <img src="/images/payment/visa.svg" alt="Visa" style={{ height: '14px' }} />
+                    <img src="/images/payment/mastercard.svg" alt="Mastercard" style={{ height: '24px' }} />
+                    <img src="/images/payment/mir.svg" alt="MIR" style={{ height: '18px' }} />
                 </div>
             </div>
         </footer>
