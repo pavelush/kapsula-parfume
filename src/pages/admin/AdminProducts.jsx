@@ -18,6 +18,7 @@ export default function AdminProducts() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [activeCategoryFilter, setActiveCategoryFilter] = useState('Все');
 
     const [activeVolumeTab, setActiveVolumeTab] = useState('3');
 
@@ -168,10 +169,11 @@ export default function AdminProducts() {
         setIsModalOpen(true);
     };
 
-    const filteredProducts = products.filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filteredProducts = products.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()));
+        const matchesCategory = activeCategoryFilter === 'Все' || (p.category || 'Парфюмерия') === activeCategoryFilter;
+        return matchesSearch && matchesCategory;
+    });
 
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
@@ -204,6 +206,28 @@ export default function AdminProducts() {
                 <button onClick={openAddModal} className="btn-primary" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Plus size={18} /> Добавить товар
                 </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                {['Все', 'Парфюмерия', 'Аксессуары'].map(cat => (
+                    <button
+                        key={cat}
+                        onClick={() => setActiveCategoryFilter(cat)}
+                        style={{
+                            padding: '8px 16px',
+                            background: activeCategoryFilter === cat ? 'var(--color-accent-gold)' : 'rgba(255,255,255,0.05)',
+                            color: activeCategoryFilter === cat ? 'black' : 'white',
+                            border: '1px solid',
+                            borderColor: activeCategoryFilter === cat ? 'var(--color-accent-gold)' : 'rgba(255,255,255,0.1)',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            fontWeight: activeCategoryFilter === cat ? '600' : '400'
+                        }}
+                    >
+                        {cat}
+                    </button>
+                ))}
             </div>
 
             <div className="admin-card" style={{ marginBottom: '2rem', padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
