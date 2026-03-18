@@ -50,7 +50,7 @@ export default function CertificatesPage() {
                             <div>
                                 <h3 style={{ color: 'white', marginBottom: '0.5rem', fontSize: '1.2rem' }}>Официальная декларация</h3>
                                 <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                                    Декларация о соответствии ЕАЭС подтверждает безопасность и высокое качество парфюмерии CLIVE CHRISTIAN.
+                                    Декларация о соответствии ЕАЭС подтверждает безопасность и высокое качество парфюмерии.
                                 </p>
                             </div>
                         </div>
@@ -69,19 +69,19 @@ export default function CertificatesPage() {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <div style={{ 
-                            background: 'white', 
-                            padding: '1rem', 
-                            borderRadius: '20px', 
+                        <div style={{
+                            background: 'white',
+                            padding: '1rem',
+                            borderRadius: '20px',
                             boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
                             border: '1px solid rgba(255,255,255,0.1)',
                             cursor: 'zoom-in',
                             overflow: 'hidden'
                         }}>
-                            <img 
-                                src="/images/certificates/certificate.png" 
-                                alt="Декларация о соответствии ЕАЭС" 
-                                style={{ width: '100%', borderRadius: '10px', display: 'block' }} 
+                            <img
+                                src="/images/certificates/certificate.jpg"
+                                alt="Декларация о соответствии ЕАЭС"
+                                style={{ width: '100%', borderRadius: '10px', display: 'block' }}
                             />
                         </div>
                         <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
@@ -89,7 +89,7 @@ export default function CertificatesPage() {
                         </p>
                     </div>
                 </div>
-                
+
 
             </main>
 
