@@ -1,11 +1,66 @@
-import React from 'react';
-import { ChevronRight, Award, ShieldCheck, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronRight, Award, ShieldCheck, FileText, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Footer from '../../components/Footer';
 
 export default function CertificatesPage() {
+    const [isZoomed, setIsZoomed] = useState(false);
+
     return (
         <div style={{ background: 'var(--color-bg)', minHeight: '100vh', color: 'var(--color-text)', scrollBehavior: 'smooth' }}>
+            {/* Zoom Modal */}
+            {isZoomed && (
+                <div 
+                    onClick={() => setIsZoomed(false)}
+                    style={{ 
+                        position: 'fixed', 
+                        top: 0, 
+                        left: 0, 
+                        width: '100%', 
+                        height: '100%', 
+                        background: 'rgba(0,0,0,0.9)', 
+                        backdropFilter: 'blur(10px)',
+                        zIndex: 1000, 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        cursor: 'zoom-out',
+                        padding: '2rem'
+                    }}
+                >
+                    <button 
+                        onClick={() => setIsZoomed(false)}
+                        style={{
+                            position: 'absolute',
+                            top: '2rem',
+                            right: '2rem',
+                            background: 'rgba(255,255,255,0.1)',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            color: 'white',
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <X size={24} />
+                    </button>
+                    <img 
+                        src="/images/certificates/certificate.jpg" 
+                        alt="Декларация о соответствии ЕАЭС" 
+                        style={{ 
+                            maxWidth: '100%', 
+                            maxHeight: '100%', 
+                            borderRadius: '10px',
+                            boxShadow: '0 0 50px rgba(0,0,0,0.5)'
+                        }} 
+                    />
+                </div>
+            )}
+
             <header style={{ padding: '2rem 5%', borderBottom: '1px solid var(--glass-border)', background: 'var(--glass-bg)', backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 100 }}>
                 <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
@@ -81,6 +136,7 @@ export default function CertificatesPage() {
                             <img
                                 src="/images/certificates/certificate.jpg"
                                 alt="Декларация о соответствии ЕАЭС"
+                                onClick={() => setIsZoomed(true)}
                                 style={{ width: '100%', borderRadius: '10px', display: 'block' }}
                             />
                         </div>
