@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import MainSite from './pages/main/MainSite';
 import AdminApp from './pages/admin/AdminApp';
+import CertificatesPage from './pages/main/CertificatesPage';
 import PrivacyPolicyPage from './pages/main/PrivacyPolicyPage';
 import OfferPage from './pages/main/OfferPage';
 import ProductPage from './pages/main/ProductPage';
@@ -202,6 +203,7 @@ function App() {
 
       <Routes>
         <Route path="/admin/*" element={<AdminApp />} />
+        <Route path="/certificates" element={<CertificatesPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/oferta" element={<OfferPage />} />
         <Route path="/payment" element={<InfoPage />} />

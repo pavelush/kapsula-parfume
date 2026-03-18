@@ -109,15 +109,16 @@ export default function Footer() {
                         <Link to="/payment" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Оплата</Link>
                         <Link to="/delivery" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Доставка</Link>
                         <Link to="/returns" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Возврат</Link>
+                        <Link to="/certificates" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Сертификаты</Link>
                         <Link to="/privacy" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Политика конфиденциальности</Link>
                         <Link to="/oferta" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Публичная оферта</Link>
                     </div>
                 </div>
                 <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2.5rem', flexWrap: 'wrap', opacity: 0.8 }}>
                     <img src="/images/payment/yookassa.svg" alt="YooKassa" style={{ height: '22px' }} />
-                    <img src="/images/payment/visa.svg" alt="Visa" style={{ height: '14px' }} />
-                    <img src="/images/payment/mastercard.svg" alt="Mastercard" style={{ height: '24px' }} />
-                    <img src="/images/payment/mir.svg" alt="MIR" style={{ height: '18px' }} />
+                    <img src="/images/payment/visa.svg" alt="Visa" style={{ height: '14px', filter: 'brightness(0) invert(1)' }} />
+                    <img src="/images/payment/mastercard.svg" alt="Mastercard" style={{ height: '24px', filter: 'brightness(0) invert(1)' }} />
+                    <img src="/images/payment/mir.svg" alt="MIR" style={{ height: '18px', filter: 'brightness(0) invert(1)' }} />
                 </div>
             </div>
         </footer>
