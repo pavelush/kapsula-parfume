@@ -90,13 +90,7 @@ export default function CertificatesPage() {
                     </div>
                 </div>
                 
-                <div style={{ marginTop: '6rem', textAlign: 'center', padding: '4rem 2rem', background: 'var(--glass-bg)', borderRadius: '30px', border: '1px solid var(--glass-border)' }}>
-                    <h2 style={{ fontSize: '2rem', color: 'white', marginBottom: '1rem' }}>Остались вопросы?</h2>
-                    <p style={{ color: 'var(--color-text-muted)', marginBottom: '2rem' }}>Свяжитесь с нами, и мы предоставим дополнительную информацию о качестве продукции.</p>
-                    <Link to="/#contacts" className="btn-primary" style={{ padding: '1rem 2.5rem', display: 'inline-block', textDecoration: 'none' }}>
-                        Связаться с нами
-                    </Link>
-                </div>
+
             </main>
 
             <Footer />
