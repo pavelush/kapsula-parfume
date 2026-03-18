@@ -23,7 +23,7 @@ export default function AdminProducts() {
 
     // Form state
     const initialProductState = {
-        name: '', description: '', fullDescription: '', brand: '', colorTheme: 'rgba(251, 191, 36, 0.15)', imgUrl: '',
+        name: '', description: '', fullDescription: '', brand: '', category: 'Парфюмерия', colorTheme: 'rgba(251, 191, 36, 0.15)', imgUrl: '',
         volumes: {
             3: { price: '', sku: '', stock: '' },
             5: { price: '', sku: '', stock: '' },
@@ -85,6 +85,7 @@ export default function AdminProducts() {
             description: currentProduct.description,
             fullDescription: currentProduct.fullDescription,
             brand: currentProduct.brand,
+            category: currentProduct.category,
             colorTheme: currentProduct.colorTheme,
             prices: pricesJson,
             imgUrl: currentProduct.imgUrl,
@@ -128,6 +129,7 @@ export default function AdminProducts() {
         setCurrentProduct({
             ...product,
             fullDescription: product.fullDescription || '',
+            category: product.category || 'Парфюмерия',
             volumes: {
                 3: { price: product.prices['3']?.price || '', sku: product.prices['3']?.sku || '', stock: product.prices['3']?.stock ?? '' },
                 5: { price: product.prices['5']?.price || '', sku: product.prices['5']?.sku || '', stock: product.prices['5']?.stock ?? '' },
@@ -223,7 +225,7 @@ export default function AdminProducts() {
                         <thead>
                             <tr>
                                 <th style={{ width: '80px' }}>Фото</th>
-                                <th>Бренд / Название</th>
+                                <th>Категория / Бренд / Название</th>
                                 <th>Цены (3 / 5 / 10 / 100 мл)</th>
                                 <th style={{ width: '150px', textAlign: 'right' }}>Действия</th>
                             </tr>
@@ -237,7 +239,7 @@ export default function AdminProducts() {
                                         </div>
                                     </td>
                                     <td>
-                                        <div style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>{product.brand}</div>
+                                        <div style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>{product.category || 'Парфюмерия'} | {product.brand}</div>
                                         <div style={{ fontWeight: 500, color: 'white', opacity: product.is_active ? 1 : 0.5, display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             {product.name}
                                             {!product.is_active && <span style={{ fontSize: '0.7rem', padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>Скрыт</span>}
@@ -289,7 +291,19 @@ export default function AdminProducts() {
                                 <label htmlFor="is_active" style={{ marginBottom: 0, cursor: 'pointer', color: 'white' }}>Показывать этот товар в каталоге</label>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem' }}>
+                                <div className="form-group">
+                                    <label>Категория</label>
+                                    <select
+                                        className="form-control"
+                                        value={currentProduct.category}
+                                        onChange={(e) => setCurrentProduct({ ...currentProduct, category: e.target.value })}
+                                        required
+                                    >
+                                        <option value="Парфюмерия">Парфюмерия</option>
+                                        <option value="Аксессуары">Аксессуары</option>
+                                    </select>
+                                </div>
                                 <div className="form-group">
                                     <label>Бренд</label>
                                     <select

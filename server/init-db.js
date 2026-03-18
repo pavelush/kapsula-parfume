@@ -85,7 +85,8 @@ async function initDB() {
                 brand VARCHAR(255),
                 "colorTheme" VARCHAR(50),
                 prices JSONB,
-                "imgUrl" VARCHAR(255)
+                "imgUrl" VARCHAR(255),
+                category VARCHAR(50) DEFAULT 'Парфюмерия'
             );
         `);
         console.log("Products table created or already exists.");
@@ -95,9 +96,9 @@ async function initDB() {
 
         for (const p of fragrances) {
             await pool.query(`
-                INSERT INTO products (name, description, brand, "colorTheme", prices, "imgUrl")
-                VALUES ($1, $2, $3, $4, $5, $6)
-            `, [p.name, p.description, p.brand, p.colorTheme, p.prices, p.imgUrl]);
+                INSERT INTO products (name, description, brand, "colorTheme", prices, "imgUrl", category)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `, [p.name, p.description, p.brand, p.colorTheme, p.prices, p.imgUrl, 'Парфюмерия']);
         }
         console.log("Products inserted successfully.");
     } catch (err) {
