@@ -10,7 +10,7 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
         phone: '',
         email: '',
         paymentMethod: '',
-        deliveryType: 'delivery',
+        deliveryType: 'pickup',
         deliveryAddress: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -135,7 +135,7 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                         phone: '',
                         email: '',
                         paymentMethod: paymentMethods[0]?.name || '',
-                        deliveryType: 'delivery',
+                        deliveryType: 'pickup',
                         deliveryAddress: ''
                     });
                 }, 3000);
@@ -243,16 +243,6 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                             </div>
 
                             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: formData.deliveryType === 'delivery' ? 'white' : 'var(--color-text-muted)' }}>
-                                    <input
-                                        type="radio"
-                                        name="deliveryType"
-                                        value="delivery"
-                                        checked={formData.deliveryType === 'delivery'}
-                                        onChange={(e) => setFormData({ ...formData, deliveryType: e.target.value, deliveryAddress: '' })}
-                                    />
-                                    Доставка
-                                </label>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: formData.deliveryType === 'pickup' ? 'white' : 'var(--color-text-muted)' }}>
                                     <input
                                         type="radio"
@@ -268,6 +258,16 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                                         }}
                                     />
                                     Самовывоз
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: formData.deliveryType === 'delivery' ? 'white' : 'var(--color-text-muted)' }}>
+                                    <input
+                                        type="radio"
+                                        name="deliveryType"
+                                        value="delivery"
+                                        checked={formData.deliveryType === 'delivery'}
+                                        onChange={(e) => setFormData({ ...formData, deliveryType: e.target.value, deliveryAddress: '' })}
+                                    />
+                                    Доставка
                                 </label>
                             </div>
 
