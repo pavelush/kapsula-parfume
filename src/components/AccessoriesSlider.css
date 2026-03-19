@@ -6,16 +6,15 @@
 .accessories-slider-container {
     display: flex;
     overflow-x: auto;
-    overflow-y: visible;
     scroll-snap-type: x mandatory;
     gap: 2.5rem;
-    scrollbar-width: none; /* Firefox */
-    padding: 30px 10px; /* Vertical padding for hover scale */
-    margin: -30px -10px; /* Compensate for padding */
+    scrollbar-width: none;
+    /* Firefox */
 }
 
 .accessories-slider-container::-webkit-scrollbar {
-    display: none; /* Chrome, Safari */
+    display: none;
+    /* Chrome, Safari */
 }
 
 .accessories-slider-item {
@@ -66,9 +65,11 @@
     .accessories-slider-item {
         flex: 0 0 100%;
     }
+
     .accessories-slider-wrapper {
         padding: 0;
     }
+
     .slider-btn {
         display: none;
     }

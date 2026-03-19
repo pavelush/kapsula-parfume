@@ -12,8 +12,8 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
         }
         return true;
     };
-    const availableVolumes = product.category === 'Аксессуары' 
-        ? ['1'].filter(checkVol) 
+    const availableVolumes = product.category === 'Аксессуары'
+        ? ['1'].filter(checkVol)
         : [3, 5, 10, 100].filter(checkVol);
     const [selectedVolume, setSelectedVolume] = useState(availableVolumes.length > 0 ? availableVolumes[0] : (product.category === 'Аксессуары' ? '1' : 3));
     const [isHovered, setIsHovered] = useState(false);
@@ -22,7 +22,7 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
     return (
         <div
             className="glass-card"
-            style={{ padding: '0', overflow: 'visible', display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}
+            style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
@@ -51,7 +51,7 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                overflow: 'visible'
+                overflow: 'hidden'
             }}>
                 <button
                     onClick={(e) => { e.preventDefault(); onToggleFavorite(product.id); }}
