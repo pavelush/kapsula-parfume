@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import CatalogSection from '../../components/CatalogSection';
+import AccessoriesSlider from '../../components/AccessoriesSlider';
 import FAQSection from '../../components/FAQSection';
 import WhyUsSection from '../../components/WhyUsSection';
 import Footer from '../../components/Footer';
@@ -37,6 +38,9 @@ function MainSite({ favorites, toggleFavorite, addToCart, cartItems, setCartItem
             </div>
           </div>
         </section>
+
+        {/* Accessories Slider */}
+        <AccessoriesSlider favorites={favorites} toggleFavorite={toggleFavorite} addToCart={addToCart} />
 
         {/* Catalog Section Refactored to Component */}
         <CatalogSection favorites={favorites} toggleFavorite={toggleFavorite} addToCart={addToCart} />

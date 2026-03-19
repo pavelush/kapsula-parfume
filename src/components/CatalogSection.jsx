@@ -59,9 +59,10 @@ export default function CatalogSection({ favorites = [], toggleFavorite = () => 
     };
 
     const filteredFragrances = products.filter(product => {
+        const isPerfumery = !product.category || product.category === 'Парфюмерия';
         const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(product.brand);
         const hasStock = checkHasStock(product);
-        return matchesBrand && hasStock;
+        return isPerfumery && matchesBrand && hasStock;
     });
 
     return (
