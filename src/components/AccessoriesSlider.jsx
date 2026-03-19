@@ -53,7 +53,7 @@ export default function AccessoriesSlider({ favorites = [], toggleFavorite = () 
     }
 
     return (
-        <section id="accessories" className="section container" style={{ paddingBottom: '0' }}>
+        <section id="accessories" className="section container" style={{ paddingBottom: '0', position: 'relative', zIndex: 2 }}>
             <div style={{ textAlign: 'center', marginBottom: '3rem', maxWidth: '700px', margin: '0 auto 3rem' }}>
                 <h2 className="fade-in-up">Аксессуары <span className="text-gradient">и Дополнения</span></h2>
                 <p className="fade-in-up delay-1" style={{ color: 'var(--color-text-muted)', fontSize: '1.1rem' }}>

@@ -6,9 +6,12 @@
 .accessories-slider-container {
     display: flex;
     overflow-x: auto;
+    overflow-y: visible;
     scroll-snap-type: x mandatory;
     gap: 2.5rem;
     scrollbar-width: none; /* Firefox */
+    padding: 30px 10px; /* Vertical padding for hover scale */
+    margin: -30px -10px; /* Compensate for padding */
 }
 
 .accessories-slider-container::-webkit-scrollbar {
