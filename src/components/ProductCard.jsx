@@ -114,7 +114,6 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
                                     onClick={() => setSelectedVolume(vol)}
                                     style={{
                                         flex: 1,
-                                        maxWidth: 'calc(25% - 6px)',
                                         padding: '8px 0',
                                         borderRadius: '20px',
                                         border: 'none',
