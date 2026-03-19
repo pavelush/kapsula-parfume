@@ -6,6 +6,7 @@ import './AccessoriesSlider.css';
 export default function AccessoriesSlider({ favorites = [], toggleFavorite = () => { }, addToCart = () => { } }) {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isPaused, setIsPaused] = useState(false);
     const sliderRef = useRef(null);
 
     useEffect(() => {
@@ -26,6 +27,24 @@ export default function AccessoriesSlider({ favorites = [], toggleFavorite = () 
 
         fetchProducts();
     }, []);
+
+    useEffect(() => {
+        if (loading || products.length === 0 || isPaused) return;
+
+        const interval = setInterval(() => {
+            if (sliderRef.current) {
+                const { scrollLeft, offsetWidth, scrollWidth } = sliderRef.current;
+                // If we are at the end, scroll back to start
+                if (scrollLeft + offsetWidth >= scrollWidth - 10) {
+                    sliderRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    scroll('right');
+                }
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [loading, products.length, isPaused]);
 
     const checkHasStock = (product) => {
         const volsToCheck = product.category === 'Аксессуары' ? ['1'] : [3, 5, 10, 100];
@@ -61,7 +80,11 @@ export default function AccessoriesSlider({ favorites = [], toggleFavorite = () 
                 </p>
             </div>
 
-            <div className="accessories-slider-wrapper fade-in-up delay-2">
+            <div
+                className="accessories-slider-wrapper fade-in-up delay-2"
+                onMouseEnter={() => setIsPaused(true)}
+                onMouseLeave={() => setIsPaused(false)}
+            >
                 <button
                     className="slider-btn left"
                     onClick={() => scroll('left')}
