@@ -119,7 +119,7 @@ export default function SuccessOrderModal({ orderId, onClose }) {
                                             )}
                                             <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
                                                 <span style={{ fontSize: '0.95rem', fontWeight: 500, lineHeight: 1.2 }}>{item.name}</span>
-                                                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{item.volume} мл</span>
+                                                {item.category !== 'Аксессуары' && <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{item.volume} мл</span>}
                                             </div>
                                             <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--color-accent-gold)', marginLeft: '10px' }}>
                                                 x{item.quantity}

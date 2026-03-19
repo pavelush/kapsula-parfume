@@ -26,6 +26,7 @@ export default function AdminProducts() {
     const initialProductState = {
         name: '', description: '', fullDescription: '', brand: '', category: 'Парфюмерия', colorTheme: 'rgba(251, 191, 36, 0.15)', imgUrl: '',
         volumes: {
+            1: { price: '', sku: '', stock: '' },
             3: { price: '', sku: '', stock: '' },
             5: { price: '', sku: '', stock: '' },
             10: { price: '', sku: '', stock: '' },
@@ -132,6 +133,7 @@ export default function AdminProducts() {
             fullDescription: product.fullDescription || '',
             category: product.category || 'Парфюмерия',
             volumes: {
+                1: { price: product.prices['1']?.price || '', sku: product.prices['1']?.sku || '', stock: product.prices['1']?.stock ?? '' },
                 3: { price: product.prices['3']?.price || '', sku: product.prices['3']?.sku || '', stock: product.prices['3']?.stock ?? '' },
                 5: { price: product.prices['5']?.price || '', sku: product.prices['5']?.sku || '', stock: product.prices['5']?.stock ?? '' },
                 10: { price: product.prices['10']?.price || '', sku: product.prices['10']?.sku || '', stock: product.prices['10']?.stock ?? '' },
@@ -142,7 +144,7 @@ export default function AdminProducts() {
             seoTitle: product.seoTitle || '',
             seoDescription: product.seoDescription || ''
         });
-        setActiveVolumeTab('3');
+        setActiveVolumeTab(product.category === 'Аксессуары' ? '1' : '3');
         setIsModalOpen(true);
     };
 
@@ -321,7 +323,11 @@ export default function AdminProducts() {
                                     <select
                                         className="form-control"
                                         value={currentProduct.category}
-                                        onChange={(e) => setCurrentProduct({ ...currentProduct, category: e.target.value })}
+                                        onChange={(e) => {
+                                            const newCategory = e.target.value;
+                                            setCurrentProduct({ ...currentProduct, category: newCategory });
+                                            setActiveVolumeTab(newCategory === 'Аксессуары' ? '1' : '3');
+                                        }}
                                         required
                                     >
                                         <option value="Парфюмерия">Парфюмерия</option>
@@ -460,28 +466,34 @@ export default function AdminProducts() {
                                 />
                             </div>
 
-                            <h4 style={{ color: 'white', marginBottom: '1rem', marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>Настройка объемов и цен (МойСклад)</h4>
-                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
-                                {['3', '5', '10', '100'].map(vol => (
-                                    <button
-                                        key={vol}
-                                        type="button"
-                                        onClick={() => setActiveVolumeTab(vol)}
-                                        style={{
-                                            padding: '8px 16px',
-                                            background: activeVolumeTab === vol ? 'var(--color-accent-gold)' : 'transparent',
-                                            color: activeVolumeTab === vol ? 'black' : 'white',
-                                            border: 'none',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer',
-                                            fontWeight: activeVolumeTab === vol ? '600' : '400',
-                                            transition: 'all 0.2s',
-                                        }}
-                                    >
-                                        {vol} мл
-                                    </button>
-                                ))}
-                            </div>
+                            {currentProduct.category !== 'Аксессуары' ? (
+                                <>
+                                    <h4 style={{ color: 'white', marginBottom: '1rem', marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>Настройка объемов и цен (МойСклад)</h4>
+                                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+                                        {['3', '5', '10', '100'].map(vol => (
+                                            <button
+                                                key={vol}
+                                                type="button"
+                                                onClick={() => setActiveVolumeTab(vol)}
+                                                style={{
+                                                    padding: '8px 16px',
+                                                    background: activeVolumeTab === vol ? 'var(--color-accent-gold)' : 'transparent',
+                                                    color: activeVolumeTab === vol ? 'black' : 'white',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    fontWeight: activeVolumeTab === vol ? '600' : '400',
+                                                    transition: 'all 0.2s',
+                                                }}
+                                            >
+                                                {vol} мл
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            ) : (
+                                <h4 style={{ color: 'white', marginBottom: '1rem', marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>Настройка цены и остатка (МойСклад)</h4>
+                            )}
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                 <div className="form-group" style={{ marginBottom: 0 }}>

@@ -185,7 +185,7 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>{item.brand}</div>
                                         <div style={{ fontWeight: 500, marginBottom: '4px' }}>{item.name}</div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--color-accent-gold)', fontSize: '0.9rem' }}>
-                                            <span>Объем: {item.volume} мл</span>
+                                            <span>{item.category === 'Аксессуары' ? '' : `Объем: ${item.volume} мл`}</span>
                                             <span style={{ fontWeight: 'bold' }}>{item.price} ₽</span>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>

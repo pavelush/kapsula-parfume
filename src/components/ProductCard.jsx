@@ -3,7 +3,7 @@ import { ShoppingBag, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => {
-    const availableVolumes = [3, 5, 10, 100].filter(vol => {
+    const checkVol = (vol) => {
         const pData = product.prices && product.prices[vol];
         if (!pData) return false;
         if (!pData.price || String(pData.price).trim() === "") return false;
@@ -11,8 +11,11 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
             if (Number(pData.stock) <= 0) return false;
         }
         return true;
-    });
-    const [selectedVolume, setSelectedVolume] = useState(availableVolumes.length > 0 ? availableVolumes[0] : 3);
+    };
+    const availableVolumes = product.category === 'Аксессуары' 
+        ? ['1'].filter(checkVol) 
+        : [3, 5, 10, 100].filter(checkVol);
+    const [selectedVolume, setSelectedVolume] = useState(availableVolumes.length > 0 ? availableVolumes[0] : (product.category === 'Аксессуары' ? '1' : 3));
     const [isHovered, setIsHovered] = useState(false);
     const currentPrice = product.prices[selectedVolume] || { price: "0" };
 

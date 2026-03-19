@@ -33,7 +33,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                         }
                         metaDesc.content = found.seoDescription || found.description;
 
-                        const vols = [3, 5, 10, 100].filter(vol => {
+                        const checkVol = (vol) => {
                             const pData = found.prices && found.prices[vol];
                             if (!pData) return false;
                             if (!pData.price || String(pData.price).trim() === "") return false;
@@ -41,16 +41,21 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                                 if (Number(pData.stock) <= 0) return false;
                             }
                             return true;
-                        });
+                        };
+                        const vols = found.category === 'Аксессуары' 
+                            ? ['1'].filter(checkVol) 
+                            : [3, 5, 10, 100].filter(checkVol);
                         setAvailableVolumes(vols);
                         if (vols.length > 0) setSelectedVolume(vols[0]);
+                        else if (found.category === 'Аксессуары') setSelectedVolume('1');
 
                         const sameBrand = data.filter(p => {
                             if (p.brand !== found.brand || p.id === found.id) return false;
 
                             // Reusable stock check logic
                             const checkHasStock = (product) => {
-                                return [3, 5, 10, 100].some(vol => {
+                                const volsToCheck = product.category === 'Аксессуары' ? ['1'] : [3, 5, 10, 100];
+                                return volsToCheck.some(vol => {
                                     const pData = product.prices && product.prices[vol];
                                     if (!pData) return false;
                                     if (!pData.price || String(pData.price).trim() === "") return false;
@@ -179,32 +184,34 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                             </p>
                         </div>
 
-                        <div>
-                            <h3 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.2rem' }}>Выберите объем</h3>
-                            <div className="product-volumes-container" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                                {availableVolumes.map(vol => (
-                                    <button
-                                        key={vol}
-                                        onClick={() => setSelectedVolume(vol)}
-                                        className="volume-button"
-                                        style={{
-                                            padding: '12px 24px',
-                                            borderRadius: '30px',
-                                            border: selectedVolume === vol ? 'none' : '1px solid var(--glass-border)',
-                                            background: selectedVolume === vol ? 'var(--gradient-primary)' : 'rgba(0,0,0,0.3)',
-                                            color: selectedVolume === vol ? 'white' : 'var(--color-text-muted)',
-                                            cursor: 'pointer',
-                                            fontSize: '1rem',
-                                            fontWeight: selectedVolume === vol ? 600 : 400,
-                                            transition: 'all 0.3s ease',
-                                            boxShadow: selectedVolume === vol ? '0 4px 15px rgba(0,0,0,0.3)' : 'none'
-                                        }}
-                                    >
-                                        {vol} мл
-                                    </button>
-                                ))}
+                        {product.category !== 'Аксессуары' && (
+                            <div>
+                                <h3 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.2rem' }}>Выберите объем</h3>
+                                <div className="product-volumes-container" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                    {availableVolumes.map(vol => (
+                                        <button
+                                            key={vol}
+                                            onClick={() => setSelectedVolume(vol)}
+                                            className="volume-button"
+                                            style={{
+                                                padding: '12px 24px',
+                                                borderRadius: '30px',
+                                                border: selectedVolume === vol ? 'none' : '1px solid var(--glass-border)',
+                                                background: selectedVolume === vol ? 'var(--gradient-primary)' : 'rgba(0,0,0,0.3)',
+                                                color: selectedVolume === vol ? 'white' : 'var(--color-text-muted)',
+                                                cursor: 'pointer',
+                                                fontSize: '1rem',
+                                                fontWeight: selectedVolume === vol ? 600 : 400,
+                                                transition: 'all 0.3s ease',
+                                                boxShadow: selectedVolume === vol ? '0 4px 15px rgba(0,0,0,0.3)' : 'none'
+                                            }}
+                                        >
+                                            {vol} мл
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         <div className="product-action-container" style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginTop: '1rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                             <div>
