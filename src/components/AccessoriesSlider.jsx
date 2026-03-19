@@ -69,8 +69,8 @@ export default function AccessoriesSlider({ favorites = [], toggleFavorite = () 
                     <ChevronLeft size={24} />
                 </button>
 
-                <div 
-                    className="accessories-slider-container" 
+                <div
+                    className="accessories-slider-container"
                     ref={sliderRef}
                 >
                     {products.map(product => (
@@ -80,7 +80,6 @@ export default function AccessoriesSlider({ favorites = [], toggleFavorite = () 
                                 isFavorite={favorites.includes(product.id)}
                                 onToggleFavorite={toggleFavorite}
                                 onAddToCart={addToCart}
-                                hideVolumes={true}
                             />
                         </div>
                     ))}

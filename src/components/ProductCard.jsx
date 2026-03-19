@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ShoppingBag, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart, hideVolumes = false }) => {
+const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => {
     const availableVolumes = [3, 5, 10, 100].filter(vol => {
         const pData = product.prices && product.prices[vol];
         if (!pData) return false;
@@ -19,7 +19,7 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart, hideV
     return (
         <div
             className="glass-card"
-            style={{ padding: '0', display: 'flex', flexDirection: 'column', height: '100%', position: 'relative', transition: 'box-shadow 0.3s' }}
+            style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
@@ -48,8 +48,7 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart, hideV
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                overflow: 'visible', // Changed from 'hidden' to prevent clipping on hover
-                padding: '1.5rem 0' // Added some vertical padding to give more room for scale
+                overflow: 'hidden'
             }}>
                 <button
                     onClick={(e) => { e.preventDefault(); onToggleFavorite(product.id); }}
@@ -104,32 +103,30 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart, hideV
 
                 <div style={{ marginTop: 'auto' }}>
                     {/* Volume Selector */}
-                    {!hideVolumes && (
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '1.5rem', padding: '4px', background: 'rgba(0,0,0,0.4)', borderRadius: '30px', border: '1px solid var(--glass-border)' }}>
-                            {availableVolumes.map(vol => (
-                                <button
-                                    key={vol}
-                                    onClick={() => setSelectedVolume(vol)}
-                                    style={{
-                                        flex: 1,
-                                        maxWidth: 'calc(25% - 6px)',
-                                        padding: '8px 0',
-                                        borderRadius: '20px',
-                                        border: 'none',
-                                        background: selectedVolume === vol ? 'var(--gradient-primary)' : 'transparent',
-                                        color: selectedVolume === vol ? 'white' : 'var(--color-text-muted)',
-                                        cursor: 'pointer',
-                                        fontSize: '0.9rem',
-                                        fontWeight: selectedVolume === vol ? 600 : 400,
-                                        transition: 'all 0.3s ease',
-                                        boxShadow: selectedVolume === vol ? '0 4px 10px rgba(0,0,0,0.3)' : 'none'
-                                    }}
-                                >
-                                    {vol} мл
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '1.5rem', padding: '4px', background: 'rgba(0,0,0,0.4)', borderRadius: '30px', border: '1px solid var(--glass-border)' }}>
+                        {availableVolumes.map(vol => (
+                            <button
+                                key={vol}
+                                onClick={() => setSelectedVolume(vol)}
+                                style={{
+                                    flex: 1,
+                                    maxWidth: 'calc(25% - 6px)',
+                                    padding: '8px 0',
+                                    borderRadius: '20px',
+                                    border: 'none',
+                                    background: selectedVolume === vol ? 'var(--gradient-primary)' : 'transparent',
+                                    color: selectedVolume === vol ? 'white' : 'var(--color-text-muted)',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem',
+                                    fontWeight: selectedVolume === vol ? 600 : 400,
+                                    transition: 'all 0.3s ease',
+                                    boxShadow: selectedVolume === vol ? '0 4px 10px rgba(0,0,0,0.3)' : 'none'
+                                }}
+                            >
+                                {vol} мл
+                            </button>
+                        ))}
+                    </div>
 
                     {/* Price & Action */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
