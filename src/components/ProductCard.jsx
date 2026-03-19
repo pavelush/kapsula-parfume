@@ -22,7 +22,7 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
     return (
         <div
             className="glass-card"
-            style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}
+            style={{ padding: '0', overflow: 'visible', display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
@@ -51,7 +51,7 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                overflow: 'hidden'
+                overflow: 'visible'
             }}>
                 <button
                     onClick={(e) => { e.preventDefault(); onToggleFavorite(product.id); }}

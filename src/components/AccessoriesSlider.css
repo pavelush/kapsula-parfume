@@ -10,6 +10,10 @@
     gap: 2.5rem;
     scrollbar-width: none;
     /* Firefox */
+    padding-top: 15px;
+    margin-top: -15px;
+    padding-bottom: 25px;
+    margin-bottom: -25px;
 }
 
 .accessories-slider-container::-webkit-scrollbar {
