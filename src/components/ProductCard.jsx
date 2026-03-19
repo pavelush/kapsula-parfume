@@ -51,8 +51,7 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                overflow: 'hidden',
-                padding: '20px' // Added padding to prevent clipping when scaling on hover
+                overflow: 'hidden'
             }}>
                 <button
                     onClick={(e) => { e.preventDefault(); onToggleFavorite(product.id); }}
@@ -81,7 +80,7 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
                 <Link to={`/product/${product.slug}`} style={{
                     width: '100%',
                     height: '100%',
-                    transform: isHovered ? 'scale(1.08)' : 'scale(1)',
+                    transform: isHovered ? 'scale(1.05)' : 'scale(1)',
                     transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                     display: 'block'
                 }}>
