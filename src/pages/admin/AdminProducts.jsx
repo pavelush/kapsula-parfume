@@ -252,7 +252,7 @@ export default function AdminProducts() {
                             <tr>
                                 <th style={{ width: '80px' }}>Фото</th>
                                 <th>Категория / Бренд / Название</th>
-                                <th>Цены (3 / 5 / 10 / 100 мл)</th>
+                                <th>Цены</th>
                                 <th style={{ width: '150px', textAlign: 'right' }}>Действия</th>
                             </tr>
                         </thead>
@@ -272,7 +272,9 @@ export default function AdminProducts() {
                                         </div>
                                     </td>
                                     <td style={{ color: 'var(--color-text-muted)' }}>
-                                        {product.prices['3']?.price || '-'} / {product.prices['5']?.price || '-'} / {product.prices['10']?.price || '-'} / {product.prices['100']?.price || '-'} ₽
+                                        {product.category === 'Аксессуары' 
+                                            ? `${product.prices['1']?.price || '-'} ₽` 
+                                            : `${product.prices['3']?.price || '-'} / ${product.prices['5']?.price || '-'} / ${product.prices['10']?.price || '-'} / ${product.prices['100']?.price || '-'} ₽`}
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
                                         <button onClick={() => handleToggleActive(product)} className="admin-action-btn" title={product.is_active ? "Скрыть из каталога" : "Показать в каталоге"} style={{ marginRight: '8px', color: product.is_active ? 'var(--color-text)' : 'var(--color-text-muted)' }}>
