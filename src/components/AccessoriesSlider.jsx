@@ -80,6 +80,7 @@ export default function AccessoriesSlider({ favorites = [], toggleFavorite = () 
                                 isFavorite={favorites.includes(product.id)}
                                 onToggleFavorite={toggleFavorite}
                                 onAddToCart={addToCart}
+                                hideVolumes={true}
                             />
                         </div>
                     ))}
