@@ -351,7 +351,7 @@ export default function AdminProducts() {
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label>Название парфюма</label>
+                                    <label>Название</label>
                                     <input
                                         type="text"
                                         className="form-control"
