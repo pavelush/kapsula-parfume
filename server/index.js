@@ -634,8 +634,17 @@ app.post('/api/orders', async (req, res) => {
             [customer_name, customer_phone, email, JSON.stringify(items), total_price, payment_method, delivery_type, delivery_address, finalStatus, paymentStatus]
         );
 
-        const order = result.rows[0];
+        let order = result.rows[0];
         let confirmationUrl = null;
+
+        // Try to create order in MS 
+        const { createMsCustomerOrder } = require('./moysklad_api');
+        const msOrderId = await createMsCustomerOrder(order, items);
+        
+        if (msOrderId) {
+            await pool.query('UPDATE orders SET moysklad_id = $1 WHERE id = $2', [msOrderId, order.id]);
+            order.moysklad_id = msOrderId;
+        }
 
         // 2. Then, create YooKassa payment using the order ID
         if (payment_method && (payment_method.toLowerCase().includes('yookassa') || payment_method.toLowerCase().includes('юkassa'))) {
@@ -765,6 +774,11 @@ app.put('/api/orders/:id/status', async (req, res) => {
         // Send email notification on status change
         sendCustomerEmail(order, 'status_update');
 
+        const { updateMsOrderStatus } = require('./moysklad_api');
+        if (order.moysklad_id) {
+            await updateMsOrderStatus(order.moysklad_id, status);
+        }
+
         res.json(order);
     } catch (err) {
         console.error(err);
@@ -781,7 +795,14 @@ app.put('/api/orders/:id/payment_status', async (req, res) => {
             [payment_status, id]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Order not found' });
-        res.json(result.rows[0]);
+        
+        const order = result.rows[0];
+        const { updateMsOrderStatus } = require('./moysklad_api');
+        if (order.moysklad_id) {
+            await updateMsOrderStatus(order.moysklad_id, payment_status);
+        }
+
+        res.json(order);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal server error' });
@@ -809,19 +830,99 @@ app.post('/api/yookassa/webhook', async (req, res) => {
                 const order = updateRes.rows[0];
                 sendTelegramNotification(order);
                 sendCustomerEmail(order, 'payment_success');
+
+                const { updateMsOrderStatus } = require('./moysklad_api');
+                if (order.moysklad_id) {
+                    await updateMsOrderStatus(order.moysklad_id, 'Оплачен');
+                }
             }
-        } else if (eventType === 'payment.canceled') {
-            await pool.query(
-                "UPDATE orders SET payment_status = 'Отменен' WHERE yookassa_payment_id = $1 AND payment_status = 'Ожидает оплаты'",
+            const cancelRes = await pool.query(
+                "UPDATE orders SET payment_status = 'Отменен' WHERE yookassa_payment_id = $1 AND payment_status = 'Ожидает оплаты' RETURNING *",
                 [paymentData.id]
             );
             console.log(`[YooKassa Webhook] Order with payment ID ${paymentData.id} marked as Отменен`);
-        }
+            
+            if (cancelRes.rows.length > 0) {
+                const order = cancelRes.rows[0];
+                const { updateMsOrderStatus } = require('./moysklad_api');
+                if (order.moysklad_id) {
+                    await updateMsOrderStatus(order.moysklad_id, 'Отменен');
+                }
+            }
 
         res.status(200).send('OK');
     } catch (error) {
         console.error('[YooKassa Webhook] Error processing webhook:', error);
         res.status(500).send('Internal Server Error');
+    }
+});
+
+app.post('/api/moysklad/webhook', async (req, res) => {
+    try {
+        const events = req.body && req.body.events;
+        if (!events || !Array.isArray(events)) {
+            return res.status(400).send('Invalid webhook data');
+        }
+
+        const { token, enabled } = await require('./moysklad_api').getMsSettings ? await require('./moysklad_api').getMsSettings() : { enabled: false };
+        if (!enabled || !token) {
+            return res.status(200).send('Sync disabled');
+        }
+
+        const msRequest = async (url) => {
+            const authHeader = token.includes(':') ? `Basic ${Buffer.from(token).toString('base64')}` : `Bearer ${token}`;
+            const res = await globalThis.fetch(url, { headers: { 'Authorization': authHeader, 'Accept-Encoding': 'gzip' } });
+            if (!res.ok) throw new Error(`Fetch error: ${res.status}`);
+            return await res.json();
+        };
+
+        for (const event of events) {
+            if (event.meta && event.meta.type === 'customerorder') {
+                const msOrderId = event.meta.href.split('/').pop();
+                
+                // Fetch the updated order from MS
+                const msOrder = await msRequest(event.meta.href);
+                if (msOrder && msOrder.state && msOrder.state.meta) {
+                    const stateMetaUrl = msOrder.state.meta.href;
+                    const stateInfo = await msRequest(stateMetaUrl);
+                    
+                    if (stateInfo && stateInfo.name) {
+                        const msStateName = stateInfo.name;
+                        
+                        // Map MS state back to local status
+                        // STATUS_MAP in moysklad_api.js: local -> MS map. We need reverse mapping.
+                        const reverseMap = {
+                            'Новый': 'new',
+                            'В обработке': 'processing',
+                            'Выполнен': 'completed',
+                            'Отменен': 'cancelled',
+                            'Доставлен': 'delivered'
+                        };
+                        
+                        const newLocalStatus = reverseMap[msStateName];
+                        if (newLocalStatus) {
+                            await pool.query(
+                                'UPDATE orders SET status = $1 WHERE moysklad_id = $2 AND status != $1',
+                                [newLocalStatus, msOrderId]
+                            );
+                            console.log(`[MoySklad Webhook] Order ${msOrderId} status updated to ${newLocalStatus}`);
+                        } else if (msStateName === 'Оплачен') {
+                            await pool.query(
+                                "UPDATE orders SET payment_status = 'Оплачен' WHERE moysklad_id = $1 AND payment_status != 'Оплачен'",
+                                [msOrderId]
+                            );
+                            console.log(`[MoySklad Webhook] Order ${msOrderId} payment_status updated to Оплачен`);
+                        }
+                    }
+                }
+            }
+        }
+
+        res.status(200).send('OK');
+    } catch (error) {
+        console.error('[MoySklad Webhook] Error processing webhook:', error);
+        // Reply with 200 so MS doesn't disable the webhook
+        res.status(200).send('Error but OK');
     }
 });
 
