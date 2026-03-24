@@ -172,7 +172,18 @@ export default function AdminProducts() {
     };
 
     const filteredProducts = products.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()));
+        const searchLower = searchQuery.toLowerCase();
+        
+        // Check standard fields
+        let matchesSearch = p.name.toLowerCase().includes(searchLower) || (p.brand && p.brand.toLowerCase().includes(searchLower));
+        
+        // Also check if any SKU matches the search
+        if (!matchesSearch && p.prices) {
+            matchesSearch = Object.values(p.prices).some(
+                volData => volData && volData.sku && volData.sku.toLowerCase().includes(searchLower)
+            );
+        }
+
         const matchesCategory = activeCategoryFilter === 'Все' || (p.category || 'Парфюмерия') === activeCategoryFilter;
         return matchesSearch && matchesCategory;
     });
@@ -236,7 +247,7 @@ export default function AdminProducts() {
                 <Search size={20} color="var(--color-text-muted)" />
                 <input
                     type="text"
-                    placeholder="Поиск по названию или бренду..."
+                    placeholder="Поиск по названию, бренду или SKU..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{ background: 'transparent', border: 'none', color: 'white', outline: 'none', width: '100%', fontSize: '1rem' }}
