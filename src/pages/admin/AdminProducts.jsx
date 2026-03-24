@@ -264,6 +264,8 @@ export default function AdminProducts() {
                                 <th style={{ width: '80px' }}>Фото</th>
                                 <th>Категория / Бренд / Название</th>
                                 <th>Цены</th>
+                                <th>Код (SKU)</th>
+                                <th>Остатки</th>
                                 <th style={{ width: '150px', textAlign: 'right' }}>Действия</th>
                             </tr>
                         </thead>
@@ -286,6 +288,16 @@ export default function AdminProducts() {
                                         {product.category === 'Аксессуары' 
                                             ? `${product.prices['1']?.price || '-'} ₽` 
                                             : `${product.prices['3']?.price || '-'} / ${product.prices['5']?.price || '-'} / ${product.prices['10']?.price || '-'} / ${product.prices['100']?.price || '-'} ₽`}
+                                    </td>
+                                    <td style={{ color: 'var(--color-text-muted)' }}>
+                                        {product.category === 'Аксессуары' 
+                                            ? `${product.prices['1']?.sku || '-'}` 
+                                            : `${product.prices['3']?.sku || '-'} / ${product.prices['5']?.sku || '-'} / ${product.prices['10']?.sku || '-'} / ${product.prices['100']?.sku || '-'}`}
+                                    </td>
+                                    <td style={{ color: 'var(--color-text-muted)' }}>
+                                        {product.category === 'Аксессуары' 
+                                            ? `${product.prices['1']?.stock || '-'}` 
+                                            : `${product.prices['3']?.stock || '-'} / ${product.prices['5']?.stock || '-'} / ${product.prices['10']?.stock || '-'} / ${product.prices['100']?.stock || '-'}`}
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
                                         <button onClick={() => handleToggleActive(product)} className="admin-action-btn" title={product.is_active ? "Скрыть из каталога" : "Показать в каталоге"} style={{ marginRight: '8px', color: product.is_active ? 'var(--color-text)' : 'var(--color-text-muted)' }}>
