@@ -642,8 +642,12 @@ app.post('/api/orders', async (req, res) => {
         const msOrderId = await createMsCustomerOrder(order, items);
         
         if (msOrderId) {
-            await pool.query('UPDATE orders SET moysklad_id = $1 WHERE id = $2', [msOrderId, order.id]);
-            order.moysklad_id = msOrderId;
+            try {
+                await pool.query('UPDATE orders SET moysklad_id = $1 WHERE id = $2', [msOrderId, order.id]);
+                order.moysklad_id = msOrderId;
+            } catch (err) {
+                console.error('Warning: could not save moysklad_id to DB (is migration run?):', err.message);
+            }
         }
 
         // 2. Then, create YooKassa payment using the order ID
