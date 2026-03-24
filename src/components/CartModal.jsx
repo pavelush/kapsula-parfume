@@ -90,8 +90,9 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
     };
 
     const totalAmount = cartItems.reduce((acc, item) => {
-        // Parse "1 500" format to integer
-        const price = parseInt(item.price.replace(/\s+/g, ''), 10) || 0;
+        // Parse "1 500" or "1.300" format to integer
+        const priceStr = String(item.price || '0').replace(/[^\d]/g, '');
+        const price = parseInt(priceStr, 10) || 0;
         return acc + (price * item.quantity);
     }, 0);
 

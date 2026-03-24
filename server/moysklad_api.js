@@ -156,7 +156,7 @@ async function createMsCustomerOrder(order, items) {
             
             if (itemMeta) {
                 // MS requires price in kopecks
-                const priceNum = String(item.price || '0').replace(/\\s+/g, '');
+                const priceNum = String(item.price || '0').replace(/[^\d]/g, '');
                 const kopecks = parseInt(priceNum, 10) * 100 || 0;
                 
                 positions.push({

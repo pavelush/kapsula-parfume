@@ -421,8 +421,8 @@ async function sendTelegramNotification(order) {
 
         const items = typeof order.items_json === 'string' ? JSON.parse(order.items_json) : order.items_json;
         const itemsList = items.map(item => {
-            // Price might be a string with spaces like "1 500"
-            const priceStr = String(item.price || '0').replace(/\s+/g, '');
+            // Price might be a string with spaces like "1 500" or "1.500"
+            const priceStr = String(item.price || '0').replace(/[^\d]/g, '');
             const priceNum = parseInt(priceStr, 10) || 0;
 
             // Extract SKU from the prices object if available
