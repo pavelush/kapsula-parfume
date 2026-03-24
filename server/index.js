@@ -836,6 +836,7 @@ app.post('/api/yookassa/webhook', async (req, res) => {
                     await updateMsOrderStatus(order.moysklad_id, 'Оплачен');
                 }
             }
+        } else if (eventType === 'payment.canceled') {
             const cancelRes = await pool.query(
                 "UPDATE orders SET payment_status = 'Отменен' WHERE yookassa_payment_id = $1 AND payment_status = 'Ожидает оплаты' RETURNING *",
                 [paymentData.id]
@@ -849,6 +850,7 @@ app.post('/api/yookassa/webhook', async (req, res) => {
                     await updateMsOrderStatus(order.moysklad_id, 'Отменен');
                 }
             }
+        }
 
         res.status(200).send('OK');
     } catch (error) {
