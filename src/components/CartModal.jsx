@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Trash2, ShoppingBag } from 'lucide-react';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
 
-export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, updateQuantity, clearCart }) {
+export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, updateQuantity, clearCart, products = [] }) {
     const [paymentMethods, setPaymentMethods] = useState([]);
     const [pickupPoints, setPickupPoints] = useState([]);
     const [formData, setFormData] = useState({
@@ -89,19 +89,49 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
         setFormData({ ...formData, phone: formatted });
     };
 
-    const totalAmount = cartItems.reduce((acc, item) => {
+    const enrichedCartItems = cartItems.map(item => {
+        if (products.length === 0) return { ...item, isOutOfStock: false, livePrice: item.price };
+        
+        const liveProduct = products.find(p => p.id === item.id);
+        let isOutOfStock = false;
+        let livePrice = item.price;
+
+        if (!liveProduct) {
+            isOutOfStock = true;
+        } else {
+            const pData = liveProduct.prices && liveProduct.prices[item.volume];
+            if (pData) {
+                if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
+                    if (Number(pData.stock) <= 0) isOutOfStock = true;
+                }
+                if (pData.price) livePrice = pData.price;
+            } else {
+                isOutOfStock = true;
+            }
+        }
+        return { ...item, isOutOfStock, livePrice };
+    });
+
+    const hasOutOfStock = enrichedCartItems.some(item => item.isOutOfStock);
+
+    const totalAmount = enrichedCartItems.reduce((acc, item) => {
+        if (item.isOutOfStock) return acc;
         // Parse "1 500" or "1.300" format to integer
-        const priceStr = String(item.price || '0').replace(/[^\d]/g, '');
+        const priceStr = String(item.livePrice || '0').replace(/[^\d]/g, '');
         const price = parseInt(priceStr, 10) || 0;
         return acc + (price * item.quantity);
     }, 0);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (cartItems.length === 0) return;
+        if (cartItems.length === 0 || hasOutOfStock) return;
 
         setIsSubmitting(true);
         try {
+            const itemsToSubmit = enrichedCartItems
+                .filter(i => !i.isOutOfStock)
+                .map(({ isOutOfStock, livePrice, ...rest }) => ({ ...rest, price: livePrice }));
+
             const res = await fetch('/api/orders', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -109,7 +139,7 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                     customer_name: formData.name,
                     customer_phone: formData.phone,
                     email: formData.email,
-                    items: cartItems,
+                    items: itemsToSubmit,
                     total_price: totalAmount,
                     payment_method: formData.paymentMethod,
                     delivery_type: formData.deliveryType,
@@ -177,22 +207,26 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                         </div>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            {cartItems.map((item, index) => (
-                                <div key={index} style={{ display: 'flex', gap: '1rem', background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '12px', position: 'relative' }}>
+                            {enrichedCartItems.map((item, index) => (
+                                <div key={index} style={{ display: 'flex', gap: '1rem', background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '12px', position: 'relative', opacity: item.isOutOfStock ? 0.6 : 1 }}>
                                     <div style={{ width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
-                                        {item.imgUrl ? <img src={item.imgUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : null}
+                                        {item.imgUrl ? <img src={item.imgUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain', filter: item.isOutOfStock ? 'grayscale(100%)' : 'none' }} /> : null}
                                     </div>
                                     <div style={{ flexGrow: 1 }}>
                                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>{item.brand}</div>
                                         <div style={{ fontWeight: 500, marginBottom: '4px' }}>{item.name}</div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--color-accent-gold)', fontSize: '0.9rem' }}>
                                             <span>{item.category === 'Аксессуары' ? '' : `Объем: ${item.volume} мл`}</span>
-                                            <span style={{ fontWeight: 'bold' }}>{item.price} ₽</span>
+                                            {item.isOutOfStock ? (
+                                                <span style={{ fontWeight: 'bold', color: '#ef4444' }}>Нет в наличии</span>
+                                            ) : (
+                                                <span style={{ fontWeight: 'bold' }}>{item.livePrice} ₽</span>
+                                            )}
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
-                                            <button onClick={() => updateQuantity(index, -1)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '24px', height: '24px', borderRadius: '4px', cursor: 'pointer' }}>-</button>
-                                            <span>{item.quantity}</span>
-                                            <button onClick={() => updateQuantity(index, 1)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '24px', height: '24px', borderRadius: '4px', cursor: 'pointer' }}>+</button>
+                                            <button disabled={item.isOutOfStock} onClick={() => updateQuantity(index, -1)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '24px', height: '24px', borderRadius: '4px', cursor: item.isOutOfStock ? 'not-allowed' : 'pointer', opacity: item.isOutOfStock ? 0.5 : 1 }}>-</button>
+                                            <span style={{ color: item.isOutOfStock ? 'var(--color-text-muted)' : 'inherit' }}>{item.quantity}</span>
+                                            <button disabled={item.isOutOfStock} onClick={() => updateQuantity(index, 1)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '24px', height: '24px', borderRadius: '4px', cursor: item.isOutOfStock ? 'not-allowed' : 'pointer', opacity: item.isOutOfStock ? 0.5 : 1 }}>+</button>
                                         </div>
                                     </div>
                                     <button onClick={() => removeFromCart(index)} style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
@@ -342,7 +376,13 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                                 </label>
                             </div>
 
-                            <button type="submit" className="btn-primary" disabled={isSubmitting || !isConsentGiven} style={{ padding: '14px', width: '100%', marginTop: '10px', opacity: (!isConsentGiven || isSubmitting) ? 0.5 : 1, cursor: (!isConsentGiven || isSubmitting) ? 'not-allowed' : 'pointer' }}>
+                            {hasOutOfStock && (
+                                <div style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '10px', textAlign: 'center' }}>
+                                    В корзине есть товары, которых нет в наличии. Пожалуйста, удалите их, чтобы оформить заказ.
+                                </div>
+                            )}
+
+                            <button type="submit" className="btn-primary" disabled={isSubmitting || !isConsentGiven || hasOutOfStock} style={{ padding: '14px', width: '100%', marginTop: '10px', opacity: (!isConsentGiven || isSubmitting || hasOutOfStock) ? 0.5 : 1, cursor: (!isConsentGiven || isSubmitting || hasOutOfStock) ? 'not-allowed' : 'pointer' }}>
                                 {isSubmitting ? 'Оформление...' : 'Оформить заказ'}
                             </button>
                         </form>

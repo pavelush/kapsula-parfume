@@ -182,6 +182,7 @@ function App() {
             removeFromCart={removeFromCart}
             updateQuantity={updateQuantity}
             clearCart={clearCart}
+            products={products}
           />
           <FavoritesModal
             isOpen={isFavoritesOpen}
