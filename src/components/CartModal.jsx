@@ -90,11 +90,12 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
     };
 
     const enrichedCartItems = cartItems.map(item => {
-        if (products.length === 0) return { ...item, isOutOfStock: false, livePrice: item.price };
+        if (products.length === 0) return { ...item, isOutOfStock: false, livePrice: item.price, maxStock: null };
         
         const liveProduct = products.find(p => p.id === item.id);
         let isOutOfStock = false;
         let livePrice = item.price;
+        let maxStock = null;
 
         if (!liveProduct) {
             isOutOfStock = true;
@@ -102,17 +103,20 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
             const pData = liveProduct.prices && liveProduct.prices[item.volume];
             if (pData) {
                 if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
-                    if (Number(pData.stock) <= 0) isOutOfStock = true;
+                    maxStock = Number(pData.stock);
+                    if (maxStock <= 0) isOutOfStock = true;
                 }
                 if (pData.price) livePrice = pData.price;
             } else {
                 isOutOfStock = true;
             }
         }
-        return { ...item, isOutOfStock, livePrice };
+        return { ...item, isOutOfStock, livePrice, maxStock };
     });
 
     const hasOutOfStock = enrichedCartItems.some(item => item.isOutOfStock);
+    const hasExceededStock = enrichedCartItems.some(item => item.maxStock !== null && item.quantity > item.maxStock);
+    const isSubmitDisabled = cartItems.length === 0 || hasOutOfStock || hasExceededStock;
 
     const totalAmount = enrichedCartItems.reduce((acc, item) => {
         if (item.isOutOfStock) return acc;
@@ -124,13 +128,13 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (cartItems.length === 0 || hasOutOfStock) return;
+        if (isSubmitDisabled) return;
 
         setIsSubmitting(true);
         try {
             const itemsToSubmit = enrichedCartItems
                 .filter(i => !i.isOutOfStock)
-                .map(({ isOutOfStock, livePrice, ...rest }) => ({ ...rest, price: livePrice }));
+                .map(({ isOutOfStock, livePrice, maxStock, ...rest }) => ({ ...rest, price: livePrice }));
 
             const res = await fetch('/api/orders', {
                 method: 'POST',
@@ -207,33 +211,40 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                         </div>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            {enrichedCartItems.map((item, index) => (
-                                <div key={index} style={{ display: 'flex', gap: '1rem', background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '12px', position: 'relative', opacity: item.isOutOfStock ? 0.6 : 1 }}>
-                                    <div style={{ width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
-                                        {item.imgUrl ? <img src={item.imgUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain', filter: item.isOutOfStock ? 'grayscale(100%)' : 'none' }} /> : null}
-                                    </div>
-                                    <div style={{ flexGrow: 1 }}>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>{item.brand}</div>
-                                        <div style={{ fontWeight: 500, marginBottom: '4px' }}>{item.name}</div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--color-accent-gold)', fontSize: '0.9rem' }}>
-                                            <span>{item.category === 'Аксессуары' ? '' : `Объем: ${item.volume} мл`}</span>
-                                            {item.isOutOfStock ? (
-                                                <span style={{ fontWeight: 'bold', color: '#ef4444' }}>Нет в наличии</span>
-                                            ) : (
-                                                <span style={{ fontWeight: 'bold' }}>{item.livePrice} ₽</span>
-                                            )}
+                            {enrichedCartItems.map((item, index) => {
+                                const isPlusDisabled = item.isOutOfStock || (item.maxStock !== null && item.quantity >= item.maxStock);
+                                const isExceeded = item.maxStock !== null && item.quantity > item.maxStock;
+                                
+                                return (
+                                    <div key={index} style={{ display: 'flex', gap: '1rem', background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '12px', position: 'relative', opacity: item.isOutOfStock ? 0.6 : 1 }}>
+                                        <div style={{ width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
+                                            {item.imgUrl ? <img src={item.imgUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain', filter: item.isOutOfStock ? 'grayscale(100%)' : 'none' }} /> : null}
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
-                                            <button disabled={item.isOutOfStock} onClick={() => updateQuantity(index, -1)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '24px', height: '24px', borderRadius: '4px', cursor: item.isOutOfStock ? 'not-allowed' : 'pointer', opacity: item.isOutOfStock ? 0.5 : 1 }}>-</button>
-                                            <span style={{ color: item.isOutOfStock ? 'var(--color-text-muted)' : 'inherit' }}>{item.quantity}</span>
-                                            <button disabled={item.isOutOfStock} onClick={() => updateQuantity(index, 1)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '24px', height: '24px', borderRadius: '4px', cursor: item.isOutOfStock ? 'not-allowed' : 'pointer', opacity: item.isOutOfStock ? 0.5 : 1 }}>+</button>
+                                        <div style={{ flexGrow: 1 }}>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>{item.brand}</div>
+                                            <div style={{ fontWeight: 500, marginBottom: '4px' }}>{item.name}</div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--color-accent-gold)', fontSize: '0.9rem' }}>
+                                                <span>{item.category === 'Аксессуары' ? '' : `Объем: ${item.volume} мл`}</span>
+                                                {item.isOutOfStock ? (
+                                                    <span style={{ fontWeight: 'bold', color: '#ef4444' }}>Нет в наличии</span>
+                                                ) : isExceeded ? (
+                                                    <span style={{ fontWeight: 'bold', color: '#ef4444' }}>Доступно: {item.maxStock}</span>
+                                                ) : (
+                                                    <span style={{ fontWeight: 'bold' }}>{item.livePrice} ₽</span>
+                                                )}
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                                                <button disabled={item.isOutOfStock} onClick={() => updateQuantity(index, -1)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '24px', height: '24px', borderRadius: '4px', cursor: item.isOutOfStock ? 'not-allowed' : 'pointer', opacity: item.isOutOfStock ? 0.5 : 1 }}>-</button>
+                                                <span style={{ color: item.isOutOfStock || isExceeded ? '#ef4444' : 'inherit' }}>{item.quantity}</span>
+                                                <button disabled={isPlusDisabled} onClick={() => updateQuantity(index, 1, item.maxStock)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '24px', height: '24px', borderRadius: '4px', cursor: isPlusDisabled ? 'not-allowed' : 'pointer', opacity: isPlusDisabled ? 0.3 : 1 }}>+</button>
+                                            </div>
                                         </div>
+                                        <button onClick={() => removeFromCart(index)} style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
+                                            <Trash2 size={16} />
+                                        </button>
                                     </div>
-                                    <button onClick={() => removeFromCart(index)} style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>

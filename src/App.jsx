@@ -120,13 +120,24 @@ function App() {
 
   const addToCart = (product, volume, price) => {
     setCartItems(prev => {
+      // Find max stock for validation
+      const liveProd = products.find(p => p.id === product.id) || product;
+      const pData = liveProd.prices && liveProd.prices[volume];
+      let maxStock = null;
+      if (pData && pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
+          maxStock = Number(pData.stock);
+      }
+
       const existing = prev.find(item => item.id === product.id && item.volume === volume);
       if (existing) {
-        return prev.map(item =>
-          item.id === product.id && item.volume === volume
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+        return prev.map(item => {
+          if (item.id === product.id && item.volume === volume) {
+            const newQ = item.quantity + 1;
+            if (maxStock !== null && newQ > maxStock) return item; // Don't exceed stock limit
+            return { ...item, quantity: newQ };
+          }
+          return item;
+        });
       }
       return [...prev, { ...product, volume, price, quantity: 1 }];
     });
@@ -137,10 +148,11 @@ function App() {
     setCartItems(prev => prev.filter((_, i) => i !== index));
   };
 
-  const updateQuantity = (index, delta) => {
+  const updateQuantity = (index, delta, maxStock = null) => {
     setCartItems(prev => prev.map((item, i) => {
       if (i === index) {
         const newQ = item.quantity + delta;
+        if (maxStock !== null && newQ > maxStock) return item; // Don't exceed stock limit
         return newQ > 0 ? { ...item, quantity: newQ } : item;
       }
       return item;
