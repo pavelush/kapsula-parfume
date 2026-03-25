@@ -15,16 +15,7 @@ async function getMsSettings() {
     return { token, enabled: enabled === 'true' };
 }
 
-// Map local status to MS state name
-const STATUS_MAP = {
-    'new': 'Новый',
-    'Оплачен': 'Оплачен', // Assuming we want an state "Оплачен" if it exists, but typically states are global for the order.
-    // Let's rely on standard MS states if present, but allow partial mapping
-    'processing': 'В обработке',
-    'completed': 'Выполнен',
-    'cancelled': 'Отменен',
-    'delivered': 'Доставлен'
-};
+// No local to MS map needed since we use native MS keys
 
 // Helper for MS API
 async function msRequest(endpoint, token, method = 'GET', body = null) {
@@ -186,8 +177,8 @@ async function createMsCustomerOrder(order, items) {
             description: description,
         };
 
-        // Attach state if it represents "Новый" or any initial state we map
-        const stateName = STATUS_MAP[order.status] || 'Новый';
+        // Attach state using native naming
+        const stateName = order.status || 'Новый';
         const stateMeta = await getOrderStateMeta(token, stateName);
         if (stateMeta) {
             msOrderBody.state = { meta: stateMeta };
@@ -214,7 +205,7 @@ async function updateMsOrderStatus(msOrderId, localStatus) {
         const { token, enabled } = await getMsSettings();
         if (!enabled || !token) return;
 
-        const targetStateName = STATUS_MAP[localStatus];
+        const targetStateName = localStatus;
         if (!targetStateName) return; // No mapping
 
         // Fetch the state meta

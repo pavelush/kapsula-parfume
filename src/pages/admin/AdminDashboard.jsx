@@ -31,18 +31,8 @@ export default function AdminDashboard() {
                 totalProducts: productsData.length
             });
 
-            // Normalize Russian DB statuses to English internal state keys
-            const normalizeStatus = (statusStr) => {
-                if (!statusStr) return 'new';
-                const s = statusStr.toLowerCase();
-                if (s === 'новый') return 'new';
-                if (s === 'доставлен') return 'delivered';
-                if (s === 'выполнен') return 'completed';
-                if (s === 'отменен') return 'cancelled';
-                if (s === 'архив') return 'archived';
-                if (s === 'в обработке') return 'processing';
-                return statusStr;
-            };
+            // We use native Russian strings in the DB now. No normalization needed.
+            const normalizeStatus = (statusStr) => statusStr || 'Новый';
 
             // Format orders for display
             const formattedOrders = ordersData.map(o => ({
@@ -140,26 +130,16 @@ export default function AdminDashboard() {
         }
     };
 
-    const getStatusText = (status) => {
-        switch (status) {
-            case 'new': return 'Новый';
-            case 'delivered': return 'Доставлен';
-            case 'completed': return 'Выполнен';
-            case 'cancelled': return 'Отменен';
-            case 'archived': return 'Архив';
-            case 'processing': return 'В обработке'; // Fallback for old orders
-            default: return status;
-        }
-    };
-
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'new': return <span className="badge new" style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6' }}>Новый</span>;
-            case 'delivered': return <span className="badge processing" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}>Доставлен</span>;
-            case 'completed': return <span className="badge completed" style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e' }}>Выполнен</span>;
-            case 'cancelled': return <span className="badge cancelled" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>Отменен</span>;
-            case 'archived': return <span className="badge" style={{ background: 'rgba(107, 114, 128, 0.2)', color: '#9ca3af' }}>Архив</span>;
-            case 'processing': return <span className="badge processing" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b' }}>В обработке</span>;
+            case 'Новый': return <span className="badge new" style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6' }}>Новый</span>;
+            case 'Подтвержден': return <span className="badge processing" style={{ background: 'rgba(14, 165, 233, 0.2)', color: '#0ea5e9' }}>Подтвержден</span>;
+            case 'Собран': return <span className="badge processing" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}>Собран</span>;
+            case 'Отправлен': return <span className="badge processing" style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6' }}>Отправлен</span>;
+            case 'Отгружен': return <span className="badge processing" style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#a855f7' }}>Отгружен</span>;
+            case 'Доставлен': return <span className="badge completed" style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e' }}>Доставлен</span>;
+            case 'Возврат': return <span className="badge cancelled" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>Возврат</span>;
+            case 'Отменен': return <span className="badge cancelled" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>Отменен</span>;
             default: return <span className="badge">{status}</span>;
         }
     };
@@ -218,11 +198,14 @@ export default function AdminDashboard() {
                 <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
                     {[
                         { id: 'all', label: 'Все' },
-                        { id: 'new', label: 'Новые' },
-                        { id: 'delivered', label: 'В доставке' },
-                        { id: 'completed', label: 'Выполнены' },
-                        { id: 'cancelled', label: 'Отменены' },
-                        { id: 'archived', label: 'Архив' }
+                        { id: 'Новый', label: 'Новый' },
+                        { id: 'Подтвержден', label: 'Подтвержден' },
+                        { id: 'Собран', label: 'Собран' },
+                        { id: 'Отправлен', label: 'Отправлен' },
+                        { id: 'Отгружен', label: 'Отгружен' },
+                        { id: 'Доставлен', label: 'Доставлен' },
+                        { id: 'Возврат', label: 'Возврат' },
+                        { id: 'Отменен', label: 'Отменен' }
                     ].map(filter => (
                         <button
                             key={filter.id}
@@ -348,11 +331,14 @@ export default function AdminDashboard() {
                                                 cursor: 'pointer'
                                             }}
                                         >
-                                            <option value="new" style={{ color: 'black' }}>Новый</option>
-                                            <option value="delivered" style={{ color: 'black' }}>Доставлен</option>
-                                            <option value="completed" style={{ color: 'black' }}>Выполнен</option>
-                                            <option value="cancelled" style={{ color: 'black' }}>Отменен</option>
-                                            <option value="archived" style={{ color: 'black' }}>Архив</option>
+                                            <option value="Новый" style={{ color: 'black' }}>Новый</option>
+                                            <option value="Подтвержден" style={{ color: 'black' }}>Подтвержден</option>
+                                            <option value="Собран" style={{ color: 'black' }}>Собран</option>
+                                            <option value="Отправлен" style={{ color: 'black' }}>Отправлен</option>
+                                            <option value="Отгружен" style={{ color: 'black' }}>Отгружен</option>
+                                            <option value="Доставлен" style={{ color: 'black' }}>Доставлен</option>
+                                            <option value="Возврат" style={{ color: 'black' }}>Возврат</option>
+                                            <option value="Отменен" style={{ color: 'black' }}>Отменен</option>
                                         </select>
                                     </div>
                                 </div>

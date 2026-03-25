@@ -528,15 +528,8 @@ async function sendCustomerEmail(order, type) {
             title = 'Заказ успешно оплачен!';
             subtitle = 'Спасибо за покупку. Мы уже начали подготовку к отправке.';
         } else if (type === 'status_update') {
-            const statusMap = {
-                'new': 'Новый',
-                'delivered': 'Доставлен',
-                'completed': 'Выполнен',
-                'cancelled': 'Отменен',
-                'archived': 'Архив',
-                'processing': 'В обработке'
-            };
-            const displayStatus = statusMap[order.status] || order.status;
+            // Using native Russian status from DB
+            const displayStatus = order.status;
             subject = `Обновление статуса заказа #${order.id}`;
             title = 'Статус вашего заказа изменился';
             subtitle = `Новый статус: <strong style="color: #E5B25D;">${displayStatus}</strong>`;
@@ -895,18 +888,8 @@ app.post('/api/moysklad/webhook', async (req, res) => {
                     if (stateInfo && stateInfo.name) {
                         const msStateName = stateInfo.name;
                         
-                        // Map MS state back to local status
-                        // STATUS_MAP in moysklad_api.js: local -> MS map. We need reverse mapping.
-                        const reverseMap = {
-                            'Новый': 'new',
-                            'В обработке': 'processing',
-                            'Выполнен': 'completed',
-                            'Отменен': 'cancelled',
-                            'Доставлен': 'delivered'
-                        };
-                        
-                        const newLocalStatus = reverseMap[msStateName];
-                        if (newLocalStatus) {
+                        const newLocalStatus = msStateName;
+                        if (newLocalStatus && newLocalStatus !== 'Оплачен') {
                             await pool.query(
                                 'UPDATE orders SET status = $1 WHERE moysklad_id = $2 AND status != $1',
                                 [newLocalStatus, msOrderId]
