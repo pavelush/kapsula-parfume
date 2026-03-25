@@ -33,21 +33,34 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                         }
                         metaDesc.content = found.seoDescription || found.description;
 
-                        const checkVol = (vol) => {
+                        const checkVolValid = (vol) => {
                             const pData = found.prices && found.prices[vol];
                             if (!pData) return false;
                             if (!pData.price || String(pData.price).trim() === "") return false;
-                            if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
-                                if (Number(pData.stock) <= 0) return false;
+                            return true;
+                        };
+                        
+                        const vols = found.category === 'Аксессуары' 
+                            ? ['1'].filter(checkVolValid) 
+                            : [3, 5, 10, 100].filter(checkVolValid);
+                        
+                        setAvailableVolumes(vols);
+                        
+                        // Select the first IN STOCK volume if possible, otherwise just the first available
+                        const checkStock = (v) => {
+                            const pd = found.prices && found.prices[v];
+                            if (pd && pd.stock !== undefined && pd.stock !== null && pd.stock !== "") {
+                                return Number(pd.stock) > 0;
                             }
                             return true;
                         };
-                        const vols = found.category === 'Аксессуары' 
-                            ? ['1'].filter(checkVol) 
-                            : [3, 5, 10, 100].filter(checkVol);
-                        setAvailableVolumes(vols);
-                        if (vols.length > 0) setSelectedVolume(vols[0]);
-                        else if (found.category === 'Аксессуары') setSelectedVolume('1');
+                        
+                        if (vols.length > 0) {
+                            const firstInStock = vols.find(v => checkStock(v));
+                            setSelectedVolume(firstInStock || vols[0]);
+                        } else if (found.category === 'Аксессуары') {
+                            setSelectedVolume('1');
+                        }
 
                         const sameBrand = data.filter(p => {
                             if (p.brand !== found.brand || p.id === found.id) return false;
@@ -96,6 +109,18 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
 
     const currentPrice = product.prices[selectedVolume] || { price: "0" };
     const isFavorite = favorites.includes(product.id);
+    
+    // Helper to check if a specific volume is in stock
+    const isVolumeInStock = (vol) => {
+        const pData = product.prices && product.prices[vol];
+        if (!pData) return false;
+        if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
+            return Number(pData.stock) > 0;
+        }
+        return true; 
+    };
+
+    const isCurrentVolumeInStock = isVolumeInStock(selectedVolume);
 
     return (
         <div style={{ minHeight: '100vh', background: 'var(--color-bg)', paddingTop: '80px', display: 'flex', flexDirection: 'column' }}>
@@ -129,7 +154,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                             transform: 'translate(-50%, -50%)',
                             width: '100%',
                             height: '100%',
-                            background: `radial-gradient(circle at center, ${product.colorTheme}, transparent 70%)`,
+                            background: `radial-gradient(circle at center, ${product.colorTheme || 'var(--color-primary)'}, transparent 70%)`,
                             opacity: 0.3,
                             pointerEvents: 'none',
                             zIndex: 0
@@ -188,27 +213,45 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                             <div>
                                 <h3 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.2rem' }}>Выберите объем</h3>
                                 <div className="product-volumes-container" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                                    {availableVolumes.map(vol => (
-                                        <button
-                                            key={vol}
-                                            onClick={() => setSelectedVolume(vol)}
-                                            className="volume-button"
-                                            style={{
-                                                padding: '12px 24px',
-                                                borderRadius: '30px',
-                                                border: selectedVolume === vol ? 'none' : '1px solid var(--glass-border)',
-                                                background: selectedVolume === vol ? 'var(--gradient-primary)' : 'rgba(0,0,0,0.3)',
-                                                color: selectedVolume === vol ? 'white' : 'var(--color-text-muted)',
-                                                cursor: 'pointer',
-                                                fontSize: '1rem',
-                                                fontWeight: selectedVolume === vol ? 600 : 400,
-                                                transition: 'all 0.3s ease',
-                                                boxShadow: selectedVolume === vol ? '0 4px 15px rgba(0,0,0,0.3)' : 'none'
-                                            }}
-                                        >
-                                            {vol} мл
-                                        </button>
-                                    ))}
+                                    {availableVolumes.map(vol => {
+                                        const inStock = isVolumeInStock(vol);
+                                        return (
+                                            <button
+                                                key={vol}
+                                                onClick={() => setSelectedVolume(vol)}
+                                                className="volume-button"
+                                                style={{
+                                                    padding: '12px 24px',
+                                                    borderRadius: '30px',
+                                                    border: selectedVolume === vol ? 'none' : '1px solid var(--glass-border)',
+                                                    background: selectedVolume === vol ? 'var(--gradient-primary)' : 'rgba(0,0,0,0.3)',
+                                                    color: selectedVolume === vol 
+                                                        ? 'white' 
+                                                        : (inStock ? 'var(--color-text-muted)' : 'rgba(255,255,255,0.2)'),
+                                                    cursor: 'pointer',
+                                                    fontSize: '1rem',
+                                                    fontWeight: selectedVolume === vol ? 600 : 400,
+                                                    transition: 'all 0.3s ease',
+                                                    boxShadow: selectedVolume === vol ? '0 4px 15px rgba(0,0,0,0.3)' : 'none',
+                                                    opacity: inStock ? 1 : 0.6,
+                                                    position: 'relative',
+                                                    overflow: 'hidden'
+                                                }}
+                                            >
+                                                {vol} мл
+                                                {!inStock && (
+                                                    <span style={{ 
+                                                        display: 'block', 
+                                                        fontSize: '0.7rem', 
+                                                        color: '#ff3333',
+                                                        marginTop: '2px'
+                                                    }}>
+                                                        Нет в наличии
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -225,14 +268,37 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                                 </span>
                             </div>
 
-                            <button
-                                className="btn-primary"
-                                style={{ padding: '16px 32px', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '12px', flexGrow: 1, justifyContent: 'center' }}
-                                onClick={() => addToCart(product, selectedVolume, currentPrice.price)}
-                            >
-                                <ShoppingBag size={20} />
-                                В корзину
-                            </button>
+                            {isCurrentVolumeInStock ? (
+                                <button
+                                    className="btn-primary"
+                                    style={{ padding: '16px 32px', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '12px', flexGrow: 1, justifyContent: 'center' }}
+                                    onClick={() => addToCart(product, selectedVolume, currentPrice.price)}
+                                >
+                                    <ShoppingBag size={20} />
+                                    В корзину
+                                </button>
+                            ) : (
+                                <button
+                                    style={{ 
+                                        padding: '16px 32px', 
+                                        fontSize: '1.1rem', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: '12px', 
+                                        flexGrow: 1, 
+                                        justifyContent: 'center',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        color: '#ff4444',
+                                        borderRadius: '30px',
+                                        cursor: 'not-allowed',
+                                        fontWeight: 600
+                                    }}
+                                    disabled
+                                >
+                                    Нет в наличии
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
