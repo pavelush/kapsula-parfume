@@ -240,7 +240,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                                                 onClick={() => setSelectedVolume(vol)}
                                                 className="volume-button"
                                                 style={{
-                                                    padding: '12px 24px',
+                                                    padding: '10px 16px',
                                                     borderRadius: '30px',
                                                     border: border,
                                                     background: bg,
@@ -252,17 +252,23 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                                                     boxShadow: isSelected && inStock ? '0 4px 15px rgba(0,0,0,0.3)' : 'none',
                                                     opacity: inStock ? 1 : 0.6,
                                                     position: 'relative',
-                                                    overflow: 'hidden'
+                                                    overflow: 'hidden',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    minWidth: '80px'
                                                 }}
                                             >
-                                                {vol} мл
+                                                <span>{vol} мл</span>
                                                 {!inStock && (
                                                     <span style={{ 
                                                         display: 'block', 
-                                                        fontSize: '0.75rem', 
+                                                        fontSize: '0.65rem', 
                                                         color: isSelected ? '#ff8888' : '#ff4444',
                                                         marginTop: '4px',
-                                                        fontWeight: 500
+                                                        fontWeight: 500,
+                                                        whiteSpace: 'nowrap'
                                                     }}>
                                                         Нет в наличии
                                                     </span>
