@@ -376,12 +376,6 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                                 </label>
                             </div>
 
-                            {hasOutOfStock && (
-                                <div style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '10px', textAlign: 'center' }}>
-                                    В корзине есть товары, которых нет в наличии. Пожалуйста, удалите их, чтобы оформить заказ.
-                                </div>
-                            )}
-
                             <button type="submit" className="btn-primary" disabled={isSubmitting || !isConsentGiven || hasOutOfStock} style={{ padding: '14px', width: '100%', marginTop: '10px', opacity: (!isConsentGiven || isSubmitting || hasOutOfStock) ? 0.5 : 1, cursor: (!isConsentGiven || isSubmitting || hasOutOfStock) ? 'not-allowed' : 'pointer' }}>
                                 {isSubmitting ? 'Оформление...' : 'Оформить заказ'}
                             </button>
