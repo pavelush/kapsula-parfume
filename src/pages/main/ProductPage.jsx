@@ -215,6 +215,25 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                                 <div className="product-volumes-container" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                     {availableVolumes.map(vol => {
                                         const inStock = isVolumeInStock(vol);
+                                        const isSelected = selectedVolume === vol;
+                                        
+                                        let bg = 'rgba(0,0,0,0.3)';
+                                        if (isSelected) {
+                                            bg = inStock ? 'var(--gradient-primary)' : 'rgba(255,255,255,0.1)';
+                                        }
+
+                                        let textColor = 'var(--color-text-muted)';
+                                        if (isSelected) {
+                                            textColor = 'white';
+                                        } else if (!inStock) {
+                                            textColor = 'rgba(255,255,255,0.4)';
+                                        }
+
+                                        let border = '1px solid var(--glass-border)';
+                                        if (isSelected) {
+                                            border = inStock ? 'none' : '1px solid rgba(255,255,255,0.3)';
+                                        }
+
                                         return (
                                             <button
                                                 key={vol}
@@ -223,16 +242,14 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                                                 style={{
                                                     padding: '12px 24px',
                                                     borderRadius: '30px',
-                                                    border: selectedVolume === vol ? 'none' : '1px solid var(--glass-border)',
-                                                    background: selectedVolume === vol ? 'var(--gradient-primary)' : 'rgba(0,0,0,0.3)',
-                                                    color: selectedVolume === vol 
-                                                        ? 'white' 
-                                                        : (inStock ? 'var(--color-text-muted)' : 'rgba(255,255,255,0.2)'),
+                                                    border: border,
+                                                    background: bg,
+                                                    color: textColor,
                                                     cursor: 'pointer',
                                                     fontSize: '1rem',
-                                                    fontWeight: selectedVolume === vol ? 600 : 400,
+                                                    fontWeight: isSelected ? 600 : 400,
                                                     transition: 'all 0.3s ease',
-                                                    boxShadow: selectedVolume === vol ? '0 4px 15px rgba(0,0,0,0.3)' : 'none',
+                                                    boxShadow: isSelected && inStock ? '0 4px 15px rgba(0,0,0,0.3)' : 'none',
                                                     opacity: inStock ? 1 : 0.6,
                                                     position: 'relative',
                                                     overflow: 'hidden'
@@ -242,9 +259,10 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                                                 {!inStock && (
                                                     <span style={{ 
                                                         display: 'block', 
-                                                        fontSize: '0.7rem', 
-                                                        color: '#ff3333',
-                                                        marginTop: '2px'
+                                                        fontSize: '0.75rem', 
+                                                        color: isSelected ? '#ff8888' : '#ff4444',
+                                                        marginTop: '4px',
+                                                        fontWeight: 500
                                                     }}>
                                                         Нет в наличии
                                                     </span>
