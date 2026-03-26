@@ -104,7 +104,12 @@ export default function Footer() {
             </div>
             <div style={{ paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                 <div className="container" style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-                    <span>© {new Date().getFullYear()} Kapsula Parfume. Все права защищены.</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
+                        <span>© {new Date().getFullYear()} Kapsula Parfume. Все права защищены.</span>
+                        <a href="https://webparkstudio.ru" target="_blank" rel="noopener noreferrer" style={{ display: 'block', opacity: 0.7, transition: 'opacity 0.3s ease' }} onMouseOver={e => e.currentTarget.style.opacity = 1} onMouseOut={e => e.currentTarget.style.opacity = 0.7}>
+                            <img src="https://webparkstudio.ru/!poweredby/poweredby-light.png" alt="Powered by Web Park Studio" style={{ height: '22px' }} />
+                        </a>
+                    </div>
                     <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                         <Link to="/payment" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Оплата</Link>
                         <Link to="/delivery" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Доставка</Link>
