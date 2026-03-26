@@ -103,27 +103,29 @@ export default function Footer() {
                 </div>
             </div>
             <div style={{ paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                <div className="container" style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
+                <div className="container" style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem' }}>
                         <span>© {new Date().getFullYear()} Kapsula Parfume. Все права защищены.</span>
-                        <a href="https://webparkstudio.ru" target="_blank" rel="noopener noreferrer" style={{ display: 'block', opacity: 0.7, transition: 'opacity 0.3s ease', marginTop: '1.2rem' }} onMouseOver={e => e.currentTarget.style.opacity = 1} onMouseOut={e => e.currentTarget.style.opacity = 0.7}>
+                        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                            <Link to="/payment" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Оплата</Link>
+                            <Link to="/delivery" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Доставка</Link>
+                            <Link to="/returns" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Возврат</Link>
+                            <Link to="/certificates" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Сертификаты</Link>
+                            <Link to="/privacy" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Политика конфиденциальности</Link>
+                            <Link to="/oferta" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Публичная оферта</Link>
+                        </div>
+                    </div>
+                    <div style={{ marginTop: '2.5rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem' }}>
+                        <a href="https://webparkstudio.ru" target="_blank" rel="noopener noreferrer" style={{ display: 'block', opacity: 0.7, transition: 'opacity 0.3s ease' }} onMouseOver={e => e.currentTarget.style.opacity = 1} onMouseOut={e => e.currentTarget.style.opacity = 0.7}>
                             <img src="https://webparkstudio.ru/!poweredby/poweredby-light.png" alt="Powered by Web Park Studio" style={{ display: 'block' }} />
                         </a>
+                        <div style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', opacity: 0.8 }}>
+                            <img src="/images/payment/yookassa.svg" alt="YooKassa" style={{ height: '15px' }} />
+                            <img src="/images/payment/visa.svg" alt="Visa" style={{ height: '30px', filter: 'brightness(0) invert(1)' }} />
+                            <img src="/images/payment/mastercard.svg" alt="Mastercard" style={{ height: '24px', filter: 'brightness(0) invert(1)' }} />
+                            <img src="/images/payment/mir.svg" alt="MIR" style={{ height: '42px', filter: 'brightness(0) invert(1)' }} />
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                        <Link to="/payment" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Оплата</Link>
-                        <Link to="/delivery" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Доставка</Link>
-                        <Link to="/returns" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Возврат</Link>
-                        <Link to="/certificates" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Сертификаты</Link>
-                        <Link to="/privacy" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Политика конфиденциальности</Link>
-                        <Link to="/oferta" style={{ textDecoration: 'none', color: 'var(--color-text-muted)', transition: 'color 0.3s ease' }}>Публичная оферта</Link>
-                    </div>
-                </div>
-                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2.5rem', flexWrap: 'wrap', opacity: 0.8 }}>
-                    <img src="/images/payment/yookassa.svg" alt="YooKassa" style={{ height: '15px' }} />
-                    <img src="/images/payment/visa.svg" alt="Visa" style={{ height: '30px', filter: 'brightness(0) invert(1)' }} />
-                    <img src="/images/payment/mastercard.svg" alt="Mastercard" style={{ height: '24px', filter: 'brightness(0) invert(1)' }} />
-                    <img src="/images/payment/mir.svg" alt="MIR" style={{ height: '42px', filter: 'brightness(0) invert(1)' }} />
                 </div>
             </div>
         </footer>
