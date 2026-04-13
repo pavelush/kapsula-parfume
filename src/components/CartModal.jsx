@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Trash2, ShoppingBag } from 'lucide-react';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
+import OfferModal from './OfferModal';
 
 export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, updateQuantity, clearCart, products = [] }) {
     const [paymentMethods, setPaymentMethods] = useState([]);
@@ -18,6 +19,7 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
     const [isConsentGiven, setIsConsentGiven] = useState(false);
     const [isOfferConsentGiven, setIsOfferConsentGiven] = useState(false);
     const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+    const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -371,7 +373,7 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                                         required
                                         checked={isConsentGiven}
                                         onChange={(e) => setIsConsentGiven(e.target.checked)}
-                                        style={{ marginTop: '3px', width: '16px', height: '16px', accentColor: 'var(--color-accent-gold)' }}
+                                        style={{ marginTop: '3px', width: '16px', height: '16px', flexShrink: 0, accentColor: 'var(--color-accent-gold)' }}
                                     />
                                     <span>
                                         Я даю согласие на обработку персональных данных в соответствии с{' '}
@@ -393,18 +395,19 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                                         required
                                         checked={isOfferConsentGiven}
                                         onChange={(e) => setIsOfferConsentGiven(e.target.checked)}
-                                        style={{ marginTop: '3px', width: '16px', height: '16px', accentColor: 'var(--color-accent-gold)' }}
+                                        style={{ marginTop: '3px', width: '16px', height: '16px', flexShrink: 0, accentColor: 'var(--color-accent-gold)' }}
                                     />
                                     <span>
                                         Я согласен с условиями{' '}
-                                        <a
-                                            href="/oferta"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{ color: 'var(--color-accent-gold)', textDecoration: 'underline', border: 'none', background: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
+                                        <span
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setIsOfferModalOpen(true);
+                                            }}
+                                            style={{ color: 'var(--color-accent-gold)', textDecoration: 'underline', cursor: 'pointer' }}
                                         >
                                             публичной оферты
-                                        </a>
+                                        </span>
                                     </span>
                                 </label>
                             </div>
@@ -418,6 +421,7 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
             </div>
 
             <PrivacyPolicyModal isOpen={isPrivacyModalOpen} onClose={() => setIsPrivacyModalOpen(false)} />
+            <OfferModal isOpen={isOfferModalOpen} onClose={() => setIsOfferModalOpen(false)} />
 
             <style dangerouslySetInnerHTML={{
                 __html: `
