@@ -61,9 +61,24 @@ export default function FavoritesModal({ isOpen, onClose, favoriteIds, products 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {favoriteProducts.map(product => {
                                 // Default to smallest volume for add to cart
-                                const availableVolumes = [3, 5, 10, 100].filter(vol => product.prices && product.prices[vol] && product.prices[vol].price && String(product.prices[vol].price).trim() !== "");
-                                const defaultVolume = availableVolumes.length > 0 ? availableVolumes[0] : 3;
-                                const defaultPrice = product.prices[defaultVolume] ? product.prices[defaultVolume].price : '0';
+                                const checkVol = (vol) => {
+                                    const pData = product.prices && product.prices[vol];
+                                    if (!pData) return false;
+                                    if (!pData.price || String(pData.price).trim() === "") return false;
+                                    // Also check stock to pick a valid volume
+                                    if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
+                                        if (Number(pData.stock) <= 0) return false;
+                                    }
+                                    return true;
+                                };
+
+                                const availableVolumes = product.category === 'Аксессуары'
+                                    ? ['1'].filter(checkVol)
+                                    : [3, 5, 10, 100].filter(checkVol);
+
+                                const defaultVolume = availableVolumes.length > 0 ? availableVolumes[0] : (product.category === 'Аксессуары' ? '1' : 3);
+                                const currentPriceObj = product.prices && product.prices[defaultVolume] ? product.prices[defaultVolume] : { price: '0' };
+                                const defaultPrice = currentPriceObj.price;
 
                                 return (
                                     <div key={product.id} style={{
