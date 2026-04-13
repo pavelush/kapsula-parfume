@@ -30,6 +30,12 @@ export default function CertificatesPage() {
             image: "/images/certificates/certificate_4.jpg",
             number: "ЕАЭС N RU Д-GB.РА02.В.51221/24",
             description: "Декларация о соответствии (Clive Christian): ЕАЭС N RU Д-GB.РА02.В.51221/24"
+        },
+        {
+            id: 5,
+            image: "/images/certificates/certificate_5.jpg",
+            number: "ЕАЭС N RU Д-FR.РА11.В.12412/24",
+            description: "Декларация о соответствии (Vilhelm Parfumerie): ЕАЭС N RU Д-FR.РА11.В.12412/24"
         }
     ];
 
