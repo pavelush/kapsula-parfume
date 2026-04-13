@@ -11,6 +11,7 @@ import Header from './components/Header';
 import CartModal from './components/CartModal';
 import FavoritesModal from './components/FavoritesModal';
 import SuccessOrderModal from './components/SuccessOrderModal';
+import CookieConsent from './components/CookieConsent';
 
 function App() {
   const location = useLocation();
@@ -245,6 +246,7 @@ function App() {
           />
         } />
       </Routes>
+      <CookieConsent />
     </>
   );
 }
