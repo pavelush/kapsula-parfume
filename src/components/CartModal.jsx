@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Trash2, ShoppingBag } from 'lucide-react';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
 import OfferModal from './OfferModal';
+import MarketingConsentModal from './MarketingConsentModal';
 
 export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, updateQuantity, clearCart, products = [] }) {
     const [paymentMethods, setPaymentMethods] = useState([]);
@@ -20,6 +21,8 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
     const [isOfferConsentGiven, setIsOfferConsentGiven] = useState(false);
     const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
     const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+    const [isMarketingConsentGiven, setIsMarketingConsentGiven] = useState(false);
+    const [isMarketingModalOpen, setIsMarketingModalOpen] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -410,6 +413,27 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                                         </span>
                                     </span>
                                 </label>
+
+                                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={isMarketingConsentGiven}
+                                        onChange={(e) => setIsMarketingConsentGiven(e.target.checked)}
+                                        style={{ marginTop: '3px', width: '16px', height: '16px', flexShrink: 0, accentColor: 'var(--color-accent-gold)' }}
+                                    />
+                                    <span>
+                                        Я согласен на получение{' '}
+                                        <span
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setIsMarketingModalOpen(true);
+                                            }}
+                                            style={{ color: 'var(--color-accent-gold)', textDecoration: 'underline', cursor: 'pointer' }}
+                                        >
+                                            рекламных сообщений
+                                        </span>
+                                    </span>
+                                </label>
                             </div>
 
                             <button type="submit" className="btn-primary" disabled={isSubmitting || !isConsentGiven || !isOfferConsentGiven || hasOutOfStock} style={{ padding: '14px', width: '100%', marginTop: '10px', opacity: (!isConsentGiven || !isOfferConsentGiven || isSubmitting || hasOutOfStock) ? 0.5 : 1, cursor: (!isConsentGiven || !isOfferConsentGiven || isSubmitting || hasOutOfStock) ? 'not-allowed' : 'pointer' }}>
@@ -422,6 +446,7 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
 
             <PrivacyPolicyModal isOpen={isPrivacyModalOpen} onClose={() => setIsPrivacyModalOpen(false)} />
             <OfferModal isOpen={isOfferModalOpen} onClose={() => setIsOfferModalOpen(false)} />
+            <MarketingConsentModal isOpen={isMarketingModalOpen} onClose={() => setIsMarketingModalOpen(false)} />
 
             <style dangerouslySetInnerHTML={{
                 __html: `
