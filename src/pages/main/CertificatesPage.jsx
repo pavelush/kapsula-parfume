@@ -28,8 +28,8 @@ export default function CertificatesPage() {
         {
             id: 4,
             image: "/images/certificates/certificate_4.jpg",
-            number: "ЕАЭС N RU Д-GB.РА10.В.63668/23",
-            description: "Декларация о соответствии (Clive Christian): ЕАЭС N RU Д-GB.РА10.В.63668/23"
+            number: "ЕАЭС N RU Д-GB.РА02.В.51221/24",
+            description: "Декларация о соответствии (Clive Christian): ЕАЭС N RU Д-GB.РА02.В.51221/24"
         }
     ];
 
@@ -135,10 +135,7 @@ export default function CertificatesPage() {
                                 </p>
                             </div>
                         ))}
-                    </div>
                 </div>
-
-
             </main>
 
             <Footer />
