@@ -16,6 +16,7 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
     const [isConsentGiven, setIsConsentGiven] = useState(false);
+    const [isOfferConsentGiven, setIsOfferConsentGiven] = useState(false);
     const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
 
     useEffect(() => {
@@ -363,7 +364,7 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                                 </select>
                             </div>
 
-                            <div style={{ marginTop: '10px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
                                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                                     <input
                                         type="checkbox"
@@ -385,9 +386,30 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                                         </span>
                                     </span>
                                 </label>
+
+                                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                                    <input
+                                        type="checkbox"
+                                        required
+                                        checked={isOfferConsentGiven}
+                                        onChange={(e) => setIsOfferConsentGiven(e.target.checked)}
+                                        style={{ marginTop: '3px', width: '16px', height: '16px', accentColor: 'var(--color-accent-gold)' }}
+                                    />
+                                    <span>
+                                        Я согласен с условиями{' '}
+                                        <a
+                                            href="/oferta"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ color: 'var(--color-accent-gold)', textDecoration: 'underline', border: 'none', background: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
+                                        >
+                                            публичной оферты
+                                        </a>
+                                    </span>
+                                </label>
                             </div>
 
-                            <button type="submit" className="btn-primary" disabled={isSubmitting || !isConsentGiven || hasOutOfStock} style={{ padding: '14px', width: '100%', marginTop: '10px', opacity: (!isConsentGiven || isSubmitting || hasOutOfStock) ? 0.5 : 1, cursor: (!isConsentGiven || isSubmitting || hasOutOfStock) ? 'not-allowed' : 'pointer' }}>
+                            <button type="submit" className="btn-primary" disabled={isSubmitting || !isConsentGiven || !isOfferConsentGiven || hasOutOfStock} style={{ padding: '14px', width: '100%', marginTop: '10px', opacity: (!isConsentGiven || !isOfferConsentGiven || isSubmitting || hasOutOfStock) ? 0.5 : 1, cursor: (!isConsentGiven || !isOfferConsentGiven || isSubmitting || hasOutOfStock) ? 'not-allowed' : 'pointer' }}>
                                 {isSubmitting ? 'Оформление...' : 'Оформить заказ'}
                             </button>
                         </form>
