@@ -18,6 +18,12 @@ export default function CertificatesPage() {
             image: "/images/certificates/certificate_2.jpg",
             number: "ЕАЭС N RU Д-GB.РА09.В.55062/25",
             description: "Декларация о соответствии (Escentric Molecules): ЕАЭС N RU Д-GB.РА09.В.55062/25"
+        },
+        {
+            id: 3,
+            image: "/images/certificates/certificate_3.jpg",
+            number: "ЕАЭС N RU Д-FR.РА05.В.90479/24",
+            description: "Декларация о соответствии (BYREDO): ЕАЭС N RU Д-FR.РА05.В.90479/24"
         }
     ];
 
