@@ -138,7 +138,7 @@ export default function CertificatesPage() {
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', width: '100%' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', width: '100%' }}>
                         {CERTIFICATES.map(cert => (
                             <div key={cert.id} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                 <div style={{
@@ -148,10 +148,7 @@ export default function CertificatesPage() {
                                     boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     cursor: 'zoom-in',
-                                    overflow: 'hidden',
-                                    aspectRatio: '1 / 1.4',
-                                    display: 'flex',
-                                    alignItems: 'center'
+                                    overflow: 'hidden'
                                 }}>
                                     <img
                                         src={cert.image}
