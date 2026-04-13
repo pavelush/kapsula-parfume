@@ -4,14 +4,29 @@ import { Link } from 'react-router-dom';
 import Footer from '../../components/Footer';
 
 export default function CertificatesPage() {
-    const [isZoomed, setIsZoomed] = useState(false);
+    const [zoomedImage, setZoomedImage] = useState(null);
+
+    const CERTIFICATES = [
+        {
+            id: 1,
+            image: "/images/certificates/certificate.jpg",
+            number: "ЕАЭС N RU Д-GB.РА10.В.63668/23",
+            description: "Декларация о соответствии: ЕАЭС N RU Д-GB.РА10.В.63668/23"
+        },
+        {
+            id: 2,
+            image: "/images/certificates/certificate_2.jpg",
+            number: "ЕАЭС N RU Д-GB.РА09.В.55062/25",
+            description: "Декларация о соответствии (Escentric Molecules): ЕАЭС N RU Д-GB.РА09.В.55062/25"
+        }
+    ];
 
     return (
         <div style={{ background: 'var(--color-bg)', minHeight: '100vh', color: 'var(--color-text)', scrollBehavior: 'smooth' }}>
             {/* Zoom Modal */}
-            {isZoomed && (
+            {zoomedImage && (
                 <div 
-                    onClick={() => setIsZoomed(false)}
+                    onClick={() => setZoomedImage(null)}
                     style={{ 
                         position: 'fixed', 
                         top: 0, 
@@ -29,7 +44,7 @@ export default function CertificatesPage() {
                     }}
                 >
                     <button 
-                        onClick={() => setIsZoomed(false)}
+                        onClick={() => setZoomedImage(null)}
                         style={{
                             position: 'absolute',
                             top: '2rem',
@@ -49,7 +64,7 @@ export default function CertificatesPage() {
                         <X size={24} />
                     </button>
                     <img 
-                        src="/images/certificates/certificate.jpg" 
+                        src={zoomedImage} 
                         alt="Декларация о соответствии ЕАЭС" 
                         style={{ 
                             maxWidth: '100%', 
@@ -123,26 +138,33 @@ export default function CertificatesPage() {
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <div style={{
-                            background: 'white',
-                            padding: '1rem',
-                            borderRadius: '20px',
-                            boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            cursor: 'zoom-in',
-                            overflow: 'hidden'
-                        }}>
-                            <img
-                                src="/images/certificates/certificate.jpg"
-                                alt="Декларация о соответствии ЕАЭС"
-                                onClick={() => setIsZoomed(true)}
-                                style={{ width: '100%', borderRadius: '10px', display: 'block' }}
-                            />
-                        </div>
-                        <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
-                            Декларация о соответствии: ЕАЭС N RU Д-GB.РА10.В.63668/23
-                        </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', width: '100%' }}>
+                        {CERTIFICATES.map(cert => (
+                            <div key={cert.id} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                <div style={{
+                                    background: 'white',
+                                    padding: '1rem',
+                                    borderRadius: '20px',
+                                    boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    cursor: 'zoom-in',
+                                    overflow: 'hidden',
+                                    aspectRatio: '1 / 1.4',
+                                    display: 'flex',
+                                    alignItems: 'center'
+                                }}>
+                                    <img
+                                        src={cert.image}
+                                        alt={cert.description}
+                                        onClick={() => setZoomedImage(cert.image)}
+                                        style={{ width: '100%', borderRadius: '10px', display: 'block' }}
+                                    />
+                                </div>
+                                <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                                    {cert.description}
+                                </p>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
