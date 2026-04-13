@@ -24,6 +24,12 @@ export default function CertificatesPage() {
             image: "/images/certificates/certificate_3.jpg",
             number: "ЕАЭС N RU Д-FR.РА05.В.90479/24",
             description: "Декларация о соответствии (BYREDO): ЕАЭС N RU Д-FR.РА05.В.90479/24"
+        },
+        {
+            id: 4,
+            image: "/images/certificates/certificate_4.jpg",
+            number: "ЕАЭС N RU Д-GB.РА10.В.63668/23",
+            description: "Декларация о соответствии (Clive Christian): ЕАЭС N RU Д-GB.РА10.В.63668/23"
         }
     ];
 
@@ -105,46 +111,7 @@ export default function CertificatesPage() {
                     </p>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem', alignItems: 'start' }}>
-                    <div className="glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
-                            <div style={{ background: 'rgba(212,175,55,0.1)', color: 'var(--color-primary)', padding: '1rem', borderRadius: '15px' }}>
-                                <ShieldCheck size={24} />
-                            </div>
-                            <div>
-                                <h3 style={{ color: 'white', marginBottom: '0.5rem', fontSize: '1.2rem' }}>Стандарты качества</h3>
-                                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                                    Вся продукция соответствует техническому регламенту Таможенного союза "О безопасности парфюмерно-косметической продукции" (ТР ТС 009/2011).
-                                </p>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
-                            <div style={{ background: 'rgba(212,175,55,0.1)', color: 'var(--color-primary)', padding: '1rem', borderRadius: '15px' }}>
-                                <Award size={24} />
-                            </div>
-                            <div>
-                                <h3 style={{ color: 'white', marginBottom: '0.5rem', fontSize: '1.2rem' }}>Официальная декларация</h3>
-                                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                                    Декларация о соответствии ЕАЭС подтверждает безопасность и высокое качество парфюмерии.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
-                            <div style={{ background: 'rgba(212,175,55,0.1)', color: 'var(--color-primary)', padding: '1rem', borderRadius: '15px' }}>
-                                <FileText size={24} />
-                            </div>
-                            <div>
-                                <h3 style={{ color: 'white', marginBottom: '0.5rem', fontSize: '1.2rem' }}>Прозрачность</h3>
-                                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                                    Мы предоставляем все необходимые документы по запросу покупателя, подтверждая путь каждого флакона.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', width: '100%' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem', width: '100%' }}>
                         {CERTIFICATES.map(cert => (
                             <div key={cert.id} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                 <div style={{
