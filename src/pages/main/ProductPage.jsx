@@ -39,13 +39,13 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                             if (!pData.price || String(pData.price).trim() === "") return false;
                             return true;
                         };
-                        
-                        const vols = found.category === 'Аксессуары' 
-                            ? ['1'].filter(checkVolValid) 
+
+                        const vols = found.category === 'Аксессуары'
+                            ? ['1'].filter(checkVolValid)
                             : [3, 5, 10, 100].filter(checkVolValid);
-                        
+
                         setAvailableVolumes(vols);
-                        
+
                         // Select the first IN STOCK volume if possible, otherwise just the first available
                         const checkStock = (v) => {
                             const pd = found.prices && found.prices[v];
@@ -54,7 +54,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                             }
                             return true;
                         };
-                        
+
                         if (vols.length > 0) {
                             const firstInStock = vols.find(v => checkStock(v));
                             setSelectedVolume(firstInStock || vols[0]);
@@ -109,7 +109,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
 
     const currentPrice = product.prices[selectedVolume] || { price: "0" };
     const isFavorite = favorites.includes(product.id);
-    
+
     // Helper to check if a specific volume is in stock
     const isVolumeInStock = (vol) => {
         const pData = product.prices && product.prices[vol];
@@ -117,7 +117,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
         if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
             return Number(pData.stock) > 0;
         }
-        return true; 
+        return true;
     };
 
     const isCurrentVolumeInStock = isVolumeInStock(selectedVolume);
@@ -211,13 +211,13 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
 
                         {product.fsa_link && (
                             <div style={{
-                                background: '#f8f9fa',
+                                background: '#f352df2b',
                                 borderRadius: '12px',
                                 padding: '12px 16px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '12px',
-                                border: '1px solid #e9ecef',
+                                border: '1px solid var(--glass-border)',
                                 marginTop: '-1rem'
                             }}>
                                 <img
@@ -225,8 +225,8 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                                     alt="ФСА Логотип"
                                     style={{ width: '32px', height: '32px', objectFit: 'contain', flexShrink: 0 }}
                                 />
-                                <div style={{ fontSize: '0.85rem', color: '#212529', lineHeight: 1.4 }}>
-                                    <strong style={{ display: 'block', marginBottom: '2px', color: '#000' }}>Безопасен</strong>
+                                <div style={{ fontSize: '0.85rem', color: '#ffffffff', lineHeight: 1.4 }}>
+                                    <strong style={{ display: 'block', marginBottom: '2px', color: '#ffffffff' }}>Безопасен</strong>
                                     Это подтверждено документами из{' '}
                                     <a
                                         href={product.fsa_link}
@@ -249,7 +249,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                                     {availableVolumes.map(vol => {
                                         const inStock = isVolumeInStock(vol);
                                         const isSelected = selectedVolume === vol;
-                                        
+
                                         let bg = 'rgba(0,0,0,0.3)';
                                         if (isSelected) {
                                             bg = inStock ? 'var(--gradient-primary)' : 'rgba(255,255,255,0.1)';
@@ -295,9 +295,9 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                                             >
                                                 <span>{vol} мл</span>
                                                 {!inStock && (
-                                                    <span style={{ 
-                                                        display: 'block', 
-                                                        fontSize: '0.65rem', 
+                                                    <span style={{
+                                                        display: 'block',
+                                                        fontSize: '0.65rem',
                                                         color: isSelected ? '#ff8888' : '#ff4444',
                                                         marginTop: '4px',
                                                         fontWeight: 500,
@@ -336,13 +336,13 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                                 </button>
                             ) : (
                                 <button
-                                    style={{ 
-                                        padding: '16px 32px', 
-                                        fontSize: '1.1rem', 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        gap: '12px', 
-                                        flexGrow: 1, 
+                                    style={{
+                                        padding: '16px 32px',
+                                        fontSize: '1.1rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        flexGrow: 1,
                                         justifyContent: 'center',
                                         background: 'rgba(255,255,255,0.05)',
                                         border: '1px solid rgba(255,255,255,0.1)',
