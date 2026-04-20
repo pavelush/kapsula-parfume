@@ -209,6 +209,39 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                             </p>
                         </div>
 
+                        {product.fsa_link && (
+                            <div style={{
+                                background: '#f8f9fa',
+                                borderRadius: '12px',
+                                padding: '12px 16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                border: '1px solid #e9ecef',
+                                marginTop: '-1rem'
+                            }}>
+                                <img
+                                    src="/images/logo-fsa.png"
+                                    alt="ФСА Логотип"
+                                    style={{ width: '32px', height: '32px', objectFit: 'contain', flexShrink: 0 }}
+                                />
+                                <div style={{ fontSize: '0.85rem', color: '#212529', lineHeight: 1.4 }}>
+                                    <strong style={{ display: 'block', marginBottom: '2px', color: '#000' }}>Безопасен</strong>
+                                    Это подтверждено документами из{' '}
+                                    <a
+                                        href={product.fsa_link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ color: '#0d6efd', textDecoration: 'none' }}
+                                        onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
+                                        onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+                                    >
+                                        реестра Росаккредитации
+                                    </a>
+                                </div>
+                            </div>
+                        )}
+
                         {product.category !== 'Аксессуары' && (
                             <div>
                                 <h3 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.2rem' }}>Выберите объем</h3>

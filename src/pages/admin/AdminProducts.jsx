@@ -33,7 +33,7 @@ export default function AdminProducts() {
             100: { price: '', sku: '', stock: '' }
         },
         is_active: true,
-        slug: '', seoTitle: '', seoDescription: ''
+        slug: '', seoTitle: '', seoDescription: '', fsa_link: ''
     };
     const [currentProduct, setCurrentProduct] = useState(initialProductState);
 
@@ -94,7 +94,8 @@ export default function AdminProducts() {
             is_active: currentProduct.is_active,
             slug: finalSlug,
             seoTitle: finalSeoTitle,
-            seoDescription: finalSeoDescription
+            seoDescription: finalSeoDescription,
+            fsa_link: currentProduct.fsa_link
         };
 
         try {
@@ -142,7 +143,8 @@ export default function AdminProducts() {
             is_active: product.is_active !== undefined ? product.is_active : true,
             slug: product.slug || '',
             seoTitle: product.seoTitle || '',
-            seoDescription: product.seoDescription || ''
+            seoDescription: product.seoDescription || '',
+            fsa_link: product.fsa_link || ''
         });
         setActiveVolumeTab(product.category === 'Аксессуары' ? '1' : '3');
         setIsModalOpen(true);
@@ -457,6 +459,17 @@ export default function AdminProducts() {
                                         style={{ fontSize: '0.8rem', opacity: 0.7 }}
                                     />
                                 </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Ссылка на реестр Росаккредитации (FSA)</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    value={currentProduct.fsa_link || ''}
+                                    onChange={(e) => setCurrentProduct({ ...currentProduct, fsa_link: e.target.value })}
+                                    placeholder="https://pub.fsa.gov.ru/..."
+                                />
                             </div>
 
                             <h4 style={{ color: 'white', marginBottom: '1rem', marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>SEO настройки</h4>
