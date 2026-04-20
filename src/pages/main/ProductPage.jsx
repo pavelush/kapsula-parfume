@@ -232,7 +232,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                                         href={product.fsa_link}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        style={{ color: '#0d6efd', textDecoration: 'none' }}
+                                        style={{ color: '#5d9eff', textDecoration: 'none' }}
                                         onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
                                         onMouseOut={(e) => e.target.style.textDecoration = 'none'}
                                     >
