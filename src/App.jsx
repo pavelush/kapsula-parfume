@@ -130,29 +130,19 @@ function App() {
       const totalStockVal = (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") ? Number(pData.stock) : null;
 
       if (totalStockVal !== null) {
-          // Check if it's a shared SKU
-          let isSharedSku = false;
-          if (liveProd.prices && sku) {
-              let skuCount = 0;
-              for (const v of Object.keys(liveProd.prices)) {
-                  if (liveProd.prices[v] && liveProd.prices[v].sku === sku) {
-                      skuCount++;
-                  }
-              }
-              isSharedSku = skuCount > 1;
-          }
+          const isMlBased = liveProd.category !== 'Аксессуары';
 
           let currentUsed = 0;
           prev.forEach(item => {
               const itemProd = products.find(p => p.id === item.id) || item;
               const itemPData = itemProd.prices && itemProd.prices[item.volume];
               if (itemPData && itemPData.sku === sku) {
-                  const itemVol = isSharedSku ? Number(item.volume) : 1;
+                  const itemVol = (itemProd.category !== 'Аксессуары') ? Number(item.volume) : 1;
                   currentUsed += item.quantity * itemVol;
               }
           });
 
-          const addedVol = isSharedSku ? Number(volume) : 1;
+          const addedVol = isMlBased ? Number(volume) : 1;
           if ((currentUsed + addedVol) > totalStockVal) {
               return prev; // Cannot exceed stock
           }

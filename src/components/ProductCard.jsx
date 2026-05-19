@@ -9,20 +9,10 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
         if (!pData.price || String(pData.price).trim() === "") return false;
         if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
             const stockVal = Number(pData.stock);
-            let isSharedSku = false;
-            if (product.prices && pData.sku) {
-                let skuCount = 0;
-                for (const key of Object.keys(product.prices)) {
-                    if (product.prices[key] && product.prices[key].sku === pData.sku) {
-                        skuCount++;
-                    }
-                }
-                isSharedSku = skuCount > 1;
+            if (product.category === 'Аксессуары') {
+                return stockVal > 0;
             }
-            if (isSharedSku) {
-                return stockVal >= Number(vol);
-            }
-            return stockVal > 0;
+            return stockVal >= Number(vol);
         }
         return true;
     };

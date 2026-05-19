@@ -112,20 +112,10 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                 
                 const totalStockVal = (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") ? Number(pData.stock) : null;
                 if (totalStockVal !== null) {
-                    // Check if it's a shared SKU
-                    let isSharedSku = false;
                     const sku = pData.sku;
-                    if (liveProduct.prices && sku) {
-                        let skuCount = 0;
-                        for (const v of Object.keys(liveProduct.prices)) {
-                            if (liveProduct.prices[v] && liveProduct.prices[v].sku === sku) {
-                                skuCount++;
-                            }
-                        }
-                        isSharedSku = skuCount > 1;
-                    }
+                    const isMlBased = liveProduct.category !== 'Аксессуары';
 
-                    if (isSharedSku) {
+                    if (isMlBased) {
                         // Calculate how much ml is consumed by OTHER items in the cart of the same SKU
                         let otherUsedMl = 0;
                         cartItems.forEach((otherItem, otherIdx) => {

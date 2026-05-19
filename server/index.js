@@ -635,27 +635,16 @@ app.post('/api/orders', async (req, res) => {
                 const sku = pData.sku || `no-sku-${item.id}-${item.volume}`;
                 const stockVal = Number(pData.stock);
                 
-                // Determine if shared SKU
-                let isShared = false;
-                if (product.prices && pData.sku) {
-                    let skuCount = 0;
-                    for (const v of Object.keys(product.prices)) {
-                        if (product.prices[v] && product.prices[v].sku === pData.sku) {
-                            skuCount++;
-                        }
-                    }
-                    isShared = skuCount > 1;
-                }
-                
+                const isMlBased = product.category !== 'Аксессуары';
                 const requestedQty = Number(item.quantity) || 1;
-                const requestedUnits = isShared ? (requestedQty * Number(item.volume)) : requestedQty;
+                const requestedUnits = isMlBased ? (requestedQty * Number(item.volume)) : requestedQty;
                 
                 if (!skuGroups[sku]) {
                     skuGroups[sku] = {
                         name: item.name,
                         totalRequested: 0,
                         availableStock: stockVal,
-                        isShared: isShared,
+                        isMlBased: isMlBased,
                         volume: item.volume
                     };
                 }
@@ -666,7 +655,7 @@ app.post('/api/orders', async (req, res) => {
         for (const sku of Object.keys(skuGroups)) {
             const group = skuGroups[sku];
             if (group.totalRequested > group.availableStock) {
-                if (group.isShared) {
+                if (group.isMlBased) {
                     return res.status(400).json({
                         error: `Недостаточно остатка для товара "${group.name}". Доступно: ${group.availableStock} мл, требуется: ${group.totalRequested} мл.`
                     });
