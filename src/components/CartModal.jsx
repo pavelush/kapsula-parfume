@@ -95,7 +95,7 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
         setFormData({ ...formData, phone: formatted });
     };
 
-    const enrichedCartItems = cartItems.map(item => {
+    const enrichedCartItems = cartItems.map((item, index) => {
         if (products.length === 0) return { ...item, isOutOfStock: false, livePrice: item.price, maxStock: null };
         
         const liveProduct = products.find(p => p.id === item.id);
@@ -108,11 +108,56 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
         } else {
             const pData = liveProduct.prices && liveProduct.prices[item.volume];
             if (pData) {
-                if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
-                    maxStock = Number(pData.stock);
-                    if (maxStock <= 0) isOutOfStock = true;
-                }
                 if (pData.price) livePrice = pData.price;
+                
+                const totalStockVal = (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") ? Number(pData.stock) : null;
+                if (totalStockVal !== null) {
+                    // Check if it's a shared SKU
+                    let isSharedSku = false;
+                    const sku = pData.sku;
+                    if (liveProduct.prices && sku) {
+                        let skuCount = 0;
+                        for (const v of Object.keys(liveProduct.prices)) {
+                            if (liveProduct.prices[v] && liveProduct.prices[v].sku === sku) {
+                                skuCount++;
+                            }
+                        }
+                        isSharedSku = skuCount > 1;
+                    }
+
+                    if (isSharedSku) {
+                        // Calculate how much ml is consumed by OTHER items in the cart of the same SKU
+                        let otherUsedMl = 0;
+                        cartItems.forEach((otherItem, otherIdx) => {
+                            if (otherIdx !== index) {
+                                const otherProd = products.find(p => p.id === otherItem.id);
+                                if (otherProd) {
+                                    const otherPData = otherProd.prices && otherProd.prices[otherItem.volume];
+                                    if (otherPData && otherPData.sku === sku) {
+                                        otherUsedMl += otherItem.quantity * Number(otherItem.volume);
+                                    }
+                                }
+                            }
+                        });
+                        const availableMl = totalStockVal - otherUsedMl;
+                        maxStock = Math.floor(availableMl / Number(item.volume));
+                        if (maxStock <= 0) {
+                            isOutOfStock = true;
+                        }
+                    } else {
+                        // Standard item (measured in pieces)
+                        let otherUsedPcs = 0;
+                        cartItems.forEach((otherItem, otherIdx) => {
+                            if (otherIdx !== index && otherItem.id === item.id && otherItem.volume === item.volume) {
+                                otherUsedPcs += otherItem.quantity;
+                            }
+                        });
+                        maxStock = totalStockVal - otherUsedPcs;
+                        if (maxStock <= 0) {
+                            isOutOfStock = true;
+                        }
+                    }
+                }
             } else {
                 isOutOfStock = true;
             }
@@ -181,7 +226,8 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                     });
                 }, 3000);
             } else {
-                alert('Ошибка при оформлении заказа');
+                const errData = await res.json().catch(() => ({}));
+                alert(errData.error || 'Ошибка при оформлении заказа');
             }
         } catch (error) {
             console.error('Submit order error', error);

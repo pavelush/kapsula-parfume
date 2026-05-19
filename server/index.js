@@ -618,6 +618,66 @@ app.post('/api/orders', async (req, res) => {
     try {
         const { customer_name, customer_phone, email, items, total_price, payment_method, delivery_type, delivery_address } = req.body;
 
+        // Stock validation before placing order
+        const skuGroups = {};
+        for (const item of items) {
+            const productRes = await pool.query('SELECT prices, category FROM products WHERE id = $1', [item.id]);
+            if (productRes.rows.length === 0) {
+                return res.status(400).json({ error: `Товар "${item.name}" не найден.` });
+            }
+            const product = productRes.rows[0];
+            const pData = product.prices && product.prices[item.volume];
+            if (!pData) {
+                return res.status(400).json({ error: `Объем ${item.volume} мл для товара "${item.name}" не доступен.` });
+            }
+            
+            if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
+                const sku = pData.sku || `no-sku-${item.id}-${item.volume}`;
+                const stockVal = Number(pData.stock);
+                
+                // Determine if shared SKU
+                let isShared = false;
+                if (product.prices && pData.sku) {
+                    let skuCount = 0;
+                    for (const v of Object.keys(product.prices)) {
+                        if (product.prices[v] && product.prices[v].sku === pData.sku) {
+                            skuCount++;
+                        }
+                    }
+                    isShared = skuCount > 1;
+                }
+                
+                const requestedQty = Number(item.quantity) || 1;
+                const requestedUnits = isShared ? (requestedQty * Number(item.volume)) : requestedQty;
+                
+                if (!skuGroups[sku]) {
+                    skuGroups[sku] = {
+                        name: item.name,
+                        totalRequested: 0,
+                        availableStock: stockVal,
+                        isShared: isShared,
+                        volume: item.volume
+                    };
+                }
+                skuGroups[sku].totalRequested += requestedUnits;
+            }
+        }
+        
+        for (const sku of Object.keys(skuGroups)) {
+            const group = skuGroups[sku];
+            if (group.totalRequested > group.availableStock) {
+                if (group.isShared) {
+                    return res.status(400).json({
+                        error: `Недостаточно остатка для товара "${group.name}". Доступно: ${group.availableStock} мл, требуется: ${group.totalRequested} мл.`
+                    });
+                } else {
+                    return res.status(400).json({
+                        error: `Недостаточно остатка для товара "${group.name}". Доступно: ${group.availableStock} шт, требуется: ${group.totalRequested} шт.`
+                    });
+                }
+            }
+        }
+
         let finalStatus = 'Новый';
         let paymentStatus = 'Не оплачен';
 

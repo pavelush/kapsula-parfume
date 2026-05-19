@@ -50,7 +50,22 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                         const checkStock = (v) => {
                             const pd = found.prices && found.prices[v];
                             if (pd && pd.stock !== undefined && pd.stock !== null && pd.stock !== "") {
-                                return Number(pd.stock) > 0;
+                                const stockVal = Number(pd.stock);
+                                // Check if it's a shared SKU
+                                let isSharedSku = false;
+                                if (found.prices && pd.sku) {
+                                    let skuCount = 0;
+                                    for (const key of Object.keys(found.prices)) {
+                                        if (found.prices[key] && found.prices[key].sku === pd.sku) {
+                                            skuCount++;
+                                        }
+                                    }
+                                    isSharedSku = skuCount > 1;
+                                }
+                                if (isSharedSku) {
+                                    return stockVal >= Number(v);
+                                }
+                                return stockVal > 0;
                             }
                             return true;
                         };
@@ -73,7 +88,21 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                                     if (!pData) return false;
                                     if (!pData.price || String(pData.price).trim() === "") return false;
                                     if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
-                                        return Number(pData.stock) > 0;
+                                        const stockVal = Number(pData.stock);
+                                        let isSharedSku = false;
+                                        if (product.prices && pData.sku) {
+                                            let skuCount = 0;
+                                            for (const key of Object.keys(product.prices)) {
+                                                if (product.prices[key] && product.prices[key].sku === pData.sku) {
+                                                    skuCount++;
+                                                }
+                                            }
+                                            isSharedSku = skuCount > 1;
+                                        }
+                                        if (isSharedSku) {
+                                            return stockVal >= Number(vol);
+                                        }
+                                        return stockVal > 0;
                                     }
                                     return true;
                                 });
@@ -115,7 +144,21 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
         const pData = product.prices && product.prices[vol];
         if (!pData) return false;
         if (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
-            return Number(pData.stock) > 0;
+            const stockVal = Number(pData.stock);
+            let isSharedSku = false;
+            if (product.prices && pData.sku) {
+                let skuCount = 0;
+                for (const key of Object.keys(product.prices)) {
+                    if (product.prices[key] && product.prices[key].sku === pData.sku) {
+                        skuCount++;
+                    }
+                }
+                isSharedSku = skuCount > 1;
+            }
+            if (isSharedSku) {
+                return stockVal >= Number(vol);
+            }
+            return stockVal > 0;
         }
         return true;
     };

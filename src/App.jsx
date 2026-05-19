@@ -124,18 +124,45 @@ function App() {
       // Find max stock for validation
       const liveProd = products.find(p => p.id === product.id) || product;
       const pData = liveProd.prices && liveProd.prices[volume];
-      let maxStock = null;
-      if (pData && pData.stock !== undefined && pData.stock !== null && pData.stock !== "") {
-          maxStock = Number(pData.stock);
+      if (!pData) return prev;
+
+      const sku = pData.sku;
+      const totalStockVal = (pData.stock !== undefined && pData.stock !== null && pData.stock !== "") ? Number(pData.stock) : null;
+
+      if (totalStockVal !== null) {
+          // Check if it's a shared SKU
+          let isSharedSku = false;
+          if (liveProd.prices && sku) {
+              let skuCount = 0;
+              for (const v of Object.keys(liveProd.prices)) {
+                  if (liveProd.prices[v] && liveProd.prices[v].sku === sku) {
+                      skuCount++;
+                  }
+              }
+              isSharedSku = skuCount > 1;
+          }
+
+          let currentUsed = 0;
+          prev.forEach(item => {
+              const itemProd = products.find(p => p.id === item.id) || item;
+              const itemPData = itemProd.prices && itemProd.prices[item.volume];
+              if (itemPData && itemPData.sku === sku) {
+                  const itemVol = isSharedSku ? Number(item.volume) : 1;
+                  currentUsed += item.quantity * itemVol;
+              }
+          });
+
+          const addedVol = isSharedSku ? Number(volume) : 1;
+          if ((currentUsed + addedVol) > totalStockVal) {
+              return prev; // Cannot exceed stock
+          }
       }
 
       const existing = prev.find(item => item.id === product.id && item.volume === volume);
       if (existing) {
         return prev.map(item => {
           if (item.id === product.id && item.volume === volume) {
-            const newQ = item.quantity + 1;
-            if (maxStock !== null && newQ > maxStock) return item; // Don't exceed stock limit
-            return { ...item, quantity: newQ };
+            return { ...item, quantity: item.quantity + 1 };
           }
           return item;
         });
