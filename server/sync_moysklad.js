@@ -80,8 +80,26 @@ async function syncWithMoySklad() {
                         const msItem = msMap.get(volumeData.sku);
 
                         if (msItem) {
-                            // Цена в МойСклад хранится в копейках (salePrices[0].value)
-                            const msPriceInKopecks = msItem.salePrices && msItem.salePrices.length > 0 ? msItem.salePrices[0].value : null;
+                            // Ищем цену, соответствующую объему (например, "Цена для Сайта 3 мл" для vol = 3)
+                            let msPriceInKopecks = null;
+                            if (msItem.salePrices && msItem.salePrices.length > 0) {
+                                const targetPriceName = `Цена для Сайта ${vol} мл`;
+                                const foundPrice = msItem.salePrices.find(
+                                    sp => sp.priceType && sp.priceType.name === targetPriceName
+                                );
+
+                                if (foundPrice && foundPrice.value > 0) {
+                                    msPriceInKopecks = foundPrice.value;
+                                } else {
+                                    // Иначе берем "Цена продажи" или первый доступный вариант
+                                    const defaultPrice = msItem.salePrices.find(
+                                        sp => sp.priceType && sp.priceType.name === 'Цена продажи'
+                                    );
+                                    msPriceInKopecks = (defaultPrice && defaultPrice.value > 0)
+                                        ? defaultPrice.value
+                                        : msItem.salePrices[0].value;
+                                }
+                            }
                             const msStock = msItem.stock !== undefined ? msItem.stock : 0;
 
                             if (msPriceInKopecks !== null) {
