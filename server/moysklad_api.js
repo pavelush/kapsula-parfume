@@ -149,13 +149,39 @@ async function createMsCustomerOrder(order, items) {
                 // MS requires price in kopecks
                 const priceNum = String(item.price || '0').replace(/[^\d]/g, '');
                 const kopecks = parseInt(priceNum, 10) * 100 || 0;
+
+                // Проверяем, является ли SKU общим для нескольких объемов (т.е. остаток ведется в мл)
+                let isSharedSku = false;
+                const volumeVal = parseInt(item.volume) || 1;
+                
+                if (item.prices && sku) {
+                    let skuCount = 0;
+                    for (const vol of Object.keys(item.prices)) {
+                        if (item.prices[vol] && item.prices[vol].sku === sku) {
+                            skuCount++;
+                        }
+                    }
+                    isSharedSku = skuCount > 1;
+                }
+
+                let positionQty = parseInt(item.quantity) || 1;
+                let positionPrice = kopecks;
+
+                if (isSharedSku) {
+                    // Если SKU общий, значит, товар в МойСклад измеряется в мл
+                    // Количество = количество заказанных флаконов * объем флакона в мл
+                    positionQty = positionQty * volumeVal;
+                    // Цена за 1 мл = цена флакона / объем флакона в мл
+                    positionPrice = Math.round(kopecks / volumeVal);
+                }
                 
                 positions.push({
-                    quantity: parseInt(item.quantity) || 1,
-                    price: kopecks,
+                    quantity: positionQty,
+                    price: positionPrice,
                     discount: 0,
                     vat: 0,
-                    assortment: { meta: itemMeta }
+                    assortment: { meta: itemMeta },
+                    reserve: positionQty // Резервируем товар в МойСклад
                 });
             } else {
                 console.warn(`[MoySklad] Warning: Assortment with sku/article ${sku} not found in MS. It won't be added to the order.`);
