@@ -100,7 +100,8 @@ async function syncWithMoySklad() {
                                         : msItem.salePrices[0].value;
                                 }
                             }
-                            const msStock = msItem.stock !== undefined ? msItem.stock : 0;
+                            // Используем доступный остаток (quantity = остаток минус резерв), а не физический остаток (stock)
+                            const msStock = msItem.quantity !== undefined ? msItem.quantity : (msItem.stock !== undefined ? msItem.stock : 0);
 
                             if (msPriceInKopecks !== null) {
                                 // Конвертируем копейки в рубли и форматируем как строку '1 500' для сохранения
