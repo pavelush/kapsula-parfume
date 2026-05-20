@@ -42,7 +42,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
 
                         const vols = found.category === 'Аксессуары'
                             ? ['1'].filter(checkVolValid)
-                            : [3, 5, 10, 100].filter(checkVolValid);
+                            : [3, 5, 10].filter(checkVolValid);
 
                         setAvailableVolumes(vols);
 
@@ -71,7 +71,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
 
                             // Reusable stock check logic
                             const checkHasStock = (product) => {
-                                const volsToCheck = product.category === 'Аксессуары' ? ['1'] : [3, 5, 10, 100];
+                                const volsToCheck = product.category === 'Аксессуары' ? ['1'] : [3, 5, 10];
                                 return volsToCheck.some(vol => {
                                     const pData = product.prices && product.prices[vol];
                                     if (!pData) return false;

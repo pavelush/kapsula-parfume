@@ -78,7 +78,7 @@ export default function FavoritesModal({ isOpen, onClose, favoriteIds, products 
 
                                 const availableVolumes = product.category === 'Аксессуары'
                                     ? ['1'].filter(checkVol)
-                                    : [3, 5, 10, 100].filter(checkVol);
+                                    : [3, 5, 10].filter(checkVol);
 
                                 const defaultVolume = availableVolumes.length > 0 ? availableVolumes[0] : (product.category === 'Аксессуары' ? '1' : 3);
                                 const currentPriceObj = product.prices && product.prices[defaultVolume] ? product.prices[defaultVolume] : { price: '0' };

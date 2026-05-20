@@ -35,7 +35,7 @@ export default function CatalogSection({ favorites = [], toggleFavorite = () => 
 
 
     const checkHasStock = (product) => {
-        const volsToCheck = product.category === 'Аксессуары' ? ['1'] : [3, 5, 10, 100];
+        const volsToCheck = product.category === 'Аксессуары' ? ['1'] : [3, 5, 10];
         return volsToCheck.some(vol => {
             const pData = product.prices && product.prices[vol];
             if (!pData) return false;

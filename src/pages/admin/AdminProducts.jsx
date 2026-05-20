@@ -29,8 +29,7 @@ export default function AdminProducts() {
             1: { price: '', sku: '', stock: '' },
             3: { price: '', sku: '', stock: '' },
             5: { price: '', sku: '', stock: '' },
-            10: { price: '', sku: '', stock: '' },
-            100: { price: '', sku: '', stock: '' }
+            10: { price: '', sku: '', stock: '' }
         },
         is_active: true,
         slug: '', seoTitle: '', seoDescription: '', fsa_link: ''
@@ -137,8 +136,7 @@ export default function AdminProducts() {
                 1: { price: product.prices['1']?.price || '', sku: product.prices['1']?.sku || '', stock: product.prices['1']?.stock ?? '' },
                 3: { price: product.prices['3']?.price || '', sku: product.prices['3']?.sku || '', stock: product.prices['3']?.stock ?? '' },
                 5: { price: product.prices['5']?.price || '', sku: product.prices['5']?.sku || '', stock: product.prices['5']?.stock ?? '' },
-                10: { price: product.prices['10']?.price || '', sku: product.prices['10']?.sku || '', stock: product.prices['10']?.stock ?? '' },
-                100: { price: product.prices['100']?.price || '', sku: product.prices['100']?.sku || '', stock: product.prices['100']?.stock ?? '' }
+                10: { price: product.prices['10']?.price || '', sku: product.prices['10']?.sku || '', stock: product.prices['10']?.stock ?? '' }
             },
             is_active: product.is_active !== undefined ? product.is_active : true,
             slug: product.slug || '',
@@ -289,17 +287,17 @@ export default function AdminProducts() {
                                     <td style={{ color: 'var(--color-text-muted)' }}>
                                         {product.category === 'Аксессуары' 
                                             ? `${product.prices['1']?.price || '-'} ₽` 
-                                            : `${product.prices['3']?.price || '-'} / ${product.prices['5']?.price || '-'} / ${product.prices['10']?.price || '-'} / ${product.prices['100']?.price || '-'} ₽`}
+                                            : `${product.prices['3']?.price || '-'} / ${product.prices['5']?.price || '-'} / ${product.prices['10']?.price || '-'} ₽`}
                                     </td>
                                     <td style={{ color: 'var(--color-text-muted)' }}>
                                         {product.category === 'Аксессуары' 
                                             ? `${product.prices['1']?.sku || '-'}` 
-                                            : `${product.prices['3']?.sku || '-'} / ${product.prices['5']?.sku || '-'} / ${product.prices['10']?.sku || '-'} / ${product.prices['100']?.sku || '-'}`}
+                                            : `${product.prices['3']?.sku || '-'} / ${product.prices['5']?.sku || '-'} / ${product.prices['10']?.sku || '-'}`}
                                     </td>
                                     <td style={{ color: 'var(--color-text-muted)' }}>
                                         {product.category === 'Аксессуары' 
                                             ? `${product.prices['1']?.stock || '-'}` 
-                                            : `${product.prices['3']?.stock || '-'} / ${product.prices['5']?.stock || '-'} / ${product.prices['10']?.stock || '-'} / ${product.prices['100']?.stock || '-'}`}
+                                            : `${product.prices['3']?.stock || '-'} / ${product.prices['5']?.stock || '-'} / ${product.prices['10']?.stock || '-'}`}
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
                                         <button onClick={() => handleToggleActive(product)} className="admin-action-btn" title={product.is_active ? "Скрыть из каталога" : "Показать в каталоге"} style={{ marginRight: '8px', color: product.is_active ? 'var(--color-text)' : 'var(--color-text-muted)' }}>
@@ -508,7 +506,7 @@ export default function AdminProducts() {
                                 <>
                                     <h4 style={{ color: 'white', marginBottom: '1rem', marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>Настройка объемов и цен (МойСклад)</h4>
                                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
-                                        {['3', '5', '10', '100'].map(vol => (
+                                        {['3', '5', '10'].map(vol => (
                                             <button
                                                 key={vol}
                                                 type="button"

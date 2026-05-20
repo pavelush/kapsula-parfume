@@ -23,7 +23,7 @@ export default function WhyUsSection() {
                             <Droplets size={36} color="var(--color-accent-blue)" />
                         </div>
                         <h3 style={{ fontSize: '1.4rem' }}>Собери гардероб</h3>
-                        <p style={{ color: 'var(--color-text-muted)' }}>Удобные атомайзеры 3, 5, 10 и 100 мл позволяют собрать коллекцию роскошных ароматов без переплат за полноразмерные флаконы.</p>
+                        <p style={{ color: 'var(--color-text-muted)' }}>Удобные атомайзеры 3, 5 и 10 мл позволяют собрать коллекцию роскошных ароматов без переплат за полноразмерные флаконы.</p>
                     </div>
 
                     <div className="glass-card" style={{ padding: '3rem 2rem', textAlign: 'center' }}>

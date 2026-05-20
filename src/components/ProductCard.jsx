@@ -18,7 +18,7 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
     };
     const availableVolumes = product.category === 'Аксессуары'
         ? ['1'].filter(checkVol)
-        : [3, 5, 10, 100].filter(checkVol);
+        : [3, 5, 10].filter(checkVol);
     const [selectedVolume, setSelectedVolume] = useState(availableVolumes.length > 0 ? availableVolumes[0] : (product.category === 'Аксессуары' ? '1' : 3));
     const [isHovered, setIsHovered] = useState(false);
     const currentPrice = product.prices[selectedVolume] || { price: "0" };
