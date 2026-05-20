@@ -101,7 +101,14 @@ const ProductCard = ({ product, isFavorite, onToggleFavorite, onAddToCart }) => 
             {/* Details Area (Bottom Half) */}
             <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flexGrow: 1, zIndex: 1 }}>
                 <div style={{ marginBottom: '1rem' }}>
-                    <p style={{ color: 'var(--color-accent-gold)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.2rem', fontWeight: 600 }}>{product.brand}</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                        <p style={{ color: 'var(--color-accent-gold)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', margin: 0, fontWeight: 600 }}>{product.brand}</p>
+                        {currentPrice.sku && (
+                            <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontFamily: 'var(--font-mono, monospace)', background: 'rgba(255, 255, 255, 0.05)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--glass-border)' }} title="Код товара">
+                                Код: {currentPrice.sku}
+                            </span>
+                        )}
+                    </div>
                     <Link to={`/product/${product.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                         <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', lineHeight: 1.3, transition: 'color 0.3s' }} onMouseEnter={(e) => e.target.style.color = 'var(--color-accent-gold)'} onMouseLeave={(e) => e.target.style.color = 'inherit'}>{product.name}</h3>
                     </Link>

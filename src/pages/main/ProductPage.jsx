@@ -206,10 +206,17 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                     {/* Details Section */}
                     <div className="product-details-container" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                         <div>
-                            <p style={{ color: 'var(--color-accent-gold)', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '0.5rem', fontWeight: 600 }}>
-                                {product.brand}
-                            </p>
-                            <h1 style={{ fontSize: '2.5rem', color: 'white', marginBottom: '1rem', lineHeight: 1.2 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <p style={{ color: 'var(--color-accent-gold)', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '2px', margin: 0, fontWeight: 600 }}>
+                                    {product.brand}
+                                </p>
+                                {currentPrice.sku && (
+                                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-mono, monospace)', background: 'rgba(255, 255, 255, 0.05)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--glass-border)' }}>
+                                        Код товара: {currentPrice.sku}
+                                    </span>
+                                )}
+                            </div>
+                            <h1 style={{ fontSize: '2.5rem', color: 'white', marginTop: '0.5rem', marginBottom: '1rem', lineHeight: 1.2 }}>
                                 {product.name}
                             </h1>
                         </div>
