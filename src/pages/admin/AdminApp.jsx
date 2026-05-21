@@ -20,6 +20,34 @@ export default function AdminApp() {
         if (token) {
             setIsAuthenticated(true);
         }
+
+        // Global fetch interceptor to append authorization token and handle 401 Unauthorized
+        const originalFetch = window.fetch;
+        window.fetch = async (url, options = {}) => {
+            const currentToken = localStorage.getItem('adminToken');
+            if (currentToken && url.toString().startsWith('/api/')) {
+                const headers = options.headers || {};
+                options.headers = {
+                    ...headers,
+                    'Authorization': `Bearer ${currentToken}`
+                };
+            }
+            try {
+                const response = await originalFetch(url, options);
+                if (response.status === 401 && url.toString().startsWith('/api/')) {
+                    console.warn('[Admin Security] Session expired or invalid token (401). Logging out.');
+                    localStorage.removeItem('adminToken');
+                    setIsAuthenticated(false);
+                }
+                return response;
+            } catch (err) {
+                throw err;
+            }
+        };
+
+        return () => {
+            window.fetch = originalFetch;
+        };
     }, []);
 
     const handleLogin = (token) => {
@@ -27,7 +55,12 @@ export default function AdminApp() {
         setIsAuthenticated(true);
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/admin/logout', { method: 'POST' });
+        } catch (err) {
+            console.error('Logout request failed:', err);
+        }
         localStorage.removeItem('adminToken');
         setIsAuthenticated(false);
     };

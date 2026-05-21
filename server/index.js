@@ -4,6 +4,7 @@ const pool = require('./db');
 const multer = require('multer');
 const path = require('path');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
@@ -13,10 +14,88 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// --- SECURITY INITIALIZATION & HELPERS ---
+async function initSecurityTables() {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS admin_sessions (
+                token VARCHAR(255) PRIMARY KEY,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+        console.log('[Security init] admin_sessions table initialized');
+    } catch (err) {
+        console.error('[Security init] Failed to initialize admin_sessions table:', err);
+    }
+}
+initSecurityTables();
+
+// Password hashing helpers using scryptSync
+function hashPassword(password) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+    return `${salt}:${hash}`;
+}
+
+function verifyPassword(password, storedValue) {
+    if (!storedValue.includes(':')) {
+        // Plaintext comparison for migration
+        return password === storedValue;
+    }
+    const [salt, hash] = storedValue.split(':');
+    if (!salt || !hash) return false;
+    const inputHash = crypto.scryptSync(password, salt, 64).toString('hex');
+    return inputHash === hash;
+}
+
+// In-memory IP rate limiter for login
+const loginAttempts = new Map();
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+const MAX_ATTEMPTS = 5;
+
+function rateLimiter(req, res, next) {
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const now = Date.now();
+    if (loginAttempts.has(ip)) {
+        const data = loginAttempts.get(ip);
+        if (now - data.firstAttempt > RATE_LIMIT_WINDOW) {
+            loginAttempts.set(ip, { count: 1, firstAttempt: now });
+        } else {
+            data.count += 1;
+            if (data.count > MAX_ATTEMPTS) {
+                const timeLeft = Math.ceil((RATE_LIMIT_WINDOW - (now - data.firstAttempt)) / 1000);
+                return res.status(429).json({ error: `Слишком много попыток входа. Пожалуйста, попробуйте снова через ${timeLeft} сек.` });
+            }
+        }
+    } else {
+        loginAttempts.set(ip, { count: 1, firstAttempt: now });
+    }
+    next();
+}
+
+// Authentication middleware for administrative routes
+async function authenticateAdmin(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) {
+        return res.status(401).json({ error: 'Требуется авторизация' });
+    }
+    const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+    try {
+        const result = await pool.query('SELECT 1 FROM admin_sessions WHERE token = $1', [token]);
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: 'Неверный или просроченный токен сессии' });
+        }
+        next();
+    } catch (err) {
+        console.error('Session verification error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
 // Serve uploaded images statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Configure Multer for image uploads
+// Configure Multer for secure image uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
@@ -27,28 +106,82 @@ const storage = multer.diskStorage({
         cb(null, file.fieldname + '-' + uniqueSuffix + ext);
     }
 });
-const upload = multer({ storage });
 
-app.post('/api/upload', upload.single('image'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded' });
+const upload = multer({
+    storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|gif|webp/;
+        const mimeType = allowedTypes.test(file.mimetype);
+        const extName = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+
+        if (mimeType && extName) {
+            return cb(null, true);
+        }
+        cb(new Error('Разрешены только изображения (jpeg, jpg, png, gif, webp)!'));
     }
-    // Return the URL where the image can be accessed
-    const imageUrl = `/uploads/${req.file.filename}`;
-    res.json({ url: imageUrl });
+});
+
+// Secure file upload endpoint (admin only, size and mimetype validated)
+app.post('/api/upload', authenticateAdmin, (req, res) => {
+    upload.single('image')(req, res, function (err) {
+        if (err) {
+            if (err instanceof multer.MulterError) {
+                if (err.code === 'LIMIT_FILE_SIZE') {
+                    return res.status(400).json({ error: 'Размер файла не должен превышать 5МБ' });
+                }
+                return res.status(400).json({ error: err.message });
+            } else {
+                return res.status(400).json({ error: err.message });
+            }
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+
+        const imageUrl = `/uploads/${req.file.filename}`;
+        res.json({ url: imageUrl });
+    });
 });
 
 // --- ADMIN AUTH ---
-app.post('/api/admin/login', async (req, res) => {
+app.post('/api/admin/login', rateLimiter, async (req, res) => {
     const { username, password } = req.body;
     try {
         const passResult = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'admin_password'");
-        const adminPass = passResult.rows.length > 0 ? passResult.rows[0].setting_value : (process.env.ADMIN_PASS || 'admin');
+        let adminPass = passResult.rows.length > 0 ? passResult.rows[0].setting_value : null;
+        const defaultPass = process.env.ADMIN_PASS || 'admin';
+        const isDefaultUsed = !adminPass;
+        if (isDefaultUsed) {
+            adminPass = defaultPass;
+        }
         const adminUser = process.env.ADMIN_USER || 'admin';
 
-        if (username === adminUser && password === adminPass) {
-            // Return a dummy token for simplicity
-            res.json({ success: true, token: 'admin-secret-token-123' });
+        if (username === adminUser && verifyPassword(password, adminPass)) {
+            // Migrating plain text admin password to scrypt hash on successful login
+            if (isDefaultUsed || !adminPass.includes(':')) {
+                console.log('[Security] Migrating admin password to scrypt hash');
+                const hashed = hashPassword(password);
+                await pool.query(
+                    `INSERT INTO settings (setting_key, setting_value, description) 
+                     VALUES ('admin_password', $1, 'Пароль администратора') 
+                     ON CONFLICT (setting_key) DO UPDATE SET setting_value = $1`,
+                    [hashed]
+                );
+            }
+
+            // Generate secure session token
+            const token = crypto.randomBytes(32).toString('hex');
+            await pool.query("INSERT INTO admin_sessions (token) VALUES ($1)", [token]);
+
+            // Clear login attempts for this IP on success
+            const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            loginAttempts.delete(ip);
+
+            res.json({ success: true, token });
         } else {
             res.status(401).json({ error: 'Неверный логин или пароль' });
         }
@@ -56,6 +189,16 @@ app.post('/api/admin/login', async (req, res) => {
         console.error(err);
         res.status(500).json({ error: 'Internal server error' });
     }
+});
+
+// Admin logout endpoint
+app.post('/api/admin/logout', async (req, res) => {
+    const authHeader = req.headers['authorization'];
+    if (authHeader) {
+        const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+        await pool.query('DELETE FROM admin_sessions WHERE token = $1', [token]);
+    }
+    res.json({ success: true });
 });
 
 // --- HEALTH CHECK ---
@@ -73,6 +216,23 @@ app.get('/api/health', async (req, res) => {
 app.get('/api/products', async (req, res) => {
     try {
         const includeAll = req.query.all === 'true';
+        
+        // Protect all=true (disabled/draft products) to authenticated admin only
+        if (includeAll) {
+            let isAdmin = false;
+            const authHeader = req.headers['authorization'];
+            if (authHeader) {
+                const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+                const sessionRes = await pool.query('SELECT 1 FROM admin_sessions WHERE token = $1', [token]);
+                if (sessionRes.rows.length > 0) {
+                    isAdmin = true;
+                }
+            }
+            if (!isAdmin) {
+                return res.status(401).json({ error: 'Требуется авторизация для просмотра всех товаров' });
+            }
+        }
+
         const query = includeAll
             ? 'SELECT * FROM products ORDER BY id ASC'
             : 'SELECT * FROM products WHERE is_active = true ORDER BY id ASC';
@@ -198,7 +358,7 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', authenticateAdmin, async (req, res) => {
     try {
         const { name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active, slug, seoTitle, seoDescription, category, fsa_link } = req.body;
         const result = await pool.query(
@@ -212,7 +372,7 @@ app.post('/api/products', async (req, res) => {
     }
 });
 
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active, slug, seoTitle, seoDescription, category, fsa_link } = req.body;
@@ -229,7 +389,7 @@ app.put('/api/products/:id', async (req, res) => {
     }
 });
 
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const result = await pool.query('DELETE FROM products WHERE id = $1 RETURNING *', [id]);
@@ -251,7 +411,7 @@ app.get('/api/brands', async (req, res) => {
     }
 });
 
-app.post('/api/brands', async (req, res) => {
+app.post('/api/brands', authenticateAdmin, async (req, res) => {
     try {
         const { name } = req.body;
         const result = await pool.query('INSERT INTO brands (name) VALUES ($1) RETURNING *', [name]);
@@ -261,7 +421,7 @@ app.post('/api/brands', async (req, res) => {
     }
 });
 
-app.put('/api/brands/:id', async (req, res) => {
+app.put('/api/brands/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { name } = req.body;
@@ -273,7 +433,7 @@ app.put('/api/brands/:id', async (req, res) => {
     }
 });
 
-app.delete('/api/brands/:id', async (req, res) => {
+app.delete('/api/brands/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const result = await pool.query('DELETE FROM brands WHERE id = $1 RETURNING *', [id]);
@@ -294,7 +454,7 @@ app.get('/api/faqs', async (req, res) => {
     }
 });
 
-app.post('/api/faqs', async (req, res) => {
+app.post('/api/faqs', authenticateAdmin, async (req, res) => {
     try {
         const { question, answer, sort_order } = req.body;
         const result = await pool.query(
@@ -307,7 +467,7 @@ app.post('/api/faqs', async (req, res) => {
     }
 });
 
-app.put('/api/faqs/:id', async (req, res) => {
+app.put('/api/faqs/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { question, answer, sort_order } = req.body;
@@ -322,7 +482,7 @@ app.put('/api/faqs/:id', async (req, res) => {
     }
 });
 
-app.delete('/api/faqs/:id', async (req, res) => {
+app.delete('/api/faqs/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const result = await pool.query('DELETE FROM faqs WHERE id = $1 RETURNING *', [id]);
@@ -336,25 +496,65 @@ app.delete('/api/faqs/:id', async (req, res) => {
 // --- SETTINGS ---
 app.get('/api/settings', async (req, res) => {
     try {
-        const result = await pool.query("SELECT * FROM settings WHERE setting_key != 'admin_password' ORDER BY id ASC");
-        res.json(result.rows);
+        let isAdmin = false;
+        const authHeader = req.headers['authorization'];
+        if (authHeader) {
+            const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+            const sessionRes = await pool.query('SELECT 1 FROM admin_sessions WHERE token = $1', [token]);
+            if (sessionRes.rows.length > 0) {
+                isAdmin = true;
+            }
+        }
+
+        if (isAdmin) {
+            const result = await pool.query("SELECT * FROM settings WHERE setting_key != 'admin_password' ORDER BY id ASC");
+            res.json(result.rows);
+        } else {
+            // Whitelist of public settings allowed to be seen by unauthenticated users
+            const publicKeys = [
+                'contact_phone',
+                'contact_address',
+                'contact_hours',
+                'contact_map_url',
+                'contact_metropolis_phone',
+                'contact_metropolis_address',
+                'contact_metropolis_hours',
+                'contact_metropolis_map_url',
+                'social_telegram',
+                'social_instagram',
+                'social_vk',
+                'social_tiktok',
+                'legal_information',
+                'moysklad_sync_enabled',
+                'yookassa_enabled'
+            ];
+            const result = await pool.query(
+                "SELECT * FROM settings WHERE setting_key = ANY($1) AND setting_key != 'admin_password' ORDER BY id ASC",
+                [publicKeys]
+            );
+            res.json(result.rows);
+        }
     } catch (err) {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-app.put('/api/settings/batch', async (req, res) => {
+app.put('/api/settings/batch', authenticateAdmin, async (req, res) => {
     const client = await pool.connect();
     try {
         const { updates } = req.body; // Array of {key, value}
         await client.query('BEGIN');
 
         for (const update of updates) {
+            let val = update.value;
+            if (update.key === 'admin_password') {
+                val = hashPassword(val);
+            }
             await client.query(
                 `INSERT INTO settings (setting_key, setting_value) 
                  VALUES ($1, $2) 
                  ON CONFLICT (setting_key) DO UPDATE SET setting_value = $2`,
-                [update.key, update.value]
+                [update.key, val]
             );
         }
 
@@ -387,7 +587,7 @@ app.get('/api/payments', async (req, res) => {
     }
 });
 
-app.post('/api/payments', async (req, res) => {
+app.post('/api/payments', authenticateAdmin, async (req, res) => {
     try {
         const { name, is_active } = req.body;
         const result = await pool.query(
@@ -400,7 +600,7 @@ app.post('/api/payments', async (req, res) => {
     }
 });
 
-app.put('/api/payments/:id', async (req, res) => {
+app.put('/api/payments/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { name, is_active } = req.body;
@@ -415,7 +615,7 @@ app.put('/api/payments/:id', async (req, res) => {
     }
 });
 
-app.delete('/api/payments/:id', async (req, res) => {
+app.delete('/api/payments/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const result = await pool.query('DELETE FROM payment_methods WHERE id = $1 RETURNING *', [id]);
@@ -436,7 +636,7 @@ app.get('/api/pickup_points', async (req, res) => {
     }
 });
 
-app.post('/api/pickup_points', async (req, res) => {
+app.post('/api/pickup_points', authenticateAdmin, async (req, res) => {
     try {
         const { address, is_active, moysklad_store_id, moysklad_store_name, sort_order } = req.body;
         const result = await pool.query(
@@ -450,7 +650,7 @@ app.post('/api/pickup_points', async (req, res) => {
     }
 });
 
-app.put('/api/pickup_points/:id', async (req, res) => {
+app.put('/api/pickup_points/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { address, is_active, moysklad_store_id, moysklad_store_name, sort_order } = req.body;
@@ -466,7 +666,7 @@ app.put('/api/pickup_points/:id', async (req, res) => {
     }
 });
 
-app.delete('/api/pickup_points/:id', async (req, res) => {
+app.delete('/api/pickup_points/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const result = await pool.query('DELETE FROM pickup_points WHERE id = $1 RETURNING *', [id]);
@@ -838,7 +1038,7 @@ app.post('/api/orders', async (req, res) => {
     }
 });
 
-app.get('/api/orders', async (req, res) => {
+app.get('/api/orders', authenticateAdmin, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM orders ORDER BY created_at DESC');
         res.json(result.rows);
@@ -848,7 +1048,7 @@ app.get('/api/orders', async (req, res) => {
     }
 });
 
-app.delete('/api/orders/:id', async (req, res) => {
+app.delete('/api/orders/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const result = await pool.query('DELETE FROM orders WHERE id = $1 RETURNING *', [id]);
@@ -878,7 +1078,7 @@ app.get('/api/order_status/:id', async (req, res) => {
 });
 
 
-app.put('/api/orders/:id/status', async (req, res) => {
+app.put('/api/orders/:id/status', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
@@ -904,7 +1104,7 @@ app.put('/api/orders/:id/status', async (req, res) => {
     }
 });
 
-app.put('/api/orders/:id/payment_status', async (req, res) => {
+app.put('/api/orders/:id/payment_status', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { payment_status } = req.body;
@@ -937,12 +1137,40 @@ app.post('/api/yookassa/webhook', async (req, res) => {
             return res.status(400).send('Invalid webhook data');
         }
 
-        if (eventType === 'payment.succeeded') {
+        // Fetch YooKassa credentials from settings
+        const settingsRes = await pool.query("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('yookassa_enabled', 'yookassa_shop_id', 'yookassa_secret_key')");
+        const config = {};
+        settingsRes.rows.forEach(r => { config[r.setting_key] = r.setting_value; });
+
+        if (config.yookassa_enabled !== 'true' || !config.yookassa_shop_id || !config.yookassa_secret_key) {
+            console.error('[YooKassa Webhook] YooKassa is disabled or credentials are not configured');
+            return res.status(400).send('Webhook verification failed: credentials missing or disabled');
+        }
+
+        // Verify the payment details directly from the YooKassa API to prevent spoofing
+        const authHeader = 'Basic ' + Buffer.from(`${config.yookassa_shop_id}:${config.yookassa_secret_key}`).toString('base64');
+        const verifyRes = await globalThis.fetch(`https://api.yookassa.ru/v3/payments/${paymentData.id}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': authHeader
+            }
+        });
+
+        if (!verifyRes.ok) {
+            const errText = await verifyRes.text();
+            console.error(`[YooKassa Webhook] Verification request failed for payment ${paymentData.id}:`, errText);
+            return res.status(400).send('Webhook verification failed');
+        }
+
+        const verifiedPayment = await verifyRes.json();
+        const verifiedStatus = verifiedPayment.status;
+
+        if (eventType === 'payment.succeeded' && verifiedStatus === 'succeeded') {
             const updateRes = await pool.query(
                 "UPDATE orders SET payment_status = 'Оплачен' WHERE yookassa_payment_id = $1 RETURNING *",
                 [paymentData.id]
             );
-            console.log(`[YooKassa Webhook] Order with payment ID ${paymentData.id} marked as Оплачен`);
+            console.log(`[YooKassa Webhook] Order with payment ID ${paymentData.id} verified and marked as Оплачен`);
 
             if (updateRes.rows.length > 0) {
                 const order = updateRes.rows[0];
@@ -954,12 +1182,12 @@ app.post('/api/yookassa/webhook', async (req, res) => {
                     await updateMsOrderStatus(order.moysklad_id, 'Оплачен');
                 }
             }
-        } else if (eventType === 'payment.canceled') {
+        } else if (eventType === 'payment.canceled' && verifiedStatus === 'canceled') {
             const cancelRes = await pool.query(
                 "UPDATE orders SET payment_status = 'Отменен' WHERE yookassa_payment_id = $1 AND payment_status = 'Ожидает оплаты' RETURNING *",
                 [paymentData.id]
             );
-            console.log(`[YooKassa Webhook] Order with payment ID ${paymentData.id} marked as Отменен`);
+            console.log(`[YooKassa Webhook] Order with payment ID ${paymentData.id} verified and marked as Отменен`);
             
             if (cancelRes.rows.length > 0) {
                 const order = cancelRes.rows[0];
@@ -968,6 +1196,8 @@ app.post('/api/yookassa/webhook', async (req, res) => {
                     await updateMsOrderStatus(order.moysklad_id, 'Отменен');
                 }
             }
+        } else {
+            console.log(`[YooKassa Webhook] Ignored verified payment state: event=${eventType}, status=${verifiedStatus}`);
         }
 
         res.status(200).send('OK');
@@ -990,6 +1220,10 @@ app.post('/api/moysklad/webhook', async (req, res) => {
         }
 
         const msRequest = async (url) => {
+            // SSRF check: ensure URL points only to official MoySklad domains
+            if (!url.startsWith('https://api.moysklad.ru/') && !url.startsWith('https://online.moysklad.ru/')) {
+                throw new Error(`SSRF Prevention: Invalid MoySklad URL: ${url}`);
+            }
             const authHeader = token.includes(':') ? `Basic ${Buffer.from(token).toString('base64')}` : `Bearer ${token}`;
             const res = await globalThis.fetch(url, { headers: { 'Authorization': authHeader, 'Accept-Encoding': 'gzip' } });
             if (!res.ok) throw new Error(`Fetch error: ${res.status}`);
@@ -1036,7 +1270,7 @@ app.post('/api/moysklad/webhook', async (req, res) => {
     }
 });
 
-app.get('/api/moysklad/stock-by-sku', async (req, res) => {
+app.get('/api/moysklad/stock-by-sku', authenticateAdmin, async (req, res) => {
     try {
         const { sku } = req.query;
         if (!sku) {
@@ -1052,7 +1286,7 @@ app.get('/api/moysklad/stock-by-sku', async (req, res) => {
     }
 });
 
-app.get('/api/moysklad/stores', async (req, res) => {
+app.get('/api/moysklad/stores', authenticateAdmin, async (req, res) => {
     try {
         const { getMsStores } = require('./moysklad_api');
         const stores = await getMsStores();
