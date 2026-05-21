@@ -964,6 +964,22 @@ app.post('/api/moysklad/webhook', async (req, res) => {
     }
 });
 
+app.get('/api/moysklad/stock-by-sku', async (req, res) => {
+    try {
+        const { sku } = req.query;
+        if (!sku) {
+            return res.status(400).json({ error: 'SKU is required' });
+        }
+        
+        const { getMsStockBySku } = require('./moysklad_api');
+        const stockData = await getMsStockBySku(sku);
+        res.json(stockData || []);
+    } catch (err) {
+        console.error('Error fetching stock by SKU:', err);
+        res.status(500).json({ error: 'Internal server error', details: err.message });
+    }
+});
+
 const syncWithMoySklad = require('./sync_moysklad');
 
 let syncTimeout = null;

@@ -249,7 +249,36 @@ async function updateMsOrderStatus(msOrderId, localStatus) {
     }
 }
 
+async function getMsStockBySku(sku) {
+    try {
+        const { token, enabled } = await getMsSettings();
+        if (!enabled || !token) {
+            console.log('[MoySklad] Stock query skipped: sync disabled or no token.');
+            return null;
+        }
+
+        const itemMeta = await findAssortmentMeta(token, sku);
+        if (!itemMeta) {
+            console.log(`[MoySklad] Assortment not found for SKU: ${sku}`);
+            return null;
+        }
+
+        const endpoint = `/report/stock/bystore?filter=${itemMeta.type}=${encodeURIComponent(itemMeta.href)}`;
+        const stockData = await msRequest(endpoint, token);
+
+        if (stockData && stockData.rows && stockData.rows.length > 0) {
+            return stockData.rows[0].stockByStore || [];
+        }
+        return [];
+    } catch (error) {
+        console.error(`[MoySklad] Failed to fetch stock by SKU (${sku}):`, error.message);
+        return null;
+    }
+}
+
 module.exports = {
     createMsCustomerOrder,
-    updateMsOrderStatus
+    updateMsOrderStatus,
+    getMsStockBySku
 };
+

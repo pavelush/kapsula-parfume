@@ -21,6 +21,8 @@ export default function AdminProducts() {
     const [activeCategoryFilter, setActiveCategoryFilter] = useState('Все');
 
     const [activeVolumeTab, setActiveVolumeTab] = useState('3');
+    const [msWarehouseStock, setMsWarehouseStock] = useState([]);
+    const [loadingMsStock, setLoadingMsStock] = useState(false);
 
     // Form state
     const initialProductState = {
@@ -40,6 +42,36 @@ export default function AdminProducts() {
         fetchProducts();
         fetchBrands();
     }, []);
+
+    const fetchMsStock = async (sku) => {
+        if (!sku) {
+            setMsWarehouseStock([]);
+            return;
+        }
+        setLoadingMsStock(true);
+        try {
+            const res = await fetch(`/api/moysklad/stock-by-sku?sku=${encodeURIComponent(sku)}`);
+            if (res.ok) {
+                const data = await res.json();
+                setMsWarehouseStock(data);
+            } else {
+                setMsWarehouseStock([]);
+            }
+        } catch (error) {
+            console.error('Error fetching MS warehouse stock:', error);
+            setMsWarehouseStock([]);
+        } finally {
+            setLoadingMsStock(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isModalOpen) {
+            fetchMsStock(currentProduct.volumes[activeVolumeTab]?.sku);
+        } else {
+            setMsWarehouseStock([]);
+        }
+    }, [activeVolumeTab, isModalOpen]);
 
     const fetchProducts = async () => {
         setLoading(true);
@@ -561,6 +593,7 @@ export default function AdminProducts() {
                                                 [activeVolumeTab]: { ...currentProduct.volumes[activeVolumeTab], sku: e.target.value }
                                             }
                                         })}
+                                        onBlur={(e) => fetchMsStock(e.target.value)}
                                         placeholder="Например: ART-123"
                                     />
                                 </div>
@@ -582,6 +615,37 @@ export default function AdminProducts() {
                                     <small style={{ color: 'var(--color-text-muted)', display: 'block', marginTop: '0.4rem', fontSize: '0.75rem' }}>Если остаток 0, кнопка скроется на сайте.</small>
                                 </div>
                             </div>
+
+                            {currentProduct.volumes[activeVolumeTab]?.sku && (
+                                <div style={{ marginTop: '1.5rem', padding: '1.2rem', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>Остатки по складам (МойСклад):</span>
+                                        {loadingMsStock && <span style={{ color: 'var(--color-accent-gold)' }}>Загрузка...</span>}
+                                    </div>
+                                    {loadingMsStock ? (
+                                        <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)' }}>Получение данных из МойСклад...</div>
+                                    ) : msWarehouseStock && msWarehouseStock.length > 0 ? (
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.75rem' }}>
+                                            {msWarehouseStock.map((wh) => {
+                                                const available = (wh.stock || 0) - (wh.reserve || 0);
+                                                return (
+                                                    <div key={wh.name} style={{ background: 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                        <div style={{ fontWeight: '500', color: 'white', fontSize: '0.9rem', marginBottom: '2px' }}>{wh.name}</div>
+                                                        <div style={{ fontSize: '0.8rem', color: available > 0 ? 'var(--color-accent-gold)' : 'var(--color-text-muted)' }}>
+                                                            Доступно: <strong style={{ color: available > 0 ? '#10B981' : '#EF4444' }}>{available}</strong> 
+                                                            <span style={{ opacity: 0.7, marginLeft: '6px' }}>(физ: {wh.stock || 0}, рез: {wh.reserve || 0})</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+                                            Нет данных по складам или товар с кодом "{currentProduct.volumes[activeVolumeTab]?.sku}" не найден в МойСклад.
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary" style={{ padding: '8px 24px' }}>Отмена</button>
