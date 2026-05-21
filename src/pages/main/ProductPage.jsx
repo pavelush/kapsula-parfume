@@ -4,7 +4,7 @@ import { ShoppingBag, ChevronLeft, Heart } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import Footer from '../../components/Footer';
 
-export default function ProductPage({ favorites = [], toggleFavorite = () => { }, addToCart = () => { } }) {
+export default function ProductPage({ favorites = [], toggleFavorite = () => { }, addToCart = () => { }, selectedStore = null }) {
     const { slug } = useParams();
     const navigate = useNavigate();
     const [product, setProduct] = useState(null);
@@ -15,10 +15,12 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
 
     useEffect(() => {
         const fetchProduct = async () => {
+            setLoading(true);
             try {
                 // Fetch all products and find by slug
                 // Note: since we don't have a GET /api/products/:slug endpoint yet, we fetch all and filter
-                const response = await fetch('/api/products');
+                const storeParam = selectedStore?.moysklad_store_id ? `?store_id=${selectedStore.moysklad_store_id}` : '';
+                const response = await fetch(`/api/products${storeParam}`);
                 if (response.ok) {
                     const data = await response.json();
                     const found = data.find(p => p.slug === slug);
@@ -103,7 +105,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
         };
 
         fetchProduct();
-    }, [slug, navigate]);
+    }, [slug, navigate, selectedStore?.moysklad_store_id]);
 
     if (loading) {
         return (

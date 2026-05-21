@@ -323,10 +323,74 @@ async function getMsStores() {
     }
 }
 
+let assortmentCache = null;
+let lastCacheTime = 0;
+const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+
+async function getAssortmentMapping(token) {
+    const now = Date.now();
+    if (assortmentCache && (now - lastCacheTime < CACHE_TTL)) {
+        return assortmentCache;
+    }
+
+    console.log('[MoySklad Stock Sync] Fetching assortment for cache...');
+    const data = await msRequest('/entity/assortment?limit=1000', token);
+    const hrefToSku = new Map();
+    if (data && data.rows) {
+        data.rows.forEach(item => {
+            const sku = item.article || item.code;
+            if (sku && item.meta && item.meta.href) {
+                hrefToSku.set(item.meta.href.split('?')[0], sku);
+            }
+        });
+    }
+
+    assortmentCache = hrefToSku;
+    lastCacheTime = now;
+    return hrefToSku;
+}
+
+async function getMsStockByStore(storeId) {
+    try {
+        const { token, enabled } = await getMsSettings();
+        if (!enabled || !token) {
+            console.log('[MoySklad] Stock query by store skipped: sync disabled or no token.');
+            return null;
+        }
+
+        const hrefToSku = await getAssortmentMapping(token);
+        const endpoint = `/report/stock/bystore?filter=store=https://api.moysklad.ru/api/remap/1.2/entity/store/${storeId}&limit=1000`;
+        const stockData = await msRequest(endpoint, token);
+
+        const skuStockMap = new Map();
+        if (stockData && stockData.rows) {
+            stockData.rows.forEach(row => {
+                if (row.meta && row.meta.href) {
+                    const cleanHref = row.meta.href.split('?')[0];
+                    const sku = hrefToSku.get(cleanHref);
+                    if (sku) {
+                        const storeStock = row.stockByStore ? row.stockByStore[0] : null;
+                        const stock = storeStock ? storeStock.stock : 0;
+                        const reserve = storeStock ? storeStock.reserve : 0;
+                        const available = stock - reserve;
+                        skuStockMap.set(sku, Math.max(0, available));
+                    }
+                }
+            });
+        }
+        return skuStockMap;
+    } catch (error) {
+        console.error(`[MoySklad] Failed to fetch stock by store (${storeId}):`, error.message);
+        return null;
+    }
+}
+
 module.exports = {
     createMsCustomerOrder,
     updateMsOrderStatus,
     getMsStockBySku,
-    getMsStores
+    getMsStores,
+    getMsStockByStore
 };
+
 

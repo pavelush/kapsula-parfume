@@ -84,42 +84,58 @@ app.get('/api/products', async (req, res) => {
         const modifierStr = settingsRes.rows.length > 0 ? settingsRes.rows[0].setting_value : '0';
         const modifier = parseFloat(modifierStr) || 0;
 
-        // Apply modifier if it's not 0
-        if (modifier !== 0) {
-            products = products.map(product => {
-                if (!product.prices || typeof product.prices !== 'object') return product;
+        // Fetch MoySklad store stock map if store_id query param is present
+        const storeId = req.query.store_id;
+        let storeStockMap = null;
+        if (storeId) {
+            try {
+                const { getMsStockByStore } = require('./moysklad_api');
+                storeStockMap = await getMsStockByStore(storeId);
+            } catch (err) {
+                console.error(`Error fetching stock for store ${storeId}:`, err);
+            }
+        }
 
-                const modifiedPrices = { ...product.prices };
-                for (const [vol, data] of Object.entries(modifiedPrices)) {
-                    // It can be just the string/number price, or an object { price: 1000, sku: '...', stock: 0 }
-                    let currentPrice = null;
-                    if (typeof data === 'object' && data !== null && data.price) {
-                        currentPrice = parseFloat(String(data.price).replace(/\s/g, ''));
-                    } else if (typeof data === 'string' || typeof data === 'number') {
-                        currentPrice = parseFloat(String(data).replace(/\s/g, ''));
-                    }
+        // Apply modifier and store stock override
+        products = products.map(product => {
+            if (!product.prices || typeof product.prices !== 'object') return product;
 
-                    if (currentPrice && !isNaN(currentPrice)) {
-                        // Math: originalPrice * (1 - modifier / 100)
-                        // If modifier is 5, it's originalPrice * 0.95 (5% discount)
-                        let newPrice = currentPrice * (1 - (modifier / 100));
-                        newPrice = Math.round(newPrice); // Round to nearest whole number
+            const modifiedPrices = { ...product.prices };
+            for (const [vol, data] of Object.entries(modifiedPrices)) {
+                let currentPrice = null;
+                if (typeof data === 'object' && data !== null && data.price) {
+                    currentPrice = parseFloat(String(data.price).replace(/\s/g, ''));
+                } else if (typeof data === 'string' || typeof data === 'number') {
+                    currentPrice = parseFloat(String(data).replace(/\s/g, ''));
+                }
 
-                        // Add nice formatting (spaces)
-                        const formattedNewPrice = newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+                // Initialize updated data object
+                let updatedData = typeof data === 'object' && data !== null ? { ...data } : { price: data };
 
-                        // Update object structure if it was primitive
-                        if (typeof data === 'object' && data !== null) {
-                            modifiedPrices[vol] = { ...data, price: formattedNewPrice };
-                        } else {
-                            // If it was just "1500" or 1500, we'll keep the object structure for future
-                            modifiedPrices[vol] = { price: formattedNewPrice };
-                        }
+                // Apply modifier if it's not 0
+                if (modifier !== 0 && currentPrice && !isNaN(currentPrice)) {
+                    // Math: originalPrice * (1 - modifier / 100)
+                    // If modifier is 5, it's originalPrice * 0.95 (5% discount)
+                    let newPrice = currentPrice * (1 - (modifier / 100));
+                    newPrice = Math.round(newPrice); // Round to nearest whole number
+
+                    // Add nice formatting (spaces)
+                    const formattedNewPrice = newPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+                    updatedData.price = formattedNewPrice;
+                }
+
+                // Apply store stock override
+                if (storeStockMap instanceof Map) {
+                    if (updatedData.sku) {
+                        const newStock = storeStockMap.has(updatedData.sku) ? storeStockMap.get(updatedData.sku) : 0;
+                        updatedData.stock = newStock;
                     }
                 }
-                return { ...product, prices: modifiedPrices };
-            });
-        }
+
+                modifiedPrices[vol] = updatedData;
+            }
+            return { ...product, prices: modifiedPrices };
+        });
 
         res.json(products);
     } catch (err) {
@@ -359,7 +375,7 @@ app.delete('/api/payments/:id', async (req, res) => {
 // --- PICKUP POINTS ---
 app.get('/api/pickup_points', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM pickup_points ORDER BY id ASC');
+        const result = await pool.query('SELECT * FROM pickup_points ORDER BY sort_order ASC, id ASC');
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: 'Internal server error' });
@@ -368,10 +384,10 @@ app.get('/api/pickup_points', async (req, res) => {
 
 app.post('/api/pickup_points', async (req, res) => {
     try {
-        const { address, is_active, moysklad_store_id, moysklad_store_name } = req.body;
+        const { address, is_active, moysklad_store_id, moysklad_store_name, sort_order } = req.body;
         const result = await pool.query(
-            'INSERT INTO pickup_points (address, is_active, moysklad_store_id, moysklad_store_name) VALUES ($1, $2, $3, $4) RETURNING *',
-            [address, is_active !== undefined ? is_active : true, moysklad_store_id || null, moysklad_store_name || null]
+            'INSERT INTO pickup_points (address, is_active, moysklad_store_id, moysklad_store_name, sort_order) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [address, is_active !== undefined ? is_active : true, moysklad_store_id || null, moysklad_store_name || null, parseInt(sort_order, 10) || 0]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -383,10 +399,10 @@ app.post('/api/pickup_points', async (req, res) => {
 app.put('/api/pickup_points/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { address, is_active, moysklad_store_id, moysklad_store_name } = req.body;
+        const { address, is_active, moysklad_store_id, moysklad_store_name, sort_order } = req.body;
         const result = await pool.query(
-            'UPDATE pickup_points SET address = $1, is_active = $2, moysklad_store_id = $3, moysklad_store_name = $4 WHERE id = $5 RETURNING *',
-            [address, is_active, moysklad_store_id || null, moysklad_store_name || null, id]
+            'UPDATE pickup_points SET address = $1, is_active = $2, moysklad_store_id = $3, moysklad_store_name = $4, sort_order = $5 WHERE id = $6 RETURNING *',
+            [address, is_active, moysklad_store_id || null, moysklad_store_name || null, parseInt(sort_order, 10) || 0, id]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Pickup point not found' });
         res.json(result.rows[0]);

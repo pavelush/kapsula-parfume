@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Heart, Menu, X } from 'lucide-react';
+import { ShoppingBag, Heart, Menu, X, MapPin, ChevronDown } from 'lucide-react';
 import '../pages/main/MainSite.css';
 
-export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIsCartOpen }) {
+export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIsCartOpen, pickupPoints = [], selectedStore = null, setSelectedStore = () => {} }) {
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -14,6 +15,17 @@ export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIs
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleOutsideClick = (e) => {
+            if (!e.target.closest('.store-selector-container')) {
+                setIsOpen(false);
+            }
+        };
+        window.addEventListener('click', handleOutsideClick);
+        return () => window.removeEventListener('click', handleOutsideClick);
+    }, [isOpen]);
+
     return (
         <>
             <header className={`header ${scrolled ? 'scrolled' : ''}`}>
@@ -21,6 +33,96 @@ export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIs
                     <div className="logo" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => window.location.href = '/'}>
                         <img src="/images/logo/logo.png" alt="Kapsula Parfume Logo" style={{ height: '45px', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))', transition: 'all 0.3s ease' }} />
                     </div>
+
+                    {/* Store Selector Dropdown */}
+                    {pickupPoints.length > 0 && (
+                        <div className="store-selector-container" style={{ position: 'relative', marginLeft: '1rem', marginRight: 'auto' }}>
+                            <button
+                                onClick={() => setIsOpen(!isOpen)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    background: 'rgba(255, 255, 255, 0.07)',
+                                    border: '1px solid var(--glass-border)',
+                                    borderRadius: '20px',
+                                    padding: '5px 12px',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 500,
+                                    transition: 'all 0.3s ease',
+                                    backdropFilter: 'blur(10px)',
+                                    WebkitBackdropFilter: 'blur(10px)',
+                                }}
+                                className="store-selector-btn"
+                            >
+                                <MapPin size={13} color="var(--color-accent-gold, #fbbf24)" />
+                                <span className="store-selector-text">
+                                    {selectedStore ? (selectedStore.address.split(',').slice(1).join(',').trim() || selectedStore.address) : 'Выбрать магазин'}
+                                </span>
+                                <ChevronDown size={13} style={{ transition: 'transform 0.3s ease', transform: isOpen ? 'rotate(180deg)' : 'none' }} />
+                            </button>
+
+                            {isOpen && (
+                                <div
+                                    className="store-dropdown"
+                                    style={{
+                                        position: 'absolute',
+                                        top: 'calc(100% + 8px)',
+                                        left: 0,
+                                        width: '260px',
+                                        background: 'rgba(20, 20, 20, 0.95)',
+                                        backdropFilter: 'blur(20px)',
+                                        WebkitBackdropFilter: 'blur(20px)',
+                                        border: '1px solid var(--glass-border)',
+                                        borderRadius: '16px',
+                                        padding: '8px 0',
+                                        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                                        zIndex: 200,
+                                    }}
+                                >
+                                    <div style={{ padding: '8px 16px 4px', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                                        Выберите магазин
+                                    </div>
+                                    {pickupPoints.map(store => {
+                                        const isSelected = selectedStore && store.id === selectedStore.id;
+                                        return (
+                                            <button
+                                                key={store.id}
+                                                onClick={() => {
+                                                    setSelectedStore(store);
+                                                    setIsOpen(false);
+                                                }}
+                                                style={{
+                                                    display: 'block',
+                                                    width: '100%',
+                                                    textAlign: 'left',
+                                                    background: isSelected ? 'rgba(251, 191, 36, 0.1)' : 'transparent',
+                                                    border: 'none',
+                                                    padding: '10px 16px',
+                                                    color: isSelected ? 'var(--color-accent-gold, #fbbf24)' : 'white',
+                                                    cursor: 'pointer',
+                                                    fontSize: '0.85rem',
+                                                    transition: 'all 0.2s ease',
+                                                    fontWeight: isSelected ? 600 : 400,
+                                                }}
+                                                onMouseOver={(e) => { if (!isSelected) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; }}
+                                                onMouseOut={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '8px' }}>
+                                                        {store.address}
+                                                    </span>
+                                                    {isSelected && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-accent-gold, #fbbf24)', flexShrink: 0 }} />}
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div className={`nav-links ${mobileMenuOpen ? 'mobile-active' : ''}`}>
                         <div className="mobile-menu-header">
@@ -64,6 +166,12 @@ export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIs
         .mobile-menu-header {
           display: none;
         }
+        .store-selector-text {
+          max-width: 150px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
         @media (max-width: 768px) {
           .mobile-menu-header {
             display: flex;
@@ -75,6 +183,9 @@ export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIs
             top: 0;
             left: 0;
             border-bottom: 1px solid rgba(255,255,255,0.1);
+          }
+          .store-selector-text {
+            max-width: 90px;
           }
           .nav-links {
             position: fixed;
@@ -98,6 +209,11 @@ export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIs
           }
           .menu-toggle {
             display: block !important;
+          }
+        }
+        @media (max-width: 380px) {
+          .store-selector-text {
+            max-width: 60px;
           }
         }
       `}} />

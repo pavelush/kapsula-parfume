@@ -7,7 +7,7 @@ export default function AdminDelivery() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [msStores, setMsStores] = useState([]);
 
-    const initialPointState = { id: '', address: '', is_active: true, moysklad_store_id: null, moysklad_store_name: null };
+    const initialPointState = { id: '', address: '', is_active: true, moysklad_store_id: null, moysklad_store_name: null, sort_order: 0 };
     const [currentPoint, setCurrentPoint] = useState(initialPointState);
 
     useEffect(() => {
@@ -99,6 +99,7 @@ export default function AdminDelivery() {
                                 <th>ID</th>
                                 <th>Адрес пункта выдачи</th>
                                 <th>Склад МойСклад</th>
+                                <th>Приоритет</th>
                                 <th>Статус</th>
                                 <th style={{ textAlign: 'right' }}>Действия</th>
                             </tr>
@@ -110,6 +111,9 @@ export default function AdminDelivery() {
                                     <td style={{ fontWeight: 500, color: 'white' }}>{point.address}</td>
                                     <td style={{ color: 'var(--color-accent-gold)' }}>
                                         {point.moysklad_store_name || <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Не привязан</span>}
+                                    </td>
+                                    <td style={{ color: 'var(--color-text-muted)' }}>
+                                        {point.sort_order ?? 0}
                                     </td>
                                     <td>
                                         <span style={{
@@ -133,7 +137,7 @@ export default function AdminDelivery() {
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan="4" style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>Пункты выдачи не найдены</td>
+                                    <td colSpan="6" style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>Пункты выдачи не найдены</td>
                                 </tr>
                             )}
                         </tbody>
@@ -195,6 +199,18 @@ export default function AdminDelivery() {
                                     style={{ width: '18px', height: '18px' }}
                                 />
                                 <label htmlFor="isActive" style={{ margin: 0, cursor: 'pointer' }}>Точка активна и доступна для выбора</label>
+                            </div>
+
+                            <div className="form-group" style={{ marginTop: '1rem' }}>
+                                <label>Приоритет сортировки (чем меньше число, тем выше в списке)</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    value={currentPoint.sort_order ?? 0}
+                                    onChange={(e) => setCurrentPoint({ ...currentPoint, sort_order: parseInt(e.target.value, 10) || 0 })}
+                                    style={{ background: '#181818', color: 'white' }}
+                                    placeholder="0"
+                                />
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
