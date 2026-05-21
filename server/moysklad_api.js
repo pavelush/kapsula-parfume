@@ -350,7 +350,18 @@ async function getAssortmentMapping(token) {
     return hrefToSku;
 }
 
+const storeStocksCache = new Map();
+const STORE_STOCK_TTL = 2 * 60 * 1000; // 2 minutes
+
 async function getMsStockByStore(storeId) {
+    const now = Date.now();
+    if (storeStocksCache.has(storeId)) {
+        const cached = storeStocksCache.get(storeId);
+        if (now - cached.time < STORE_STOCK_TTL) {
+            return cached.map;
+        }
+    }
+
     try {
         const { token, enabled } = await getMsSettings();
         if (!enabled || !token) {
@@ -378,6 +389,8 @@ async function getMsStockByStore(storeId) {
                 }
             });
         }
+        
+        storeStocksCache.set(storeId, { time: now, map: skuStockMap });
         return skuStockMap;
     } catch (error) {
         console.error(`[MoySklad] Failed to fetch stock by store (${storeId}):`, error.message);

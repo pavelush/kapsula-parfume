@@ -96,9 +96,63 @@ app.get('/api/products', async (req, res) => {
             }
         }
 
-        // Apply modifier and store stock override
+        // Fetch active stores for availability display
+        let activeStores = [];
+        let storeStockMaps = new Map();
+        try {
+            const activeStoresRes = await pool.query(
+                'SELECT address, moysklad_store_id FROM pickup_points WHERE is_active = true AND moysklad_store_id IS NOT NULL'
+            );
+            activeStores = activeStoresRes.rows;
+            
+            const { getMsStockByStore } = require('./moysklad_api');
+            // Fetch stocks in parallel (relies on cache inside moysklad_api)
+            await Promise.all(activeStores.map(async (store) => {
+                try {
+                    const stockMap = await getMsStockByStore(store.moysklad_store_id);
+                    if (stockMap) {
+                        storeStockMaps.set(store.moysklad_store_id, stockMap);
+                    }
+                } catch (err) {
+                    console.error(`Error fetching stock for store ${store.moysklad_store_id}:`, err);
+                }
+            }));
+        } catch (err) {
+            console.error('Error fetching active stores or store stocks:', err);
+        }
+
+        // Apply modifier, store stock override, and calculate available stores
         products = products.map(product => {
-            if (!product.prices || typeof product.prices !== 'object') return product;
+            // Calculate available stores first
+            const availableStores = [];
+            for (const store of activeStores) {
+                const stockMap = storeStockMaps.get(store.moysklad_store_id);
+                if (stockMap instanceof Map) {
+                    let isAvailableInStore = false;
+                    if (product.prices && typeof product.prices === 'object') {
+                        for (const [vol, data] of Object.entries(product.prices)) {
+                            if (data && data.sku) {
+                                const stock = stockMap.get(data.sku) || 0;
+                                if (stock > 0) {
+                                    isAvailableInStore = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (isAvailableInStore) {
+                        const displayName = store.address
+                            .replace(/Москва,\s*/i, '')
+                            .replace(/(ТЦ|ТРЦ|ТК)\s+/i, '')
+                            .trim();
+                        availableStores.push(displayName);
+                    }
+                }
+            }
+
+            if (!product.prices || typeof product.prices !== 'object') {
+                return { ...product, available_stores: availableStores };
+            }
 
             const modifiedPrices = { ...product.prices };
             for (const [vol, data] of Object.entries(modifiedPrices)) {
@@ -134,7 +188,7 @@ app.get('/api/products', async (req, res) => {
 
                 modifiedPrices[vol] = updatedData;
             }
-            return { ...product, prices: modifiedPrices };
+            return { ...product, prices: modifiedPrices, available_stores: availableStores };
         });
 
         res.json(products);

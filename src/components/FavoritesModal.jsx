@@ -106,6 +106,17 @@ export default function FavoritesModal({ isOpen, onClose, favoriteIds, products 
                                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                                 <span style={{ fontSize: '0.75rem', color: 'var(--color-accent-gold)', textTransform: 'uppercase' }}>{product.brand}</span>
                                                 <h4 style={{ fontSize: '1rem', margin: '2px 0 5px 0', transition: 'color 0.3s ease' }} onMouseOver={(e) => e.target.style.color = 'var(--color-accent-gold)'} onMouseOut={(e) => e.target.style.color = 'white'}>{product.name}</h4>
+                                                {product.available_stores && product.available_stores.length > 0 ? (
+                                                    <span style={{ fontSize: '0.75rem', color: '#4ade80', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4ade80', display: 'inline-block' }}></span>
+                                                        Доступен: {product.available_stores.join(', ')}
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444', display: 'inline-block' }}></span>
+                                                        Нет в наличии
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end' }}>
