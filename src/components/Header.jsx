@@ -176,27 +176,27 @@ export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIs
         }
         @media (max-width: 768px) {
           .header {
-            padding: 10px 3% !important;
+            padding: 10px 4% !important;
           }
           .header.scrolled {
-            padding: 8px 3% !important;
+            padding: 8px 4% !important;
           }
           .logo-store-wrapper {
-            gap: 0.5rem !important;
+            gap: 0.6rem !important;
           }
           .header-logo {
-            height: 32px !important;
+            height: 38px !important;
           }
           .store-selector-btn {
-            padding: 4px 8px !important;
-            gap: 4px !important;
-            font-size: 0.75rem !important;
+            padding: 5px 10px !important;
+            gap: 5px !important;
+            font-size: 0.78rem !important;
           }
           .store-selector-text {
-            max-width: 70px;
+            max-width: 85px;
           }
           .nav-actions {
-            gap: 0.6rem !important;
+            gap: 0.8rem !important;
           }
           .mobile-menu-header {
             display: flex;
@@ -235,7 +235,7 @@ export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIs
         }
         @media (max-width: 380px) {
           .store-selector-text {
-            max-width: 50px;
+            max-width: 70px;
           }
         }
       `}} />
