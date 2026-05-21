@@ -30,9 +30,9 @@ export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIs
         <>
             <header className={`header ${scrolled ? 'scrolled' : ''}`}>
                 <nav>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div className="logo-store-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div className="logo" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => window.location.href = '/'}>
-                            <img src="/images/logo/logo.png" alt="Kapsula Parfume Logo" style={{ height: '45px', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))', transition: 'all 0.3s ease' }} />
+                            <img className="header-logo" src="/images/logo/logo.png" alt="Kapsula Parfume Logo" style={{ height: '45px', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))', transition: 'all 0.3s ease' }} />
                         </div>
 
                         {/* Store Selector Dropdown */}
@@ -175,6 +175,29 @@ export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIs
           white-space: nowrap;
         }
         @media (max-width: 768px) {
+          .header {
+            padding: 10px 3% !important;
+          }
+          .header.scrolled {
+            padding: 8px 3% !important;
+          }
+          .logo-store-wrapper {
+            gap: 0.5rem !important;
+          }
+          .header-logo {
+            height: 32px !important;
+          }
+          .store-selector-btn {
+            padding: 4px 8px !important;
+            gap: 4px !important;
+            font-size: 0.75rem !important;
+          }
+          .store-selector-text {
+            max-width: 70px;
+          }
+          .nav-actions {
+            gap: 0.6rem !important;
+          }
           .mobile-menu-header {
             display: flex;
             justify-content: space-between;
@@ -185,9 +208,6 @@ export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIs
             top: 0;
             left: 0;
             border-bottom: 1px solid rgba(255,255,255,0.1);
-          }
-          .store-selector-text {
-            max-width: 90px;
           }
           .nav-links {
             position: fixed;
@@ -215,7 +235,7 @@ export default function Header({ favorites, cartItems, setIsFavoritesOpen, setIs
         }
         @media (max-width: 380px) {
           .store-selector-text {
-            max-width: 60px;
+            max-width: 50px;
           }
         }
       `}} />
