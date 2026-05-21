@@ -368,13 +368,14 @@ app.get('/api/pickup_points', async (req, res) => {
 
 app.post('/api/pickup_points', async (req, res) => {
     try {
-        const { address, is_active } = req.body;
+        const { address, is_active, moysklad_store_id, moysklad_store_name } = req.body;
         const result = await pool.query(
-            'INSERT INTO pickup_points (address, is_active) VALUES ($1, $2) RETURNING *',
-            [address, is_active !== undefined ? is_active : true]
+            'INSERT INTO pickup_points (address, is_active, moysklad_store_id, moysklad_store_name) VALUES ($1, $2, $3, $4) RETURNING *',
+            [address, is_active !== undefined ? is_active : true, moysklad_store_id || null, moysklad_store_name || null]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
+        console.error('Error creating pickup point:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -382,14 +383,15 @@ app.post('/api/pickup_points', async (req, res) => {
 app.put('/api/pickup_points/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { address, is_active } = req.body;
+        const { address, is_active, moysklad_store_id, moysklad_store_name } = req.body;
         const result = await pool.query(
-            'UPDATE pickup_points SET address = $1, is_active = $2 WHERE id = $3 RETURNING *',
-            [address, is_active, id]
+            'UPDATE pickup_points SET address = $1, is_active = $2, moysklad_store_id = $3, moysklad_store_name = $4 WHERE id = $5 RETURNING *',
+            [address, is_active, moysklad_store_id || null, moysklad_store_name || null, id]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Pickup point not found' });
         res.json(result.rows[0]);
     } catch (err) {
+        console.error('Error updating pickup point:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -976,6 +978,17 @@ app.get('/api/moysklad/stock-by-sku', async (req, res) => {
         res.json(stockData || []);
     } catch (err) {
         console.error('Error fetching stock by SKU:', err);
+        res.status(500).json({ error: 'Internal server error', details: err.message });
+    }
+});
+
+app.get('/api/moysklad/stores', async (req, res) => {
+    try {
+        const { getMsStores } = require('./moysklad_api');
+        const stores = await getMsStores();
+        res.json(stores || []);
+    } catch (err) {
+        console.error('Error fetching MS stores:', err);
         res.status(500).json({ error: 'Internal server error', details: err.message });
     }
 });

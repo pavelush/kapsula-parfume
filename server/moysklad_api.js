@@ -194,6 +194,21 @@ async function createMsCustomerOrder(order, items) {
         
         const description = `Способ оплаты: ${order.payment_method || 'Не указан'}\n${deliveryInfo}\nСоздан на сайте: kapsula-parfume.ru`;
 
+        let msStoreId = null;
+        if (order.delivery_type === 'pickup' && order.delivery_address) {
+            try {
+                const pickupPointRes = await pool.query(
+                    'SELECT moysklad_store_id FROM pickup_points WHERE address = $1 LIMIT 1',
+                    [order.delivery_address]
+                );
+                if (pickupPointRes.rows.length > 0) {
+                    msStoreId = pickupPointRes.rows[0].moysklad_store_id;
+                }
+            } catch (dbErr) {
+                console.error('[MoySklad] Failed to check store for pickup point:', dbErr.message);
+            }
+        }
+
         // Create the MS Order
         // Using local order ID as the name to easily link them
         const msOrderBody = {
@@ -202,6 +217,16 @@ async function createMsCustomerOrder(order, items) {
             agent: { meta: agentMeta },
             description: description,
         };
+
+        if (msStoreId) {
+            msOrderBody.store = {
+                meta: {
+                    href: `https://api.moysklad.ru/api/remap/1.2/entity/store/${msStoreId}`,
+                    type: 'store',
+                    mediaType: 'application/json'
+                }
+            };
+        }
 
         // Attach state using native naming
         const stateName = order.status || 'Новый';
@@ -276,9 +301,32 @@ async function getMsStockBySku(sku) {
     }
 }
 
+async function getMsStores() {
+    try {
+        const { token, enabled } = await getMsSettings();
+        if (!enabled || !token) {
+            console.log('[MoySklad] Sync disabled or no token, skipping stores fetch.');
+            return [];
+        }
+        const data = await msRequest('/entity/store', token);
+        if (data && data.rows) {
+            return data.rows.map(row => ({
+                id: row.id,
+                name: row.name,
+                href: row.meta.href
+            }));
+        }
+        return [];
+    } catch (error) {
+        console.error('[MoySklad] Failed to fetch stores:', error.message);
+        return [];
+    }
+}
+
 module.exports = {
     createMsCustomerOrder,
     updateMsOrderStatus,
-    getMsStockBySku
+    getMsStockBySku,
+    getMsStores
 };
 

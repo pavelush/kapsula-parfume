@@ -5,12 +5,14 @@ export default function AdminDelivery() {
     const [pickupPointsList, setPickupPointsList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [msStores, setMsStores] = useState([]);
 
-    const initialPointState = { id: '', address: '', is_active: true };
+    const initialPointState = { id: '', address: '', is_active: true, moysklad_store_id: null, moysklad_store_name: null };
     const [currentPoint, setCurrentPoint] = useState(initialPointState);
 
     useEffect(() => {
         fetchPickupPoints();
+        fetchMsStores();
     }, []);
 
     const fetchPickupPoints = async () => {
@@ -22,6 +24,15 @@ export default function AdminDelivery() {
             console.error('Error fetching pickup points:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchMsStores = async () => {
+        try {
+            const res = await fetch('/api/moysklad/stores');
+            if (res.ok) setMsStores(await res.json());
+        } catch (error) {
+            console.error('Error fetching MS stores:', error);
         }
     };
 
@@ -87,6 +98,7 @@ export default function AdminDelivery() {
                             <tr>
                                 <th>ID</th>
                                 <th>Адрес пункта выдачи</th>
+                                <th>Склад МойСклад</th>
                                 <th>Статус</th>
                                 <th style={{ textAlign: 'right' }}>Действия</th>
                             </tr>
@@ -96,6 +108,9 @@ export default function AdminDelivery() {
                                 <tr key={point.id}>
                                     <td style={{ color: 'var(--color-text-muted)' }}>#{point.id}</td>
                                     <td style={{ fontWeight: 500, color: 'white' }}>{point.address}</td>
+                                    <td style={{ color: 'var(--color-accent-gold)' }}>
+                                        {point.moysklad_store_name || <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Не привязан</span>}
+                                    </td>
                                     <td>
                                         <span style={{
                                             padding: '4px 8px',
@@ -146,6 +161,29 @@ export default function AdminDelivery() {
                                     required
                                     placeholder="Введите адрес для самовывоза"
                                 />
+                            </div>
+
+                            <div className="form-group" style={{ marginTop: '1rem' }}>
+                                <label>Склад в МойСклад</label>
+                                <select
+                                    className="form-control"
+                                    value={currentPoint.moysklad_store_id || ''}
+                                    onChange={(e) => {
+                                        const selectedId = e.target.value;
+                                        const selectedStore = msStores.find(s => s.id === selectedId);
+                                        setCurrentPoint({
+                                            ...currentPoint,
+                                            moysklad_store_id: selectedId || null,
+                                            moysklad_store_name: selectedStore ? selectedStore.name : null
+                                        });
+                                    }}
+                                    style={{ background: '#181818', color: 'white' }}
+                                >
+                                    <option value="">-- Не привязан (по умолчанию) --</option>
+                                    {msStores.map(store => (
+                                        <option key={store.id} value={store.id}>{store.name}</option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '1rem' }}>
