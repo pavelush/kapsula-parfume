@@ -12,6 +12,38 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
     const [selectedVolume, setSelectedVolume] = useState(null);
     const [availableVolumes, setAvailableVolumes] = useState([]);
     const [recommendedProducts, setRecommendedProducts] = useState([]);
+    const [isHovered, setIsHovered] = useState(false);
+
+    const getSprayColor = (colorStr, alpha = 0.65) => {
+        if (!colorStr) return `rgba(251, 191, 36, ${alpha})`;
+        if (colorStr.startsWith('rgba')) {
+            return colorStr.replace(/,?\s*[\d.]+\s*\)$/, `, ${alpha})`);
+        }
+        return colorStr;
+    };
+
+    const sprayParticles = React.useMemo(() => {
+        const count = 40;
+        const particles = [];
+        for (let i = 0; i < count; i++) {
+            const angle = (i * (360 / count) + Math.random() * 10) * (Math.PI / 180);
+            const distance = 40 + Math.random() * 80;
+            const tx = Math.cos(angle) * distance;
+            const ty = Math.sin(angle) * distance;
+            const r = 1 + Math.random() * 2.5;
+            const delay = Math.random() * 0.8;
+            const duration = 0.8 + Math.random() * 0.6;
+            particles.push({
+                id: i,
+                tx: `${tx.toFixed(1)}px`,
+                ty: `${ty.toFixed(1)}px`,
+                r: r.toFixed(1),
+                delay: `${delay.toFixed(2)}s`,
+                duration: `${duration.toFixed(2)}s`
+            });
+        }
+        return particles;
+    }, []);
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -160,7 +192,12 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                 <div className="product-page-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 1fr', gap: '4rem', alignItems: 'start' }}>
 
                     {/* Image Section */}
-                    <div className="product-image-container" style={{ position: 'relative', background: 'rgba(0,0,0,0.2)', borderRadius: '24px', padding: '2rem', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid var(--glass-border)' }}>
+                    <div 
+                        className="product-image-container" 
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}
+                        style={{ position: 'relative', background: 'rgba(0,0,0,0.2)', borderRadius: '24px', padding: '2rem', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid var(--glass-border)', overflow: 'hidden' }}
+                    >
                         <div style={{
                             position: 'absolute',
                             top: '50%',
@@ -173,6 +210,30 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                             pointerEvents: 'none',
                             zIndex: 0
                         }} />
+                        
+                        {/* Perfume Spray Particles Effect */}
+                        <div className="spray-container">
+                            {sprayParticles.map(p => (
+                                <div
+                                    key={p.id}
+                                    className="spray-particle"
+                                    style={{
+                                        width: `${p.r * 2}px`,
+                                        height: `${p.r * 2}px`,
+                                        marginLeft: `-${p.r}px`,
+                                        marginTop: `-${p.r}px`,
+                                        backgroundColor: getSprayColor(product.colorTheme),
+                                        '--tx': p.tx,
+                                        '--ty': p.ty,
+                                        animation: isHovered
+                                            ? `spray-burst ${p.duration} infinite linear`
+                                            : `spray-drift ${4 + p.id % 4}s infinite ease-in-out`,
+                                        animationDelay: isHovered ? p.delay : `${(p.id * 0.15).toFixed(2)}s`,
+                                        opacity: isHovered ? 0 : 0.25,
+                                    }}
+                                />
+                            ))}
+                        </div>
                         <button
                             onClick={(e) => { e.preventDefault(); toggleFavorite(product.id); }}
                             style={{
