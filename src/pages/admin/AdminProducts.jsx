@@ -18,7 +18,7 @@ export default function AdminProducts() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeCategoryFilter, setActiveCategoryFilter] = useState('Все');
+    const [activeCategoryFilter, setActiveCategoryFilter] = useState('Парфюмерия');
 
     const [activeVolumeTab, setActiveVolumeTab] = useState('3');
     const [msWarehouseStock, setMsWarehouseStock] = useState([]);
@@ -216,7 +216,7 @@ export default function AdminProducts() {
             );
         }
 
-        const matchesCategory = activeCategoryFilter === 'Все' || (p.category || 'Парфюмерия') === activeCategoryFilter;
+        const matchesCategory = (p.category || 'Парфюмерия') === activeCategoryFilter;
         return matchesSearch && matchesCategory;
     });
 
@@ -277,7 +277,7 @@ export default function AdminProducts() {
             </div>
 
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                {['Все', 'Парфюмерия', 'Аксессуары'].map(cat => (
+                {['Парфюмерия', 'Аксессуары'].map(cat => (
                     <button
                         key={cat}
                         onClick={() => setActiveCategoryFilter(cat)}
@@ -318,14 +318,6 @@ export default function AdminProducts() {
                             <tr>
                                 <th style={{ width: '80px' }}>Фото</th>
                                 <th>Категория / Бренд / Название</th>
-                                {activeCategoryFilter === 'Все' && (
-                                    <>
-                                        <th style={{ width: '120px' }}>3 мл</th>
-                                        <th style={{ width: '120px' }}>5 мл</th>
-                                        <th style={{ width: '120px' }}>10 мл</th>
-                                        <th style={{ width: '120px' }}>1 шт</th>
-                                    </>
-                                )}
                                 {activeCategoryFilter === 'Парфюмерия' && (
                                     <>
                                         <th style={{ width: '150px' }}>3 мл</th>
@@ -365,14 +357,6 @@ export default function AdminProducts() {
                                             {!product.is_active && <span style={{ fontSize: '0.7rem', padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>Скрыт</span>}
                                         </div>
                                     </td>
-                                    {activeCategoryFilter === 'Все' && (
-                                        <>
-                                            <td>{renderVolumeDetails(product, '3')}</td>
-                                            <td>{renderVolumeDetails(product, '5')}</td>
-                                            <td>{renderVolumeDetails(product, '10')}</td>
-                                            <td>{renderVolumeDetails(product, '1')}</td>
-                                        </>
-                                    )}
                                     {activeCategoryFilter === 'Парфюмерия' && (
                                         <>
                                             <td>{renderVolumeDetails(product, '3')}</td>
@@ -397,7 +381,7 @@ export default function AdminProducts() {
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan={activeCategoryFilter === 'Все' ? 7 : (activeCategoryFilter === 'Парфюмерия' ? 6 : 4)} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>Товары не найдены</td>
+                                    <td colSpan={activeCategoryFilter === 'Парфюмерия' ? 6 : 4} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>Товары не найдены</td>
                                 </tr>
                             )}
                         </tbody>
