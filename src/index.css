@@ -482,13 +482,13 @@ nav {
     opacity: 0;
   }
   15% {
+    opacity: 1.0;
+  }
+  75% {
     opacity: 0.9;
   }
-  80% {
-    opacity: 0.8;
-  }
   100% {
-    transform: translate(var(--tx), var(--ty)) scale(1.2);
+    transform: translate(var(--tx), var(--ty)) scale(1.5);
     opacity: 0;
   }
 }
@@ -496,15 +496,15 @@ nav {
 @keyframes spray-drift {
   0% {
     transform: translate(0, 0) scale(0.8);
-    opacity: 0.15;
+    opacity: 0.35;
   }
   50% {
-    transform: translate(calc(var(--tx) * 0.15), calc(var(--ty) * 0.15)) scale(1);
-    opacity: 0.35;
+    transform: translate(calc(var(--tx) * 0.15), calc(var(--ty) * 0.15)) scale(1.1);
+    opacity: 0.75;
   }
   100% {
     transform: translate(0, 0) scale(0.8);
-    opacity: 0.15;
+    opacity: 0.35;
   }
 }
 
@@ -526,4 +526,6 @@ nav {
   border-radius: 50%;
   transform-origin: center;
   will-change: transform, opacity;
+  background-color: currentColor;
+  box-shadow: 0 0 5px currentColor, 0 0 10px currentColor;
 }

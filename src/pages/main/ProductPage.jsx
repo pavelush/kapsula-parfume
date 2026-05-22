@@ -14,7 +14,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
     const [recommendedProducts, setRecommendedProducts] = useState([]);
     const [isHovered, setIsHovered] = useState(false);
 
-    const getSprayColor = (colorStr, alpha = 0.65) => {
+    const getSprayColor = (colorStr, alpha = 0.9) => {
         if (!colorStr) return `rgba(251, 191, 36, ${alpha})`;
         if (colorStr.startsWith('rgba')) {
             return colorStr.replace(/,?\s*[\d.]+\s*\)$/, `, ${alpha})`);
@@ -23,16 +23,16 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
     };
 
     const sprayParticles = React.useMemo(() => {
-        const count = 40;
+        const count = 200;
         const particles = [];
         for (let i = 0; i < count; i++) {
             const angle = (i * (360 / count) + Math.random() * 10) * (Math.PI / 180);
-            const distance = 40 + Math.random() * 80;
+            const distance = 40 + Math.random() * 120;
             const tx = Math.cos(angle) * distance;
             const ty = Math.sin(angle) * distance;
-            const r = 1 + Math.random() * 2.5;
-            const delay = Math.random() * 0.8;
-            const duration = 0.8 + Math.random() * 0.6;
+            const r = 1.5 + Math.random() * 4.5;
+            const delay = Math.random() * 0.9;
+            const duration = 0.7 + Math.random() * 0.6;
             particles.push({
                 id: i,
                 tx: `${tx.toFixed(1)}px`,
@@ -222,14 +222,14 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                                         height: `${p.r * 2}px`,
                                         marginLeft: `-${p.r}px`,
                                         marginTop: `-${p.r}px`,
-                                        backgroundColor: getSprayColor(product.colorTheme),
+                                        color: getSprayColor(product.colorTheme, 1.0),
                                         '--tx': p.tx,
                                         '--ty': p.ty,
                                         animation: isHovered
                                             ? `spray-burst ${p.duration} infinite linear`
                                             : `spray-drift ${4 + p.id % 4}s infinite ease-in-out`,
                                         animationDelay: isHovered ? p.delay : `${(p.id * 0.15).toFixed(2)}s`,
-                                        opacity: isHovered ? 0 : 0.25,
+                                        opacity: isHovered ? 0 : 0.5,
                                     }}
                                 />
                             ))}
