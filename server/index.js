@@ -590,10 +590,10 @@ app.get('/api/payments', async (req, res) => {
 
 app.post('/api/payments', authenticateAdmin, async (req, res) => {
     try {
-        const { name, is_active } = req.body;
+        const { name, is_active, acquiring } = req.body;
         const result = await pool.query(
-            'INSERT INTO payment_methods (name, is_active) VALUES ($1, $2) RETURNING *',
-            [name, is_active]
+            'INSERT INTO payment_methods (name, is_active, acquiring) VALUES ($1, $2, $3) RETURNING *',
+            [name, is_active, acquiring || 'none']
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -604,10 +604,10 @@ app.post('/api/payments', authenticateAdmin, async (req, res) => {
 app.put('/api/payments/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, is_active } = req.body;
+        const { name, is_active, acquiring } = req.body;
         const result = await pool.query(
-            'UPDATE payment_methods SET name = $1, is_active = $2 WHERE id = $3 RETURNING *',
-            [name, is_active, id]
+            'UPDATE payment_methods SET name = $1, is_active = $2, acquiring = $3 WHERE id = $4 RETURNING *',
+            [name, is_active, acquiring || 'none', id]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Payment method not found' });
         res.json(result.rows[0]);
@@ -1051,8 +1051,44 @@ app.post('/api/orders', async (req, res) => {
             }
         }
 
-        // 2. Then, create YooKassa payment using the order ID
-        if (payment_method && (payment_method.toLowerCase().includes('yookassa') || payment_method.toLowerCase().includes('юkassa'))) {
+        // 2. Determine acquiring type by searching DB, fallback to name-matching
+        let acquiring = 'none';
+        if (payment_method) {
+            try {
+                const methodRes = await pool.query('SELECT acquiring FROM payment_methods WHERE name = $1 AND is_active = true', [payment_method]);
+                if (methodRes.rows.length > 0) {
+                    acquiring = methodRes.rows[0].acquiring || 'none';
+                } else {
+                    const nameLower = payment_method.toLowerCase();
+                    if (nameLower.includes('yookassa') || nameLower.includes('юkassa')) {
+                        acquiring = 'yookassa';
+                    } else if (
+                        nameLower.includes('sberbank') ||
+                        nameLower.includes('сбербанк') ||
+                        nameLower.includes('sberpay') ||
+                        nameLower.includes('сберпей')
+                    ) {
+                        acquiring = 'sberbank';
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching payment method acquiring config:', err.message);
+                const nameLower = payment_method.toLowerCase();
+                if (nameLower.includes('yookassa') || nameLower.includes('юkassa')) {
+                    acquiring = 'yookassa';
+                } else if (
+                    nameLower.includes('sberbank') ||
+                    nameLower.includes('сбербанк') ||
+                    nameLower.includes('sberpay') ||
+                    nameLower.includes('сберпей')
+                ) {
+                    acquiring = 'sberbank';
+                }
+            }
+        }
+
+        // Then, create YooKassa payment using the order ID if configured
+        if (acquiring === 'yookassa') {
             const settingsRes = await pool.query("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('yookassa_enabled', 'yookassa_shop_id', 'yookassa_secret_key')");
             const config = {};
             settingsRes.rows.forEach(r => { config[r.setting_key] = r.setting_value; });
@@ -1106,12 +1142,7 @@ app.post('/api/orders', async (req, res) => {
         }
 
         // 2b. Or, create Sberbank payment using the order ID
-        const isSberbank = payment_method && (
-            payment_method.toLowerCase().includes('sberbank') ||
-            payment_method.toLowerCase().includes('сбербанк') ||
-            payment_method.toLowerCase().includes('sberpay') ||
-            payment_method.toLowerCase().includes('сберпей')
-        );
+        const isSberbank = acquiring === 'sberbank';
         if (isSberbank) {
             const settingsRes = await pool.query("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('sberbank_enabled', 'sberbank_userName', 'sberbank_password', 'sberbank_sandbox')");
             const config = {};
@@ -1175,7 +1206,7 @@ app.post('/api/orders', async (req, res) => {
             order.confirmation_url = confirmationUrl;
         }
 
-        const isYookassa = payment_method && (payment_method.toLowerCase().includes('yookassa') || payment_method.toLowerCase().includes('юkassa'));
+        const isYookassa = acquiring === 'yookassa';
         const isOnlinePayment = isYookassa || isSberbank;
 
         // Send notifications (fire-and-forget) if NOT online payment

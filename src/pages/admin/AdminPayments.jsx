@@ -5,7 +5,7 @@ export default function AdminPayments() {
     const [methods, setMethods] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentMethod, setCurrentMethod] = useState({ name: '', is_active: true });
+    const [currentMethod, setCurrentMethod] = useState({ name: '', is_active: true, acquiring: 'none' });
 
     useEffect(() => {
         fetchMethods();
@@ -37,7 +37,8 @@ export default function AdminPayments() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: currentMethod.name,
-                    is_active: currentMethod.is_active
+                    is_active: currentMethod.is_active,
+                    acquiring: currentMethod.acquiring || 'none'
                 })
             });
 
@@ -83,7 +84,7 @@ export default function AdminPayments() {
     };
 
     const openAddModal = () => {
-        setCurrentMethod({ name: '', is_active: true });
+        setCurrentMethod({ name: '', is_active: true, acquiring: 'none' });
         setIsModalOpen(true);
     };
 
@@ -104,6 +105,7 @@ export default function AdminPayments() {
                         <thead>
                             <tr>
                                 <th>Название способа</th>
+                                <th>Эквайринг</th>
                                 <th style={{ width: '150px', textAlign: 'center' }}>Статус</th>
                                 <th style={{ width: '150px', textAlign: 'right' }}>Действия</th>
                             </tr>
@@ -112,6 +114,11 @@ export default function AdminPayments() {
                             {methods.length > 0 ? methods.map(method => (
                                 <tr key={method.id} style={{ opacity: method.is_active ? 1 : 0.5 }}>
                                     <td style={{ fontWeight: 500, fontSize: '1.1rem' }}>{method.name}</td>
+                                    <td>
+                                        {method.acquiring === 'yookassa' && <span style={{ color: '#007bef' }}>ЮKassa</span>}
+                                        {method.acquiring === 'sberbank' && <span style={{ color: '#34d399' }}>Сбербанк / SberPay</span>}
+                                        {(method.acquiring === 'none' || !method.acquiring) && <span style={{ color: 'var(--color-text-muted)' }}>Без эквайринга</span>}
+                                    </td>
                                     <td style={{ textAlign: 'center' }}>
                                         <button
                                             onClick={() => toggleStatus(method)}
@@ -164,6 +171,20 @@ export default function AdminPayments() {
                                     required
                                     autoFocus
                                 />
+                            </div>
+
+                            <div className="form-group" style={{ marginTop: '1.5rem' }}>
+                                <label style={{ color: 'white', display: 'block', marginBottom: '8px' }}>Интеграция эквайринга</label>
+                                <select
+                                    className="form-control"
+                                    value={currentMethod.acquiring || 'none'}
+                                    onChange={(e) => setCurrentMethod({ ...currentMethod, acquiring: e.target.value })}
+                                    style={{ width: '100%', background: '#1c1c1e', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 12px', borderRadius: '6px' }}
+                                >
+                                    <option value="none">Без эквайринга (наличные, перевод, вручную)</option>
+                                    <option value="yookassa">ЮKassa</option>
+                                    <option value="sberbank">Сбербанк / SberPay</option>
+                                </select>
                             </div>
 
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', cursor: 'pointer', marginTop: '1.5rem' }}>
