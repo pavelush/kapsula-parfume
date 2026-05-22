@@ -367,19 +367,21 @@ export default function AdminProducts() {
                                     {activeCategoryFilter === 'Аксессуары' && (
                                         <td>{renderVolumeDetails(product, '1')}</td>
                                     )}
-                                    <td style={{ textAlign: 'right' }}>
-                                        <a href={`/product/${product.slug}`} target="_blank" rel="noopener noreferrer" className="admin-action-btn" title="Открыть на сайте" style={{ marginRight: '8px', display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle' }}>
-                                            <ExternalLink size={18} />
-                                        </a>
-                                        <button onClick={() => handleToggleActive(product)} className="admin-action-btn" title={product.is_active ? "Скрыть из каталога" : "Показать в каталоге"} style={{ marginRight: '8px', color: product.is_active ? 'var(--color-text)' : 'var(--color-text-muted)' }}>
-                                            {product.is_active ? <Eye size={18} /> : <EyeOff size={18} />}
-                                        </button>
-                                        <button onClick={() => openEditModal(product)} className="admin-action-btn" title="Редактировать">
-                                            <Edit2 size={18} />
-                                        </button>
-                                        <button onClick={() => handleDelete(product.id)} className="admin-action-btn danger" style={{ marginLeft: '8px' }} title="Удалить">
-                                            <Trash2 size={18} />
-                                        </button>
+                                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                        <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center', justifyContent: 'flex-end', verticalAlign: 'middle' }}>
+                                            <a href={`/product/${product.slug}`} target="_blank" rel="noopener noreferrer" className="admin-action-btn" title="Открыть на сайте" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                                <ExternalLink size={18} />
+                                            </a>
+                                            <button onClick={() => handleToggleActive(product)} className="admin-action-btn" title={product.is_active ? "Скрыть из каталога" : "Показать в каталоге"} style={{ color: product.is_active ? 'var(--color-text)' : 'var(--color-text-muted)', display: 'inline-flex', alignItems: 'center' }}>
+                                                {product.is_active ? <Eye size={18} /> : <EyeOff size={18} />}
+                                            </button>
+                                            <button onClick={() => openEditModal(product)} className="admin-action-btn" title="Редактировать" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                                <Edit2 size={18} />
+                                            </button>
+                                            <button onClick={() => handleDelete(product.id)} className="admin-action-btn danger" title="Удалить" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             )) : (
