@@ -526,7 +526,8 @@ app.get('/api/settings', async (req, res) => {
                 'social_tiktok',
                 'legal_information',
                 'moysklad_sync_enabled',
-                'yookassa_enabled'
+                'yookassa_enabled',
+                'sberbank_enabled'
             ];
             const result = await pool.query(
                 "SELECT * FROM settings WHERE setting_key = ANY($1) AND setting_key != 'admin_password' ORDER BY id ASC",
@@ -885,6 +886,92 @@ async function sendCustomerEmail(order, type) {
     }
 }
 
+// --- SBERBANK ACQUIRING STATUS HELPER ---
+async function updateSberbankOrderStatus(order) {
+    if (!order.sberbank_payment_id || order.payment_status !== 'Ожидает оплаты') {
+        return order;
+    }
+
+    try {
+        const settingsRes = await pool.query(
+            "SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('sberbank_enabled', 'sberbank_userName', 'sberbank_password', 'sberbank_sandbox')"
+        );
+        const config = {};
+        settingsRes.rows.forEach(r => { config[r.setting_key] = r.setting_value; });
+
+        if (config.sberbank_enabled !== 'true' || !config.sberbank_userName || !config.sberbank_password) {
+            console.error('[Sberbank Status Check] Credentials missing or disabled');
+            return order;
+        }
+
+        const isSandbox = config.sberbank_sandbox === 'true';
+        const sberParams = {
+            userName: config.sberbank_userName,
+            password: config.sberbank_password,
+            orderId: order.sberbank_payment_id
+        };
+
+        const baseUrl = isSandbox ? 'https://sandbox.sberbank.ru/payment/rest/' : 'https://securepayments.sberbank.ru/payment/rest/';
+        const url = `${baseUrl}getOrderStatusExtended.do`;
+        const formParams = new URLSearchParams();
+        for (const [key, val] of Object.entries(sberParams)) {
+            formParams.append(key, String(val));
+        }
+
+        const sberRes = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formParams.toString()
+        });
+
+        if (!sberRes.ok) {
+            console.error(`[Sberbank Status Check] API call failed: ${sberRes.status}`);
+            return order;
+        }
+
+        const statusData = await sberRes.json();
+        const orderStatus = statusData.orderStatus; // Number/Integer
+
+        if (orderStatus === 2) {
+            // Paid successfully
+            const updateRes = await pool.query(
+                "UPDATE orders SET payment_status = 'Оплачен' WHERE id = $1 RETURNING *",
+                [order.id]
+            );
+            if (updateRes.rows.length > 0) {
+                const updatedOrder = updateRes.rows[0];
+                sendTelegramNotification(updatedOrder);
+                sendCustomerEmail(updatedOrder, 'payment_success');
+
+                const { updateMsOrderStatus } = require('./moysklad_api');
+                if (updatedOrder.moysklad_id) {
+                    await updateMsOrderStatus(updatedOrder.moysklad_id, 'Оплачен');
+                }
+                return updatedOrder;
+            }
+        } else if (orderStatus === 3 || orderStatus === 6) {
+            // Cancelled or declined
+            const cancelRes = await pool.query(
+                "UPDATE orders SET payment_status = 'Отменен' WHERE id = $1 RETURNING *",
+                [order.id]
+            );
+            if (cancelRes.rows.length > 0) {
+                const updatedOrder = cancelRes.rows[0];
+                const { updateMsOrderStatus } = require('./moysklad_api');
+                if (updatedOrder.moysklad_id) {
+                    await updateMsOrderStatus(updatedOrder.moysklad_id, 'Отменен');
+                }
+                return updatedOrder;
+            }
+        }
+    } catch (err) {
+        console.error('[Sberbank Status Check] Error checking order status:', err);
+    }
+    return order;
+}
+
 // --- ORDERS ---
 app.post('/api/orders', async (req, res) => {
     try {
@@ -1018,15 +1105,82 @@ app.post('/api/orders', async (req, res) => {
             }
         }
 
+        // 2b. Or, create Sberbank payment using the order ID
+        const isSberbank = payment_method && (
+            payment_method.toLowerCase().includes('sberbank') ||
+            payment_method.toLowerCase().includes('сбербанк') ||
+            payment_method.toLowerCase().includes('sberpay') ||
+            payment_method.toLowerCase().includes('сберпей')
+        );
+        if (isSberbank) {
+            const settingsRes = await pool.query("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('sberbank_enabled', 'sberbank_userName', 'sberbank_password', 'sberbank_sandbox')");
+            const config = {};
+            settingsRes.rows.forEach(r => { config[r.setting_key] = r.setting_value; });
+
+            if (config.sberbank_enabled === 'true' && config.sberbank_userName && config.sberbank_password) {
+                const isSandbox = config.sberbank_sandbox === 'true';
+                const sberParams = {
+                    userName: config.sberbank_userName,
+                    password: config.sberbank_password,
+                    orderNumber: String(order.id),
+                    amount: Math.round(total_price * 100),
+                    currency: '643', // RUB
+                    returnUrl: `${req.headers.referer || "https://kapsula-parfume.ru/"}?success_order=${order.id}`,
+                    description: `Номер заказа #${order.id}`
+                };
+
+                const baseUrl = isSandbox ? 'https://sandbox.sberbank.ru/payment/rest/' : 'https://securepayments.sberbank.ru/payment/rest/';
+                const url = `${baseUrl}register.do`;
+                const formParams = new URLSearchParams();
+                for (const [key, val] of Object.entries(sberParams)) {
+                    if (val !== undefined && val !== null) {
+                        formParams.append(key, String(val));
+                    }
+                }
+
+                try {
+                    const sberRes = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: formParams.toString()
+                    });
+
+                    if (sberRes.ok) {
+                        const paymentData = await sberRes.json();
+                        if (paymentData.orderId && paymentData.formUrl) {
+                            confirmationUrl = paymentData.formUrl;
+
+                            await pool.query(
+                                'UPDATE orders SET sberbank_payment_id = $1, payment_status = $2 WHERE id = $3',
+                                [paymentData.orderId, 'Ожидает оплаты', order.id]
+                            );
+                            order.sberbank_payment_id = paymentData.orderId;
+                            order.payment_status = 'Ожидает оплаты';
+                        } else {
+                            console.error('Sberbank register.do returned API error:', paymentData);
+                        }
+                    } else {
+                        const errorText = await sberRes.text();
+                        console.error('Sberbank network error:', errorText);
+                    }
+                } catch (err) {
+                    console.error('Sberbank registration failed:', err);
+                }
+            }
+        }
+
         if (confirmationUrl) {
             order.confirmation_url = confirmationUrl;
         }
 
         const isYookassa = payment_method && (payment_method.toLowerCase().includes('yookassa') || payment_method.toLowerCase().includes('юkassa'));
+        const isOnlinePayment = isYookassa || isSberbank;
 
-        // Send notifications (fire-and-forget) if NOT YooKassa
-        // YooKassa orders will send notification from the webhook after successful payment
-        if (!isYookassa) {
+        // Send notifications (fire-and-forget) if NOT online payment
+        // Online payments will send notifications from webhook/callback/check after successful payment
+        if (!isOnlinePayment) {
             sendTelegramNotification(order);
             sendCustomerEmail(order, 'created');
         }
@@ -1064,13 +1218,31 @@ app.delete('/api/orders/:id', authenticateAdmin, async (req, res) => {
 app.get('/api/order_status/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        // Only return non-sensitive info needed for the receipt
         const result = await pool.query(
-            'SELECT id, items_json, delivery_type, delivery_address, total_price, payment_status, created_at FROM orders WHERE id = $1',
+            'SELECT * FROM orders WHERE id = $1',
             [id]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Order not found' });
-        res.json(result.rows[0]);
+        
+        let order = result.rows[0];
+        
+        // On-the-fly Sberbank status check and update
+        if (order.sberbank_payment_id && order.payment_status === 'Ожидает оплаты') {
+            order = await updateSberbankOrderStatus(order);
+        }
+        
+        // Only return non-sensitive info needed for the receipt
+        const publicOrder = {
+            id: order.id,
+            items_json: order.items_json,
+            delivery_type: order.delivery_type,
+            delivery_address: order.delivery_address,
+            total_price: order.total_price,
+            payment_status: order.payment_status,
+            created_at: order.created_at
+        };
+        
+        res.json(publicOrder);
     } catch (err) {
         console.error('Fetch order status error:', err);
         res.status(500).json({ error: 'Internal server error' });
@@ -1206,6 +1378,53 @@ app.post('/api/yookassa/webhook', async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
+
+// --- SBERBANK CALLBACK / WEBHOOK ---
+const sberbankCallbackHandler = async (req, res) => {
+    try {
+        const params = { ...req.query, ...req.body };
+        const mdOrder = params.mdOrder || params.orderId;
+        const orderNumber = params.orderNumber;
+
+        console.log('[Sberbank Callback] Received callback params:', params);
+
+        if (!mdOrder && !orderNumber) {
+            return res.status(400).send('Missing mdOrder or orderNumber');
+        }
+
+        let order = null;
+        if (mdOrder) {
+            const result = await pool.query('SELECT * FROM orders WHERE sberbank_payment_id = $1', [mdOrder]);
+            if (result.rows.length > 0) {
+                order = result.rows[0];
+            }
+        }
+        if (!order && orderNumber) {
+            const result = await pool.query('SELECT * FROM orders WHERE id = $1', [parseInt(orderNumber, 10)]);
+            if (result.rows.length > 0) {
+                order = result.rows[0];
+            }
+        }
+
+        if (!order) {
+            console.error('[Sberbank Callback] Order not found for callback:', params);
+            return res.status(404).send('Order not found');
+        }
+
+        // Call the status check helper to verify directly with Sberbank API and trigger side effects
+        const updatedOrder = await updateSberbankOrderStatus(order);
+
+        console.log(`[Sberbank Callback] Processed callback for order #${updatedOrder.id}. Payment status is now: ${updatedOrder.payment_status}`);
+        
+        return res.status(200).send('OK');
+    } catch (err) {
+        console.error('[Sberbank Callback] Error processing callback:', err);
+        return res.status(500).send('Internal server error');
+    }
+};
+
+app.get('/api/sberbank/callback', sberbankCallbackHandler);
+app.post('/api/sberbank/callback', sberbankCallbackHandler);
 
 app.post('/api/moysklad/webhook', async (req, res) => {
     try {

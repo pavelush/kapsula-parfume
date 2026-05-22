@@ -404,6 +404,56 @@ export default function AdminSettings() {
                         Данные можно получить в <a href="https://yookassa.ru/my" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent-gold)' }}>личном кабинете ЮKassa</a> в разделе "Интеграция -&gt; Ключи API".
                     </small>
 
+                    <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Сбербанк / SberPay (Онлайн-оплата)</h3>
+
+                    <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <input
+                            type="checkbox"
+                            id="sberbank_enabled"
+                            checked={settings.sberbank_enabled === 'true'}
+                            onChange={(e) => handleChange('sberbank_enabled', e.target.checked ? 'true' : 'false')}
+                            style={{ width: '20px', height: '20px', accentColor: 'var(--color-accent-gold)' }}
+                        />
+                        <label htmlFor="sberbank_enabled" style={{ margin: 0, cursor: 'pointer' }}>Включить эквайринг Сбербанк / SberPay</label>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1rem' }}>
+                        <div className="form-group">
+                            <label>Логин мерчанта (userName)</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={settings.sberbank_userName || ''}
+                                onChange={(e) => handleChange('sberbank_userName', e.target.value)}
+                                placeholder="Логин (например, shop-api)"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Пароль мерчанта</label>
+                            <input
+                                type="password"
+                                className="form-control"
+                                value={settings.sberbank_password || ''}
+                                onChange={(e) => handleChange('sberbank_password', e.target.value)}
+                                placeholder="Пароль от API"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <input
+                            type="checkbox"
+                            id="sberbank_sandbox"
+                            checked={settings.sberbank_sandbox === 'true'}
+                            onChange={(e) => handleChange('sberbank_sandbox', e.target.checked ? 'true' : 'false')}
+                            style={{ width: '20px', height: '20px', accentColor: 'var(--color-accent-gold)' }}
+                        />
+                        <label htmlFor="sberbank_sandbox" style={{ margin: 0, cursor: 'pointer' }}>Тестовый режим (Sandbox)</label>
+                    </div>
+                    <small style={{ display: 'block', color: 'var(--color-text-muted)', marginBottom: '1.5rem' }}>
+                        Для работы необходимо настроить Callback URL в личном кабинете Сбербанка: <code>https://&lt;ваш-домен&gt;/api/sberbank/callback</code>
+                    </small>
+
                     <h3 style={{ color: 'var(--color-accent-gold)', marginBottom: '1.5rem', marginTop: '3rem', fontSize: '1.1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>Telegram-уведомления о заказах</h3>
 
                     <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
