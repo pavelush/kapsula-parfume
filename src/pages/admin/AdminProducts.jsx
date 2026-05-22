@@ -244,6 +244,29 @@ export default function AdminProducts() {
         }
     };
 
+    const renderVolumeDetails = (product, volumeKey) => {
+        const vol = product.prices?.[volumeKey];
+        if (!vol || (!vol.price && !vol.sku && (vol.stock === undefined || vol.stock === ''))) {
+            return <span className="volume-cell-empty">—</span>;
+        }
+
+        const stockNum = vol.stock !== undefined && vol.stock !== '' ? Number(vol.stock) : 0;
+
+        return (
+            <div className="volume-cell-info">
+                <div className="volume-cell-price">
+                    {vol.price ? `${vol.price} ₽` : '—'}
+                </div>
+                <div className="volume-cell-sku">
+                    Код: {vol.sku || '—'}
+                </div>
+                <div className="volume-cell-stock">
+                    Ост: <span style={{ color: stockNum > 0 ? '#10B981' : '#EF4444', fontWeight: '600' }}>{stockNum}</span>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -295,9 +318,24 @@ export default function AdminProducts() {
                             <tr>
                                 <th style={{ width: '80px' }}>Фото</th>
                                 <th>Категория / Бренд / Название</th>
-                                <th>Цены</th>
-                                <th>Код (SKU)</th>
-                                <th>Остатки</th>
+                                {activeCategoryFilter === 'Все' && (
+                                    <>
+                                        <th style={{ width: '120px' }}>3 мл</th>
+                                        <th style={{ width: '120px' }}>5 мл</th>
+                                        <th style={{ width: '120px' }}>10 мл</th>
+                                        <th style={{ width: '120px' }}>1 шт</th>
+                                    </>
+                                )}
+                                {activeCategoryFilter === 'Парфюмерия' && (
+                                    <>
+                                        <th style={{ width: '150px' }}>3 мл</th>
+                                        <th style={{ width: '150px' }}>5 мл</th>
+                                        <th style={{ width: '150px' }}>10 мл</th>
+                                    </>
+                                )}
+                                {activeCategoryFilter === 'Аксессуары' && (
+                                    <th style={{ width: '200px' }}>Характеристики</th>
+                                )}
                                 <th style={{ width: '150px', textAlign: 'right' }}>Действия</th>
                             </tr>
                         </thead>
@@ -311,26 +349,40 @@ export default function AdminProducts() {
                                     </td>
                                     <td>
                                         <div style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>{product.category || 'Парфюмерия'} | {product.brand}</div>
-                                        <div style={{ fontWeight: 500, color: 'white', opacity: product.is_active ? 1 : 0.5, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div 
+                                            onClick={() => openEditModal(product)}
+                                            style={{ 
+                                                fontWeight: 500, 
+                                                color: 'white', 
+                                                opacity: product.is_active ? 1 : 0.5, 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                gap: '8px'
+                                            }}
+                                            className="admin-product-name-link"
+                                        >
                                             {product.name}
                                             {!product.is_active && <span style={{ fontSize: '0.7rem', padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>Скрыт</span>}
                                         </div>
                                     </td>
-                                    <td style={{ color: 'var(--color-text-muted)' }}>
-                                        {product.category === 'Аксессуары' 
-                                            ? `${product.prices['1']?.price || '-'} ₽` 
-                                            : `${product.prices['3']?.price || '-'} / ${product.prices['5']?.price || '-'} / ${product.prices['10']?.price || '-'} ₽`}
-                                    </td>
-                                    <td style={{ color: 'var(--color-text-muted)' }}>
-                                        {product.category === 'Аксессуары' 
-                                            ? `${product.prices['1']?.sku || '-'}` 
-                                            : `${product.prices['3']?.sku || '-'} / ${product.prices['5']?.sku || '-'} / ${product.prices['10']?.sku || '-'}`}
-                                    </td>
-                                    <td style={{ color: 'var(--color-text-muted)' }}>
-                                        {product.category === 'Аксессуары' 
-                                            ? `${product.prices['1']?.stock || '-'}` 
-                                            : `${product.prices['3']?.stock || '-'} / ${product.prices['5']?.stock || '-'} / ${product.prices['10']?.stock || '-'}`}
-                                    </td>
+                                    {activeCategoryFilter === 'Все' && (
+                                        <>
+                                            <td>{renderVolumeDetails(product, '3')}</td>
+                                            <td>{renderVolumeDetails(product, '5')}</td>
+                                            <td>{renderVolumeDetails(product, '10')}</td>
+                                            <td>{renderVolumeDetails(product, '1')}</td>
+                                        </>
+                                    )}
+                                    {activeCategoryFilter === 'Парфюмерия' && (
+                                        <>
+                                            <td>{renderVolumeDetails(product, '3')}</td>
+                                            <td>{renderVolumeDetails(product, '5')}</td>
+                                            <td>{renderVolumeDetails(product, '10')}</td>
+                                        </>
+                                    )}
+                                    {activeCategoryFilter === 'Аксессуары' && (
+                                        <td>{renderVolumeDetails(product, '1')}</td>
+                                    )}
                                     <td style={{ textAlign: 'right' }}>
                                         <button onClick={() => handleToggleActive(product)} className="admin-action-btn" title={product.is_active ? "Скрыть из каталога" : "Показать в каталоге"} style={{ marginRight: '8px', color: product.is_active ? 'var(--color-text)' : 'var(--color-text-muted)' }}>
                                             {product.is_active ? <Eye size={18} /> : <EyeOff size={18} />}
@@ -345,7 +397,7 @@ export default function AdminProducts() {
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan="4" style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>Товары не найдены</td>
+                                    <td colSpan={activeCategoryFilter === 'Все' ? 7 : (activeCategoryFilter === 'Парфюмерия' ? 6 : 4)} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '2rem' }}>Товары не найдены</td>
                                 </tr>
                             )}
                         </tbody>

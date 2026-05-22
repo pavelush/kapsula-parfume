@@ -280,3 +280,41 @@
     color: #f87171;
     border: 1px solid rgba(239, 68, 68, 0.3);
 }
+
+/* Custom styles for interactive product links and volume columns */
+.admin-container .admin-product-name-link {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.admin-container .admin-product-name-link:hover {
+    color: var(--color-accent-gold) !important;
+    text-decoration: underline;
+}
+
+.volume-cell-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.85rem;
+    line-height: 1.3;
+}
+
+.volume-cell-price {
+    color: var(--color-accent-gold);
+    font-weight: 600;
+}
+
+.volume-cell-sku {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.75rem;
+}
+
+.volume-cell-stock {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.75rem;
+}
+
+.volume-cell-empty {
+    color: rgba(255, 255, 255, 0.2);
+}
