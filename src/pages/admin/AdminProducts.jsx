@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, Image as ImageIcon, X, Check, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Image as ImageIcon, X, Check, Eye, EyeOff, ExternalLink } from 'lucide-react';
 
 const PRESET_COLORS = [
     { name: 'Золотой', value: 'rgba(251, 191, 36, 0.15)' },
@@ -368,6 +368,9 @@ export default function AdminProducts() {
                                         <td>{renderVolumeDetails(product, '1')}</td>
                                     )}
                                     <td style={{ textAlign: 'right' }}>
+                                        <a href={`/product/${product.slug}`} target="_blank" rel="noopener noreferrer" className="admin-action-btn" title="Открыть на сайте" style={{ marginRight: '8px', display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle' }}>
+                                            <ExternalLink size={18} />
+                                        </a>
                                         <button onClick={() => handleToggleActive(product)} className="admin-action-btn" title={product.is_active ? "Скрыть из каталога" : "Показать в каталоге"} style={{ marginRight: '8px', color: product.is_active ? 'var(--color-text)' : 'var(--color-text-muted)' }}>
                                             {product.is_active ? <Eye size={18} /> : <EyeOff size={18} />}
                                         </button>
