@@ -1,4 +1,5 @@
 const express = require('express');
+const helmet = require('helmet');
 const cors = require('cors');
 const pool = require('./db');
 const multer = require('multer');
@@ -11,7 +12,11 @@ const app = express();
 app.set('trust proxy', 1); // Trust first proxy (essential for correct req.protocol behind Nginx)
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(helmet());
+app.use(cors({
+    origin: ['https://kapsula-parfume.ru'],
+    credentials: true
+}));
 app.use(express.json());
 
 // --- SECURITY INITIALIZATION & HELPERS ---
@@ -81,7 +86,7 @@ async function authenticateAdmin(req, res, next) {
     }
     const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
     try {
-        const result = await pool.query('SELECT 1 FROM admin_sessions WHERE token = $1', [token]);
+        const result = await pool.query('SELECT 1 FROM admin_sessions WHERE token = $1 AND created_at > NOW() - INTERVAL \'24 hours\'', [token]);
         if (result.rows.length === 0) {
             return res.status(401).json({ error: 'Неверный или просроченный токен сессии' });
         }
