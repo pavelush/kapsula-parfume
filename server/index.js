@@ -202,11 +202,32 @@ function validateProductPayload(req, res, next) {
 
 // Authentication middleware for administrative routes
 async function authenticateAdmin(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    if (!authHeader) {
+    let token = null;
+
+    // Check cookies first
+    if (req.headers.cookie) {
+        const cookies = req.headers.cookie.split(';');
+        for (let cookie of cookies) {
+            const [key, value] = cookie.trim().split('=');
+            if (key === 'adminToken') {
+                token = value;
+                break;
+            }
+        }
+    }
+
+    // Fallback to Authorization header
+    if (!token) {
+        const authHeader = req.headers['authorization'];
+        if (authHeader) {
+            token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+        }
+    }
+
+    if (!token) {
         return res.status(401).json({ error: 'Требуется авторизация' });
     }
-    const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+
     try {
         const result = await pool.query('SELECT 1 FROM admin_sessions WHERE token = $1 AND created_at > NOW() - INTERVAL \'24 hours\'', [token]);
         if (result.rows.length === 0) {
@@ -353,7 +374,16 @@ app.post('/api/admin/login', rateLimiter, async (req, res) => {
             const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
             loginAttempts.delete(ip);
 
-            res.json({ success: true, token });
+            // Set secure HttpOnly cookie
+            res.cookie('adminToken', token, {
+                httpOnly: true,
+                secure: true, // Only transmit over HTTPS
+                sameSite: 'strict',
+                path: '/',
+                maxAge: 24 * 60 * 60 * 1000 // 24 hours
+            });
+
+            res.json({ success: true });
         } else {
             res.status(401).json({ error: 'Неверный логин или пароль' });
         }
@@ -365,12 +395,46 @@ app.post('/api/admin/login', rateLimiter, async (req, res) => {
 
 // Admin logout endpoint
 app.post('/api/admin/logout', async (req, res) => {
-    const authHeader = req.headers['authorization'];
-    if (authHeader) {
-        const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+    let token = null;
+
+    // Check cookies first
+    if (req.headers.cookie) {
+        const cookies = req.headers.cookie.split(';');
+        for (let cookie of cookies) {
+            const [key, value] = cookie.trim().split('=');
+            if (key === 'adminToken') {
+                token = value;
+                break;
+            }
+        }
+    }
+
+    // Fallback to Authorization header
+    if (!token) {
+        const authHeader = req.headers['authorization'];
+        if (authHeader) {
+            token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+        }
+    }
+
+    if (token) {
         await pool.query('DELETE FROM admin_sessions WHERE token = $1', [token]);
     }
+
+    // Clear the secure cookie
+    res.clearCookie('adminToken', {
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict'
+    });
+
     res.json({ success: true });
+});
+
+// Admin session verification endpoint
+app.get('/api/admin/check', authenticateAdmin, (req, res) => {
+    res.json({ authenticated: true });
 });
 
 // --- HEALTH CHECK ---
@@ -392,14 +456,35 @@ app.get('/api/products', async (req, res) => {
         // Protect all=true (disabled/draft products) to authenticated admin only
         if (includeAll) {
             let isAdmin = false;
-            const authHeader = req.headers['authorization'];
-            if (authHeader) {
-                const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
-                const sessionRes = await pool.query('SELECT 1 FROM admin_sessions WHERE token = $1', [token]);
+            let token = null;
+
+            // Check cookies first
+            if (req.headers.cookie) {
+                const cookies = req.headers.cookie.split(';');
+                for (let cookie of cookies) {
+                    const [key, value] = cookie.trim().split('=');
+                    if (key === 'adminToken') {
+                        token = value;
+                        break;
+                    }
+                }
+            }
+
+            // Fallback to Authorization header
+            if (!token) {
+                const authHeader = req.headers['authorization'];
+                if (authHeader) {
+                    token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+                }
+            }
+
+            if (token) {
+                const sessionRes = await pool.query('SELECT 1 FROM admin_sessions WHERE token = $1 AND created_at > NOW() - INTERVAL \'24 hours\'', [token]);
                 if (sessionRes.rows.length > 0) {
                     isAdmin = true;
                 }
             }
+
             if (!isAdmin) {
                 return res.status(401).json({ error: 'Требуется авторизация для просмотра всех товаров' });
             }
@@ -669,10 +754,30 @@ app.delete('/api/faqs/:id', authenticateAdmin, async (req, res) => {
 app.get('/api/settings', async (req, res) => {
     try {
         let isAdmin = false;
-        const authHeader = req.headers['authorization'];
-        if (authHeader) {
-            const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
-            const sessionRes = await pool.query('SELECT 1 FROM admin_sessions WHERE token = $1', [token]);
+        let token = null;
+
+        // Check cookies first
+        if (req.headers.cookie) {
+            const cookies = req.headers.cookie.split(';');
+            for (let cookie of cookies) {
+                const [key, value] = cookie.trim().split('=');
+                if (key === 'adminToken') {
+                    token = value;
+                    break;
+                }
+            }
+        }
+
+        // Fallback to Authorization header
+        if (!token) {
+            const authHeader = req.headers['authorization'];
+            if (authHeader) {
+                token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+            }
+        }
+
+        if (token) {
+            const sessionRes = await pool.query('SELECT 1 FROM admin_sessions WHERE token = $1 AND created_at > NOW() - INTERVAL \'24 hours\'', [token]);
             if (sessionRes.rows.length > 0) {
                 isAdmin = true;
             }

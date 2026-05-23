@@ -23,7 +23,7 @@ export default function AdminLogin({ onLogin }) {
             const data = await res.json();
 
             if (res.ok && data.success) {
-                onLogin(data.token);
+                onLogin();
             } else {
                 setError(data.error || 'Ошибка авторизации');
             }

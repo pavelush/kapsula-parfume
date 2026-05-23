@@ -14,29 +14,18 @@ import AdminPayments from './AdminPayments';
 
 export default function AdminApp() {
     const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+    const [isCheckingAuth, setIsCheckingAuth] = React.useState(true);
 
     React.useEffect(() => {
-        const token = localStorage.getItem('adminToken');
-        if (token) {
-            setIsAuthenticated(true);
-        }
-
-        // Global fetch interceptor to append authorization token and handle 401 Unauthorized
         const originalFetch = window.fetch;
+
+        // Global fetch interceptor to send credentials and handle 401 Unauthorized
         window.fetch = async (url, options = {}) => {
-            const currentToken = localStorage.getItem('adminToken');
-            if (currentToken && url.toString().startsWith('/api/')) {
-                const headers = options.headers || {};
-                options.headers = {
-                    ...headers,
-                    'Authorization': `Bearer ${currentToken}`
-                };
-            }
+            options.credentials = options.credentials || 'same-origin';
             try {
                 const response = await originalFetch(url, options);
                 if (response.status === 401 && url.toString().startsWith('/api/')) {
                     console.warn('[Admin Security] Session expired or invalid token (401). Logging out.');
-                    localStorage.removeItem('adminToken');
                     setIsAuthenticated(false);
                 }
                 return response;
@@ -45,13 +34,30 @@ export default function AdminApp() {
             }
         };
 
+        // Check if session is already active via HttpOnly cookie
+        const checkAuth = async () => {
+            try {
+                const res = await originalFetch('/api/admin/check', { credentials: 'same-origin' });
+                if (res.ok) {
+                    setIsAuthenticated(true);
+                } else {
+                    setIsAuthenticated(false);
+                }
+            } catch (err) {
+                setIsAuthenticated(false);
+            } finally {
+                setIsCheckingAuth(false);
+            }
+        };
+
+        checkAuth();
+
         return () => {
             window.fetch = originalFetch;
         };
     }, []);
 
-    const handleLogin = (token) => {
-        localStorage.setItem('adminToken', token);
+    const handleLogin = () => {
         setIsAuthenticated(true);
     };
 
@@ -61,9 +67,24 @@ export default function AdminApp() {
         } catch (err) {
             console.error('Logout request failed:', err);
         }
-        localStorage.removeItem('adminToken');
         setIsAuthenticated(false);
     };
+
+    if (isCheckingAuth) {
+        return (
+            <div style={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'var(--color-bg)',
+                color: 'white',
+                fontSize: '1.2rem'
+            }}>
+                Загрузка...
+            </div>
+        );
+    }
 
     if (!isAuthenticated) {
         return <AdminLogin onLogin={handleLogin} />;
