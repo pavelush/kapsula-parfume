@@ -103,6 +103,31 @@ function orderRateLimiter(req, res, next) {
     next();
 }
 
+// In-memory IP rate limiter for webhooks
+const webhookAttempts = new Map();
+const WEBHOOK_RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_WEBHOOKS = 30; // Max 30 requests per minute
+
+function webhookRateLimiter(req, res, next) {
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const now = Date.now();
+    if (webhookAttempts.has(ip)) {
+        const data = webhookAttempts.get(ip);
+        if (now - data.firstAttempt > WEBHOOK_RATE_LIMIT_WINDOW) {
+            webhookAttempts.set(ip, { count: 1, firstAttempt: now });
+        } else {
+            data.count += 1;
+            if (data.count > MAX_WEBHOOKS) {
+                const timeLeft = Math.ceil((WEBHOOK_RATE_LIMIT_WINDOW - (now - data.firstAttempt)) / 1000);
+                return res.status(429).send(`Слишком много запросов. Попробуйте через ${timeLeft} сек.`);
+            }
+        }
+    } else {
+        webhookAttempts.set(ip, { count: 1, firstAttempt: now });
+    }
+    next();
+}
+
 // Validation helpers
 function validateEmail(email) {
     if (!email) return true; // Optional email
@@ -1735,7 +1760,7 @@ const sberbankCallbackHandler = async (req, res) => {
 app.get('/api/sberbank/callback', sberbankCallbackHandler);
 app.post('/api/sberbank/callback', sberbankCallbackHandler);
 
-app.post('/api/moysklad/webhook', async (req, res) => {
+app.post('/api/moysklad/webhook', webhookRateLimiter, async (req, res) => {
     try {
         const events = req.body && req.body.events;
         if (!events || !Array.isArray(events)) {
