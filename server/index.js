@@ -103,6 +103,103 @@ function orderRateLimiter(req, res, next) {
     next();
 }
 
+// Validation helpers
+function validateEmail(email) {
+    if (!email) return true; // Optional email
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(String(email).toLowerCase());
+}
+
+function validatePhone(phone) {
+    if (!phone) return false;
+    const re = /^\+?[0-9\s\-()]{7,20}$/;
+    return re.test(phone);
+}
+
+function validateOrderPayload(req, res, next) {
+    const { customer_name, customer_phone, email, items, total_price } = req.body;
+
+    if (!customer_name || typeof customer_name !== 'string' || customer_name.trim().length < 2 || customer_name.length > 100) {
+        return res.status(400).json({ error: 'Имя клиента должно быть строкой длиной от 2 до 100 символов' });
+    }
+
+    if (!customer_phone || typeof customer_phone !== 'string' || !validatePhone(customer_phone)) {
+        return res.status(400).json({ error: 'Неверный формат номера телефона' });
+    }
+
+    if (email && (typeof email !== 'string' || !validateEmail(email))) {
+        return res.status(400).json({ error: 'Неверный формат email' });
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: 'Заказ должен содержать хотя бы один товар' });
+    }
+
+    for (const item of items) {
+        if (!item || !item.id || !item.name || !item.volume || !item.quantity || Number(item.quantity) <= 0) {
+            return res.status(400).json({ error: 'Некорректная структура товара в заказе' });
+        }
+    }
+
+    const price = Number(total_price);
+    if (isNaN(price) || price <= 0) {
+        return res.status(400).json({ error: 'Итоговая стоимость должна быть числом больше 0' });
+    }
+
+    next();
+}
+
+function validateProductPayload(req, res, next) {
+    const { name, brand, category, prices } = req.body;
+
+    if (!name || typeof name !== 'string' || name.trim().length < 2 || name.length > 255) {
+        return res.status(400).json({ error: 'Название товара должно быть строкой длиной от 2 до 255 символов' });
+    }
+
+    if (!brand || typeof brand !== 'string' || brand.trim().length < 1 || brand.length > 100) {
+        return res.status(400).json({ error: 'Бренд должен быть строкой длиной от 1 до 100 символов' });
+    }
+
+    if (!category || (category !== 'Парфюмерия' && category !== 'Аксессуары')) {
+        return res.status(400).json({ error: 'Категория должна быть "Парфюмерия" или "Аксессуары"' });
+    }
+
+    if (!prices || typeof prices !== 'object' || Array.isArray(prices)) {
+        return res.status(400).json({ error: 'Некорректный формат цен (объект)' });
+    }
+
+    const allowedVolumes = category === 'Аксессуары' ? ['1'] : ['1', '3', '5', '10'];
+    let hasAtLeastOnePrice = false;
+
+    for (const key of Object.keys(prices)) {
+        if (!allowedVolumes.includes(key)) {
+            return res.status(400).json({ error: `Недопустимый объем или тип: ${key}` });
+        }
+        const vol = prices[key];
+        if (vol && (vol.price || vol.sku || vol.stock !== undefined)) {
+            if (vol.price) {
+                const p = Number(String(vol.price).replace(/\s/g, ''));
+                if (isNaN(p) || p < 0) {
+                    return res.status(400).json({ error: `Некорректная цена для объема ${key}` });
+                }
+            }
+            if (vol.stock !== undefined && vol.stock !== '') {
+                const s = Number(vol.stock);
+                if (isNaN(s) || s < 0) {
+                    return res.status(400).json({ error: `Некорректный остаток для объема ${key}` });
+                }
+            }
+            hasAtLeastOnePrice = true;
+        }
+    }
+
+    if (!hasAtLeastOnePrice) {
+        return res.status(400).json({ error: 'Товар должен иметь цену хотя бы для одного объема/варианта' });
+    }
+
+    next();
+}
+
 // Authentication middleware for administrative routes
 async function authenticateAdmin(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -433,7 +530,7 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
-app.post('/api/products', authenticateAdmin, async (req, res) => {
+app.post('/api/products', authenticateAdmin, validateProductPayload, async (req, res) => {
     try {
         const { name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active, slug, seoTitle, seoDescription, category, fsa_link } = req.body;
         const result = await pool.query(
@@ -447,7 +544,7 @@ app.post('/api/products', authenticateAdmin, async (req, res) => {
     }
 });
 
-app.put('/api/products/:id', authenticateAdmin, async (req, res) => {
+app.put('/api/products/:id', authenticateAdmin, validateProductPayload, async (req, res) => {
     try {
         const { id } = req.params;
         const { name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active, slug, seoTitle, seoDescription, category, fsa_link } = req.body;
@@ -1048,7 +1145,7 @@ async function updateSberbankOrderStatus(order) {
 }
 
 // --- ORDERS ---
-app.post('/api/orders', orderRateLimiter, async (req, res) => {
+app.post('/api/orders', orderRateLimiter, validateOrderPayload, async (req, res) => {
     try {
         const { customer_name, customer_phone, email, items, total_price, payment_method, delivery_type, delivery_address } = req.body;
 
