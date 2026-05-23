@@ -78,6 +78,31 @@ function rateLimiter(req, res, next) {
     next();
 }
 
+// In-memory IP rate limiter for order creation
+const orderAttempts = new Map();
+const ORDER_RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+const MAX_ORDERS = 10;
+
+function orderRateLimiter(req, res, next) {
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const now = Date.now();
+    if (orderAttempts.has(ip)) {
+        const data = orderAttempts.get(ip);
+        if (now - data.firstAttempt > ORDER_RATE_LIMIT_WINDOW) {
+            orderAttempts.set(ip, { count: 1, firstAttempt: now });
+        } else {
+            data.count += 1;
+            if (data.count > MAX_ORDERS) {
+                const timeLeft = Math.ceil((ORDER_RATE_LIMIT_WINDOW - (now - data.firstAttempt)) / 1000);
+                return res.status(429).json({ error: `Слишком много заказов. Пожалуйста, попробуйте снова через ${timeLeft} сек.` });
+            }
+        }
+    } else {
+        orderAttempts.set(ip, { count: 1, firstAttempt: now });
+    }
+    next();
+}
+
 // Authentication middleware for administrative routes
 async function authenticateAdmin(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -978,7 +1003,7 @@ async function updateSberbankOrderStatus(order) {
 }
 
 // --- ORDERS ---
-app.post('/api/orders', async (req, res) => {
+app.post('/api/orders', orderRateLimiter, async (req, res) => {
     try {
         const { customer_name, customer_phone, email, items, total_price, payment_method, delivery_type, delivery_address } = req.body;
 
