@@ -17,7 +17,7 @@ app.use(cors({
     origin: ['https://kapsula-parfume.ru'],
     credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // --- SECURITY INITIALIZATION & HELPERS ---
 async function initSecurityTables() {
