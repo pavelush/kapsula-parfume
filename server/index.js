@@ -1305,11 +1305,12 @@ app.post('/api/orders', orderRateLimiter, validateOrderPayload, async (req, res)
 
         let finalStatus = 'Новый';
         let paymentStatus = 'Не оплачен';
+        const tracking_number = crypto.randomUUID();
 
         // 1. First, create the order in the DB to get the order ID
         const result = await pool.query(
-            'INSERT INTO orders (customer_name, customer_phone, email, items_json, total_price, payment_method, delivery_type, delivery_address, status, payment_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
-            [customer_name, customer_phone, email, JSON.stringify(items), total_price, payment_method, delivery_type, delivery_address, finalStatus, paymentStatus]
+            'INSERT INTO orders (customer_name, customer_phone, email, items_json, total_price, payment_method, delivery_type, delivery_address, status, payment_status, tracking_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
+            [customer_name, customer_phone, email, JSON.stringify(items), total_price, payment_method, delivery_type, delivery_address, finalStatus, paymentStatus, tracking_number]
         );
 
         let order = result.rows[0];
@@ -1389,7 +1390,7 @@ app.post('/api/orders', orderRateLimiter, validateOrderPayload, async (req, res)
                         capture: true,
                         confirmation: {
                             type: "redirect",
-                            return_url: `${req.headers.referer || "https://kapsula-parfume.ru/"}?success_order=${order.id}`
+                            return_url: `${req.headers.referer || "https://kapsula-parfume.ru/"}?success_order=${order.tracking_number}`
                         },
                         description: `Номер заказа #${order.id}`,
                         metadata: {
@@ -1433,7 +1434,7 @@ app.post('/api/orders', orderRateLimiter, validateOrderPayload, async (req, res)
                     orderNumber: String(order.id),
                     amount: Math.round(total_price * 100),
                     currency: '643', // RUB
-                    returnUrl: `${req.headers.referer || "https://kapsula-parfume.ru/"}?success_order=${order.id}`,
+                    returnUrl: `${req.headers.referer || "https://kapsula-parfume.ru/"}?success_order=${order.tracking_number}`,
                     description: `Номер заказа #${order.id}`
                 };
 
@@ -1527,7 +1528,7 @@ app.get('/api/order_status/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const result = await pool.query(
-            'SELECT * FROM orders WHERE id = $1',
+            'SELECT * FROM orders WHERE tracking_number = $1',
             [id]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Order not found' });
