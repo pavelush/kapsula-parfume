@@ -775,7 +775,7 @@ async function sendCustomerEmail(order, type) {
                 pass: config.smtp_pass
             },
             tls: {
-                rejectUnauthorized: false // Allow self-signed certificates
+                rejectUnauthorized: true
             }
         });
 
