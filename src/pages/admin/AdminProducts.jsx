@@ -96,7 +96,16 @@ export default function AdminProducts() {
         e.preventDefault();
 
         // Format prices back to JSON
-        const pricesJson = currentProduct.volumes;
+        let pricesJson = {};
+        if (currentProduct.category === 'Аксессуары') {
+            pricesJson = { '1': currentProduct.volumes['1'] };
+        } else {
+            pricesJson = {
+                '3': currentProduct.volumes['3'],
+                '5': currentProduct.volumes['5'],
+                '10': currentProduct.volumes['10']
+            };
+        }
 
         const transliterate = (text) => {
             const ru = {
