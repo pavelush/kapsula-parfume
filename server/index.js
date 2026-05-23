@@ -122,8 +122,53 @@ async function authenticateAdmin(req, res, next) {
     }
 }
 
-// Serve uploaded images statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded images securely with custom header checks and mime verification
+const ALLOWED_UPLOAD_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+const UPLOADS_MIME_TYPES = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp'
+};
+
+app.get('/uploads/:filename', (req, res, next) => {
+    const filename = req.params.filename;
+
+    // Prevent directory traversal
+    const safeFilename = path.basename(filename);
+    if (safeFilename !== filename) {
+        return res.status(400).json({ error: 'Invalid filename' });
+    }
+
+    const ext = path.extname(safeFilename).toLowerCase();
+    if (!ALLOWED_UPLOAD_EXTENSIONS.includes(ext)) {
+        return res.status(403).json({ error: 'File type not allowed' });
+    }
+
+    const filePath = path.join(__dirname, 'uploads', safeFilename);
+
+    // Double check that the file path actually resides within the uploads directory
+    const uploadsDir = path.join(__dirname, 'uploads');
+    if (!filePath.startsWith(uploadsDir)) {
+        return res.status(400).json({ error: 'Invalid file path' });
+    }
+
+    // Set headers for secure inline serving
+    res.setHeader('Content-Disposition', 'inline');
+    res.setHeader('Content-Type', UPLOADS_MIME_TYPES[ext]);
+
+    // Send file securely
+    res.sendFile(filePath, (err) => {
+        if (err) {
+            if (err.code === 'ENOENT') {
+                res.status(404).json({ error: 'File not found' });
+            } else {
+                next(err);
+            }
+        }
+    });
+});
 
 // Configure Multer for secure image uploads
 const storage = multer.diskStorage({

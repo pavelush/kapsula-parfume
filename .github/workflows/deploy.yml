@@ -32,8 +32,8 @@ jobs:
       - name: Deploy Frontend via Rsync
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_HOST: 85.209.135.87
-          SERVER_USER: kapsula
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
@@ -48,8 +48,8 @@ jobs:
       - name: Deploy Backend via Rsync
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_HOST: 85.209.135.87
-          SERVER_USER: kapsula
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
         run: |
           # Sync backend files
           rsync -avz --delete \
@@ -61,15 +61,15 @@ jobs:
       - name: Ensure Uploads Symlink
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_HOST: 85.209.135.87
-          SERVER_USER: kapsula
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
         run: |
           ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "ln -sfn /var/www/kapsula/data/www/api-server/uploads /var/www/kapsula/data/www/kapsula-parfume.ru/uploads"
 
       - name: Restart Backend with PM2
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_HOST: 85.209.135.87
-          SERVER_USER: kapsula
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
         run: |
           ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "export NVM_DIR=\"\$HOME/.nvm\" && [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\" && cd /var/www/kapsula/data/www/api-server && npm ci && pm2 restart kapsula-backend --update-env || pm2 start index.js --name kapsula-backend --update-env"
