@@ -398,12 +398,66 @@ async function getMsStockByStore(storeId) {
     }
 }
 
+async function createMsPaymentIn(msOrderId) {
+    if (!msOrderId) return null;
+    
+    try {
+        const { token, enabled } = await getMsSettings();
+        if (!enabled || !token) {
+            console.log('[MoySklad] Sync disabled or no token, skipping payment document creation.');
+            return null;
+        }
+
+        console.log(`[MoySklad] Checking payment state for order ${msOrderId}...`);
+
+        // 1. Fetch order details to get organization, agent, and sum
+        const order = await msRequest(`/entity/customerorder/${msOrderId}`, token);
+        if (!order) {
+            console.error(`[MoySklad] Order ${msOrderId} not found, cannot create payment.`);
+            return null;
+        }
+
+        // 2. Prevent duplicate payment document creation
+        if (order.payedSum > 0) {
+            console.log(`[MoySklad] Order ${msOrderId} is already paid (payedSum: ${order.payedSum}). Skipping payment creation.`);
+            return null;
+        }
+
+        // 3. Prepare paymentin payload
+        const paymentBody = {
+            organization: { meta: order.organization.meta },
+            agent: { meta: order.agent.meta },
+            sum: order.sum,
+            operations: [
+                {
+                    meta: {
+                        href: order.meta.href,
+                        type: 'customerorder',
+                        mediaType: 'application/json'
+                    },
+                    linkedSum: order.sum
+                }
+            ]
+        };
+
+        // 4. Create paymentin
+        console.log(`[MoySklad] Creating Incoming Payment for order ${msOrderId}...`);
+        const paymentIn = await msRequest('/entity/paymentin', token, 'POST', paymentBody);
+        console.log(`[MoySklad] Incoming payment created successfully. Payment ID: ${paymentIn.id}`);
+        return paymentIn;
+    } catch (error) {
+        console.error('[MoySklad] Failed to create Incoming Payment in MS:', error.message);
+        return null;
+    }
+}
+
 module.exports = {
     createMsCustomerOrder,
     updateMsOrderStatus,
     getMsStockBySku,
     getMsStores,
-    getMsStockByStore
+    getMsStockByStore,
+    createMsPaymentIn
 };
 
 

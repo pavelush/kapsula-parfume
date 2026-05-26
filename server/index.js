@@ -1247,9 +1247,10 @@ async function updateSberbankOrderStatus(order) {
                 sendTelegramNotification(updatedOrder);
                 sendCustomerEmail(updatedOrder, 'payment_success');
 
-                const { updateMsOrderStatus } = require('./moysklad_api');
+                const { updateMsOrderStatus, createMsPaymentIn } = require('./moysklad_api');
                 if (updatedOrder.moysklad_id) {
                     await updateMsOrderStatus(updatedOrder.moysklad_id, 'Оплачен');
+                    await createMsPaymentIn(updatedOrder.moysklad_id);
                 }
                 return updatedOrder;
             }
@@ -1653,9 +1654,12 @@ app.put('/api/orders/:id/payment_status', authenticateAdmin, async (req, res) =>
         if (result.rows.length === 0) return res.status(404).json({ error: 'Order not found' });
         
         const order = result.rows[0];
-        const { updateMsOrderStatus } = require('./moysklad_api');
+        const { updateMsOrderStatus, createMsPaymentIn } = require('./moysklad_api');
         if (order.moysklad_id) {
             await updateMsOrderStatus(order.moysklad_id, payment_status);
+            if (payment_status === 'Оплачен') {
+                await createMsPaymentIn(order.moysklad_id);
+            }
         }
 
         res.json(order);
@@ -1715,9 +1719,10 @@ app.post('/api/yookassa/webhook', async (req, res) => {
                 sendTelegramNotification(order);
                 sendCustomerEmail(order, 'payment_success');
 
-                const { updateMsOrderStatus } = require('./moysklad_api');
+                const { updateMsOrderStatus, createMsPaymentIn } = require('./moysklad_api');
                 if (order.moysklad_id) {
                     await updateMsOrderStatus(order.moysklad_id, 'Оплачен');
+                    await createMsPaymentIn(order.moysklad_id);
                 }
             }
         } else if (eventType === 'payment.canceled' && verifiedStatus === 'canceled') {
