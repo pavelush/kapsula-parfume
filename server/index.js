@@ -1953,6 +1953,44 @@ app.get('/sitemap.xml', async (req, res) => {
     }
 });
 
+app.get('/api/test-email', async (req, res) => {
+    try {
+        const settingsRes = await pool.query(
+            "SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from_email', 'smtp_from_name')"
+        );
+        const config = {};
+        settingsRes.rows.forEach(r => { config[r.setting_key] = r.setting_value; });
+
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
+            host: config.smtp_host,
+            port: parseInt(config.smtp_port, 10) || 465,
+            secure: parseInt(config.smtp_port, 10) === 465,
+            auth: {
+                user: config.smtp_user,
+                pass: config.smtp_pass
+            },
+            tls: {
+                rejectUnauthorized: true
+            }
+        });
+
+        await transporter.verify();
+        
+        const fromString = config.smtp_from_name ? `"${config.smtp_from_name}" <${config.smtp_from_email || config.smtp_user}>` : config.smtp_user;
+        const info = await transporter.sendMail({
+            from: fromString,
+            to: req.query.to || 'pavellarenso@gmail.com',
+            subject: 'Test production email',
+            text: 'This is a test email from the production server.'
+        });
+
+        res.json({ success: true, messageId: info.messageId });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message, stack: err.stack });
+    }
+});
+
 // Serve static React frontend
 app.use(express.static(path.join(__dirname, '../dist')));
 app.use((req, res, next) => {
