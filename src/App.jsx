@@ -12,6 +12,7 @@ import CartModal from './components/CartModal';
 import FavoritesModal from './components/FavoritesModal';
 import SuccessOrderModal from './components/SuccessOrderModal';
 import CookieConsent from './components/CookieConsent';
+import NotFoundPage from './pages/main/NotFoundPage';
 
 function App() {
   const location = useLocation();
@@ -252,7 +253,7 @@ function App() {
             setIsCartOpen={setIsCartOpen}
           />
         } />
-        <Route path="/*" element={
+        <Route path="/" element={
           <MainSite
             favorites={favorites}
             toggleFavorite={toggleFavorite}
@@ -263,6 +264,7 @@ function App() {
             setIsCartOpen={setIsCartOpen}
           />
         } />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <CookieConsent />
     </>
