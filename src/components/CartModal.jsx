@@ -171,6 +171,13 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
         e.preventDefault();
         if (isSubmitDisabled) return;
 
+        // Валидация номера телефона (должно быть не менее 11 цифр)
+        const cleanPhone = formData.phone.replace(/\D/g, '');
+        if (cleanPhone.length < 11) {
+            alert('Пожалуйста, введите корректный номер телефона (11 цифр)');
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             const itemsToSubmit = enrichedCartItems

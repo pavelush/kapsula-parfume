@@ -137,8 +137,8 @@ function validateEmail(email) {
 
 function validatePhone(phone) {
     if (!phone) return false;
-    const re = /^\+?[0-9\s\-()]{7,20}$/;
-    return re.test(phone);
+    const clean = phone.replace(/\D/g, '');
+    return clean.length >= 10 && clean.length <= 15;
 }
 
 function validateOrderPayload(req, res, next) {
