@@ -4,7 +4,7 @@ import PrivacyPolicyModal from './PrivacyPolicyModal';
 import OfferModal from './OfferModal';
 import MarketingConsentModal from './MarketingConsentModal';
 
-export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, updateQuantity, clearCart, products = [] }) {
+export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, updateQuantity, clearCart, products = [], setSuccessOrderId }) {
     const [paymentMethods, setPaymentMethods] = useState([]);
     const [pickupPoints, setPickupPoints] = useState([]);
     const [formData, setFormData] = useState({
@@ -208,20 +208,19 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                     return; // Stop execution to let the browser navigate
                 }
 
-                setSuccessMsg('Заказ успешно оформлен! Мы свяжемся с вами в ближайшее время.');
-                setTimeout(() => {
-                    clearCart();
-                    onClose();
-                    setSuccessMsg('');
-                    setFormData({
-                        name: '',
-                        phone: '',
-                        email: '',
-                        paymentMethod: paymentMethods[0]?.name || '',
-                        deliveryType: 'pickup',
-                        deliveryAddress: ''
-                    });
-                }, 3000);
+                clearCart();
+                onClose();
+                if (setSuccessOrderId) {
+                    setSuccessOrderId(responseData.tracking_number);
+                }
+                setFormData({
+                    name: '',
+                    phone: '',
+                    email: '',
+                    paymentMethod: paymentMethods[0]?.name || '',
+                    deliveryType: 'pickup',
+                    deliveryAddress: ''
+                });
             } else {
                 const errData = await res.json().catch(() => ({}));
                 alert(errData.error || 'Ошибка при оформлении заказа');

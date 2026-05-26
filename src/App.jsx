@@ -213,6 +213,7 @@ function App() {
             updateQuantity={updateQuantity}
             clearCart={clearCart}
             products={products}
+            setSuccessOrderId={setSuccessOrderId}
           />
           <FavoritesModal
             isOpen={isFavoritesOpen}
