@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, Package, Truck, MapPin, X } from 'lucide-react';
+import { CheckCircle, Package, Truck, MapPin, X, Clock } from 'lucide-react';
 
 export default function SuccessOrderModal({ orderId, onClose }) {
     const [order, setOrder] = useState(null);
@@ -34,6 +34,41 @@ export default function SuccessOrderModal({ orderId, onClose }) {
     }, [orderId]);
 
     if (!orderId) return null;
+
+    // Determine status text and style dynamically
+    let titleText = "Заказ успешно оформлен!";
+    let subText = "Спасибо за покупку. Мы свяжемся с вами в ближайшее время.";
+    let iconColor = "#10b981"; // Green
+    let iconBg = "rgba(16, 185, 129, 0.1)";
+    let pulseClass = "pulseGreen";
+    let statusIcon = <CheckCircle size={48} color={iconColor} style={{ animation: 'scaleIn 0.5s 0.2s both' }} />;
+
+    if (order) {
+        const isOnlinePayment = order.payment_method === 'ЮKassa' || order.payment_method === 'SberPay' || order.payment_method === 'Сбербанк' || order.payment_method === 'СберПей' || (order.payment_method && (order.payment_method.toLowerCase().includes('yookassa') || order.payment_method.toLowerCase().includes('юкасса') || order.payment_method.toLowerCase().includes('sber')));
+
+        if (order.payment_status === 'Оплачен') {
+            titleText = "Заказ успешно оплачен!";
+            subText = "Спасибо за покупку. Мы уже начали собирать ваш заказ.";
+            iconColor = "#10b981";
+            iconBg = "rgba(16, 185, 129, 0.1)";
+            pulseClass = "pulseGreen";
+            statusIcon = <CheckCircle size={48} color={iconColor} style={{ animation: 'scaleIn 0.5s 0.2s both' }} />;
+        } else if (order.payment_status === 'Ожидает оплаты' && isOnlinePayment) {
+            titleText = "Заказ ожидает оплаты";
+            subText = "Ожидаем подтверждения платежа. После получения оплаты мы сразу начнем сборку.";
+            iconColor = "var(--color-accent-gold)";
+            iconBg = "rgba(251, 191, 36, 0.1)";
+            pulseClass = "pulseGold";
+            statusIcon = <Clock size={48} color={iconColor} style={{ animation: 'scaleIn 0.5s 0.2s both' }} />;
+        } else if (order.payment_status === 'Не оплачен' || order.payment_method === 'Оплата при получении') {
+            titleText = "Заказ успешно оформлен!";
+            subText = "Спасибо за заказ. Вы сможете оплатить его при получении.";
+            iconColor = "#10b981";
+            iconBg = "rgba(16, 185, 129, 0.1)";
+            pulseClass = "pulseGreen";
+            statusIcon = <CheckCircle size={48} color={iconColor} style={{ animation: 'scaleIn 0.5s 0.2s both' }} />;
+        }
+    }
 
     return (
         <div style={{
@@ -78,18 +113,18 @@ export default function SuccessOrderModal({ orderId, onClose }) {
                 <div 
                     style={{
                         width: '80px', height: '80px',
-                        borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)',
+                        borderRadius: '50%', background: iconBg,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         marginBottom: '1.5rem',
-                        animation: 'pulseGreen 2s infinite'
+                        animation: `${pulseClass} 2s infinite`
                     }}
                 >
-                    <CheckCircle size={48} color="#10b981" style={{ animation: 'scaleIn 0.5s 0.2s both' }} />
+                    {statusIcon}
                 </div>
 
-                <h2 style={{ fontSize: '2rem', color: 'white', marginBottom: '0.5rem', fontWeight: 600 }}>Заказ успешно оплачен!</h2>
+                <h2 style={{ fontSize: '2rem', color: 'white', marginBottom: '0.5rem', fontWeight: 600 }}>{titleText}</h2>
                 <p style={{ color: 'var(--color-text-muted)', fontSize: '1.1rem', marginBottom: '2rem' }}>
-                    Спасибо за покупку. Мы уже начали собирать ваш заказ.
+                    {subText}
                 </p>
 
                 <div style={{ width: '100%', background: 'rgba(0,0,0,0.3)', borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -164,6 +199,11 @@ export default function SuccessOrderModal({ orderId, onClose }) {
                     0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
                     70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
                     100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+                }
+                @keyframes pulseGold {
+                    0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4); }
+                    70% { box-shadow: 0 0 0 20px rgba(251, 191, 36, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
                 }
                 @keyframes scaleIn {
                     0% { transform: scale(0); }

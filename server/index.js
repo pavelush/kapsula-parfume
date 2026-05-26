@@ -1604,6 +1604,7 @@ app.get('/api/order_status/:id', async (req, res) => {
             delivery_address: order.delivery_address,
             total_price: order.total_price,
             payment_status: order.payment_status,
+            payment_method: order.payment_method,
             created_at: order.created_at
         };
         
