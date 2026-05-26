@@ -334,7 +334,10 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                                     <div style={{ display: 'flex', gap: '1rem', margin: '0.2rem 0' }}>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: formData.deliveryType === 'pickup' ? 'white' : 'var(--color-text-muted)', fontSize: '0.9rem' }}>
                                             <input
-                                                                  checked={formData.deliveryType === 'pickup'}
+                                                type="radio"
+                                                name="deliveryType"
+                                                value="pickup"
+                                                checked={formData.deliveryType === 'pickup'}
                                                 onChange={(e) => {
                                                     setFormData({
                                                         ...formData,
