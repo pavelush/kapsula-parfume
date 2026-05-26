@@ -41,8 +41,6 @@ function App() {
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [successOrderId, setSuccessOrderId] = useState(null);
-  const [pickupPoints, setPickupPoints] = useState([]);
-  const [selectedStore, setSelectedStore] = useState(null);
 
   useEffect(() => {
     const fetchSeoSettings = async () => {
@@ -101,40 +99,9 @@ function App() {
 
   useEffect(() => {
     if (isAdminRoute) return;
-    const fetchPickupPoints = async () => {
-      try {
-        const res = await fetch('/api/pickup_points');
-        if (res.ok) {
-          const points = await res.json();
-          const activePoints = points.filter(p => p.is_active);
-          setPickupPoints(activePoints);
-
-          const savedStoreId = localStorage.getItem('kapsula_selected_store_id');
-          let defaultStore = null;
-          if (savedStoreId) {
-            defaultStore = activePoints.find(p => String(p.id) === String(savedStoreId));
-          }
-          if (!defaultStore && activePoints.length > 0) {
-            defaultStore = activePoints[0];
-          }
-          if (defaultStore) {
-            setSelectedStore(defaultStore);
-            localStorage.setItem('kapsula_selected_store_id', String(defaultStore.id));
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch pickup points", error);
-      }
-    };
-    fetchPickupPoints();
-  }, [isAdminRoute]);
-
-  useEffect(() => {
-    if (isAdminRoute) return;
     const fetchProducts = async () => {
       try {
-        const storeParam = selectedStore?.moysklad_store_id ? `?store_id=${selectedStore.moysklad_store_id}` : '';
-        const res = await fetch(`/api/products${storeParam}`);
+        const res = await fetch(`/api/products`);
         if (res.ok) {
           const data = await res.json();
           setProducts(data);
@@ -144,7 +111,7 @@ function App() {
       }
     };
     fetchProducts();
-  }, [isAdminRoute, selectedStore?.moysklad_store_id]);
+  }, [isAdminRoute]);
 
   const toggleFavorite = (id) => {
     setFavorites(prev =>
@@ -237,12 +204,6 @@ function App() {
             cartItems={cartItems}
             setIsFavoritesOpen={setIsFavoritesOpen}
             setIsCartOpen={setIsCartOpen}
-            pickupPoints={pickupPoints}
-            selectedStore={selectedStore}
-            setSelectedStore={(store) => {
-              setSelectedStore(store);
-              localStorage.setItem('kapsula_selected_store_id', String(store.id));
-            }}
           />
           <CartModal
             isOpen={isCartOpen}
@@ -252,7 +213,6 @@ function App() {
             updateQuantity={updateQuantity}
             clearCart={clearCart}
             products={products}
-            selectedStore={selectedStore}
           />
           <FavoritesModal
             isOpen={isFavoritesOpen}
@@ -264,14 +224,14 @@ function App() {
           />
         </>
       )}
-
+ 
       {successOrderId && (
         <SuccessOrderModal 
           orderId={successOrderId} 
           onClose={() => setSuccessOrderId(null)} 
         />
       )}
-
+ 
       <Routes>
         <Route path="/admin/*" element={<AdminApp />} />
         <Route path="/certificates" element={<CertificatesPage />} />
@@ -289,7 +249,6 @@ function App() {
             setCartItems={setCartItems}
             isCartOpen={isCartOpen}
             setIsCartOpen={setIsCartOpen}
-            selectedStore={selectedStore}
           />
         } />
         <Route path="/*" element={
@@ -301,7 +260,6 @@ function App() {
             setCartItems={setCartItems}
             isCartOpen={isCartOpen}
             setIsCartOpen={setIsCartOpen}
-            selectedStore={selectedStore}
           />
         } />
       </Routes>

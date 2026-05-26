@@ -7,7 +7,7 @@ import Footer from '../../components/Footer';
 import { ChevronRight } from 'lucide-react';
 import './MainSite.css';
 
-function MainSite({ favorites, toggleFavorite, addToCart, cartItems, setCartItems, isCartOpen, setIsCartOpen, selectedStore = null }) {
+function MainSite({ favorites, toggleFavorite, addToCart, cartItems, setCartItems, isCartOpen, setIsCartOpen }) {
   // Header and Modal states moved to App.jsx
   useEffect(() => {
     // Settings logic moved to individual components, leaving this for potential future main-page specific needs
@@ -40,10 +40,10 @@ function MainSite({ favorites, toggleFavorite, addToCart, cartItems, setCartItem
         </section>
 
         {/* Accessories Slider */}
-        <AccessoriesSlider favorites={favorites} toggleFavorite={toggleFavorite} addToCart={addToCart} selectedStore={selectedStore} />
+        <AccessoriesSlider favorites={favorites} toggleFavorite={toggleFavorite} addToCart={addToCart} />
 
         {/* Catalog Section Refactored to Component */}
-        <CatalogSection favorites={favorites} toggleFavorite={toggleFavorite} addToCart={addToCart} selectedStore={selectedStore} />
+        <CatalogSection favorites={favorites} toggleFavorite={toggleFavorite} addToCart={addToCart} />
 
         {/* Features / About Section Refactored to Component */}
         <WhyUsSection />

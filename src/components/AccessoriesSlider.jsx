@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductCard from './ProductCard';
 import './AccessoriesSlider.css';
 
-export default function AccessoriesSlider({ favorites = [], toggleFavorite = () => { }, addToCart = () => { }, selectedStore = null }) {
+export default function AccessoriesSlider({ favorites = [], toggleFavorite = () => { }, addToCart = () => { } }) {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isPaused, setIsPaused] = useState(false);
@@ -13,8 +13,7 @@ export default function AccessoriesSlider({ favorites = [], toggleFavorite = () 
         const fetchProducts = async () => {
             setLoading(true);
             try {
-                const storeParam = selectedStore?.moysklad_store_id ? `?store_id=${selectedStore.moysklad_store_id}` : '';
-                const response = await fetch(`/api/products${storeParam}`);
+                const response = await fetch(`/api/products`);
                 if (response.ok) {
                     const data = await response.json();
                     const accessories = data.filter(p => p.category === 'Аксессуары' && checkHasStock(p));
@@ -28,7 +27,7 @@ export default function AccessoriesSlider({ favorites = [], toggleFavorite = () 
         };
 
         fetchProducts();
-    }, [selectedStore?.moysklad_store_id]);
+    }, []);
 
     useEffect(() => {
         if (loading || products.length === 0 || isPaused) return;

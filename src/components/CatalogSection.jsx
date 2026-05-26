@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 
 import ProductCard from './ProductCard';
 
-export default function CatalogSection({ favorites = [], toggleFavorite = () => { }, addToCart = () => { }, selectedStore = null }) {
+export default function CatalogSection({ favorites = [], toggleFavorite = () => { }, addToCart = () => { } }) {
     const [selectedBrands, setSelectedBrands] = useState([]);
     const [visibleCount, setVisibleCount] = useState(6);
     const [products, setProducts] = useState([]);
@@ -16,8 +16,7 @@ export default function CatalogSection({ favorites = [], toggleFavorite = () => 
         const fetchProducts = async () => {
             setLoading(true);
             try {
-                const storeParam = selectedStore?.moysklad_store_id ? `?store_id=${selectedStore.moysklad_store_id}` : '';
-                const response = await fetch(`/api/products${storeParam}`);
+                const response = await fetch(`/api/products`);
                 if (response.ok) {
                     const data = await response.json();
                     setProducts(data);
@@ -32,7 +31,7 @@ export default function CatalogSection({ favorites = [], toggleFavorite = () => 
         };
 
         fetchProducts();
-    }, [selectedStore?.moysklad_store_id]);
+    }, []);
 
 
 

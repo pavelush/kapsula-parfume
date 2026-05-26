@@ -4,7 +4,7 @@ import PrivacyPolicyModal from './PrivacyPolicyModal';
 import OfferModal from './OfferModal';
 import MarketingConsentModal from './MarketingConsentModal';
 
-export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, updateQuantity, clearCart, products = [], selectedStore = null }) {
+export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, updateQuantity, clearCart, products = [] }) {
     const [paymentMethods, setPaymentMethods] = useState([]);
     const [pickupPoints, setPickupPoints] = useState([]);
     const [formData, setFormData] = useState({
@@ -31,15 +31,6 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
         }
     }, [isOpen]);
 
-    useEffect(() => {
-        if (isOpen && selectedStore) {
-            setFormData(prev => ({
-                ...prev,
-                deliveryAddress: selectedStore.address
-            }));
-        }
-    }, [isOpen, selectedStore]);
-
     const fetchPickupPoints = async () => {
         try {
             const res = await fetch('/api/pickup_points');
@@ -48,7 +39,7 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                 const active = data.filter(p => p.is_active);
                 setPickupPoints(active);
                 if (active.length > 0 && formData.deliveryType === 'pickup' && !formData.deliveryAddress) {
-                    setFormData(prev => ({ ...prev, deliveryAddress: selectedStore ? selectedStore.address : active[0].address }));
+                    setFormData(prev => ({ ...prev, deliveryAddress: active[0].address }));
                 }
             }
         } catch (error) {
@@ -343,15 +334,12 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                                     <div style={{ display: 'flex', gap: '1rem', margin: '0.2rem 0' }}>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: formData.deliveryType === 'pickup' ? 'white' : 'var(--color-text-muted)', fontSize: '0.9rem' }}>
                                             <input
-                                                type="radio"
-                                                name="deliveryType"
-                                                value="pickup"
-                                                checked={formData.deliveryType === 'pickup'}
+                                                                  checked={formData.deliveryType === 'pickup'}
                                                 onChange={(e) => {
                                                     setFormData({
                                                         ...formData,
                                                         deliveryType: e.target.value,
-                                                        deliveryAddress: selectedStore ? selectedStore.address : (pickupPoints.length > 0 ? pickupPoints[0].address : '')
+                                                        deliveryAddress: pickupPoints.length > 0 ? pickupPoints[0].address : ''
                                                     });
                                                 }}
                                                 style={{ accentColor: 'var(--color-accent-gold)' }}
@@ -370,7 +358,7 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                                             Доставка
                                         </label>
                                     </div>
-
+ 
                                     {formData.deliveryType === 'delivery' && (
                                         <div>
                                             <textarea
@@ -383,42 +371,24 @@ export default function CartModal({ isOpen, onClose, cartItems, removeFromCart, 
                                             />
                                         </div>
                                     )}
-
+ 
                                     {formData.deliveryType === 'pickup' && (
-                                        selectedStore ? (
-                                            <div style={{
-                                                padding: '10px 12px',
-                                                background: 'rgba(255, 255, 255, 0.05)',
-                                                border: '1px solid var(--glass-border)',
-                                                borderRadius: '8px',
-                                                color: 'var(--color-accent-gold)',
-                                                fontSize: '0.9rem',
-                                                fontWeight: 500,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px'
-                                            }}>
-                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-accent-gold)' }} />
-                                                <span>Адрес самовывоза: <strong>{selectedStore.address}</strong></span>
-                                            </div>
-                                        ) : (
-                                            <div style={{ position: 'relative' }}>
-                                                <select
-                                                    required
-                                                    value={formData.deliveryAddress}
-                                                    onChange={(e) => setFormData({ ...formData, deliveryAddress: e.target.value })}
-                                                    style={{ width: '100%', padding: '10px 12px', background: 'rgba(0,0,0,0.25)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white', outline: 'none', appearance: 'none', fontSize: '0.9rem', paddingRight: '30px' }}
-                                                >
-                                                    <option value="" disabled style={{ color: 'black' }}>Выберите пункт выдачи...</option>
-                                                    {pickupPoints.map(point => (
-                                                        <option key={point.id} value={point.address} style={{ color: 'black' }}>
-                                                            {point.address}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid white' }} />
-                                            </div>
-                                        )
+                                        <div style={{ position: 'relative' }}>
+                                            <select
+                                                required
+                                                value={formData.deliveryAddress}
+                                                onChange={(e) => setFormData({ ...formData, deliveryAddress: e.target.value })}
+                                                style={{ width: '100%', padding: '10px 12px', background: 'rgba(0,0,0,0.25)', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'white', outline: 'none', appearance: 'none', fontSize: '0.9rem', paddingRight: '30px' }}
+                                            >
+                                                <option value="" disabled style={{ color: 'black' }}>Выберите пункт выдачи...</option>
+                                                {pickupPoints.map(point => (
+                                                    <option key={point.id} value={point.address} style={{ color: 'black' }}>
+                                                        {point.address}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid white' }} />
+                                        </div>
                                     )}
 
                                     <div style={{ position: 'relative' }}>
