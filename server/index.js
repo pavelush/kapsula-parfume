@@ -1360,24 +1360,16 @@ app.post('/api/orders', orderRateLimiter, validateOrderPayload, async (req, res)
             try {
                 const methodRes = await pool.query('SELECT acquiring FROM payment_methods WHERE name = $1 AND is_active = true', [payment_method]);
                 if (methodRes.rows.length > 0) {
-                    acquiring = methodRes.rows[0].acquiring || 'none';
-                } else {
-                    const nameLower = payment_method.toLowerCase();
-                    if (nameLower.includes('yookassa') || nameLower.includes('юkassa')) {
-                        acquiring = 'yookassa';
-                    } else if (
-                        nameLower.includes('sberbank') ||
-                        nameLower.includes('сбербанк') ||
-                        nameLower.includes('sberpay') ||
-                        nameLower.includes('сберпей')
-                    ) {
-                        acquiring = 'sberbank';
-                    }
+                    acquiring = methodRes.rows[0].acquiring;
                 }
             } catch (err) {
                 console.error('Error fetching payment method acquiring config:', err.message);
+            }
+
+            // Fallback name matching if acquiring is not determined, or set to 'none' in DB but method name indicates online payment
+            if (!acquiring || acquiring === 'none') {
                 const nameLower = payment_method.toLowerCase();
-                if (nameLower.includes('yookassa') || nameLower.includes('юkassa')) {
+                if (nameLower.includes('yookassa') || nameLower.includes('юkassa') || nameLower.includes('юкасса')) {
                     acquiring = 'yookassa';
                 } else if (
                     nameLower.includes('sberbank') ||
@@ -1388,6 +1380,7 @@ app.post('/api/orders', orderRateLimiter, validateOrderPayload, async (req, res)
                     acquiring = 'sberbank';
                 }
             }
+            if (!acquiring) acquiring = 'none';
         }
 
         // Then, create YooKassa payment using the order ID if configured
@@ -1400,6 +1393,60 @@ app.post('/api/orders', orderRateLimiter, validateOrderPayload, async (req, res)
                 const authHeader = 'Basic ' + Buffer.from(`${config.yookassa_shop_id}:${config.yookassa_secret_key}`).toString('base64');
                 const idempotenceKey = Date.now().toString() + '_' + Math.random().toString(36).substring(7);
 
+                // 1. Normalize customer phone for 54-FZ receipt (E.164 without symbols, starts with 7)
+                let cleanPhone = customer_phone ? customer_phone.replace(/\D/g, '') : '';
+                if (cleanPhone.startsWith('8') && cleanPhone.length === 11) {
+                    cleanPhone = '7' + cleanPhone.substring(1);
+                }
+
+                // 2. Build receipt items
+                const receiptItems = items.map(item => {
+                    const priceVal = parseFloat(String(item.price).replace(/[^\d.]/g, ''));
+                    const qtyVal = parseFloat(item.quantity) || 1;
+                    return {
+                        description: `${item.name} ${item.volume ? item.volume + 'мл' : ''}`.trim().substring(0, 128),
+                        quantity: qtyVal.toFixed(2),
+                        amount: {
+                            value: priceVal.toFixed(2),
+                            currency: "RUB"
+                        },
+                        vat_code: 1, // Без НДС (1)
+                        payment_mode: "full_payment",
+                        payment_subject: "commodity"
+                    };
+                });
+
+                // 3. Compute accurate total from receipt items to prevent rounding discrepancies in YooKassa
+                const receiptSum = receiptItems.reduce((acc, item) => {
+                    return acc + (parseFloat(item.amount.value) * parseFloat(item.quantity));
+                }, 0);
+                const paymentAmount = receiptSum.toFixed(2);
+
+                const payload = {
+                    amount: {
+                        value: paymentAmount,
+                        currency: "RUB"
+                    },
+                    capture: true,
+                    confirmation: {
+                        type: "redirect",
+                        return_url: `${req.headers.referer || "https://kapsula-parfume.ru/"}?success_order=${order.tracking_number}`
+                    },
+                    description: `Номер заказа #${order.id}`,
+                    metadata: {
+                        order_id: order.id,
+                        customer_phone,
+                        email
+                    },
+                    receipt: {
+                        customer: {
+                            phone: cleanPhone || undefined,
+                            email: email || undefined
+                        },
+                        items: receiptItems
+                    }
+                };
+
                 const yooRes = await fetch('https://api.yookassa.ru/v3/payments', {
                     method: 'POST',
                     headers: {
@@ -1407,23 +1454,7 @@ app.post('/api/orders', orderRateLimiter, validateOrderPayload, async (req, res)
                         'Idempotence-Key': idempotenceKey,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        amount: {
-                            value: total_price.toFixed(2),
-                            currency: "RUB"
-                        },
-                        capture: true,
-                        confirmation: {
-                            type: "redirect",
-                            return_url: `${req.headers.referer || "https://kapsula-parfume.ru/"}?success_order=${order.tracking_number}`
-                        },
-                        description: `Номер заказа #${order.id}`,
-                        metadata: {
-                            order_id: order.id,
-                            customer_phone,
-                            email
-                        }
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 if (yooRes.ok) {
