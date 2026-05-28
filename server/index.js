@@ -662,37 +662,48 @@ const downloadAutofillImage = async (url) => {
     let ogImageUrl = isDirectImage ? url : null;
 
     if (!isDirectImage) {
-        console.log(`[Autofill Image] Fetching page: ${url}`);
-        const aromoRes = await fetch(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
+        if (/https?:\/\/(?:www\.)?fragrantica\.ru/i.test(url)) {
+            const idMatch = url.match(/-(\d+)\.html/);
+            if (idMatch) {
+                // Construct the CDN image URL directly from open fimgs.net CDN
+                ogImageUrl = `https://fimgs.net/images/perfume/nd.${idMatch[1]}.jpg`;
+                console.log(`[Autofill Image] Fragrantica direct CDN map: ${ogImageUrl}`);
+            } else {
+                throw new Error('Не удалось извлечь ID аромата из URL fragrantica.ru');
             }
-        });
+        } else {
+            console.log(`[Autofill Image] Fetching page: ${url}`);
+            const aromoRes = await fetch(url, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
+                }
+            });
 
-        if (!aromoRes.ok) {
-            throw new Error(`Не удалось получить страницу аромата, статус: ${aromoRes.status}`);
-        }
-
-        const html = await aromoRes.text();
-        const getMetaTagContent = (htmlStr, nameOrProperty) => {
-            const regex = new RegExp(`<meta[^>]+(?:name|property|data-hid)="${nameOrProperty}"[^>]*>`, 'i');
-            const matchTag = htmlStr.match(regex);
-            if (matchTag) {
-                const contentMatch = matchTag[0].match(/content="([^"]+)"/i);
-                return contentMatch ? contentMatch[1] : null;
+            if (!aromoRes.ok) {
+                throw new Error(`Не удалось получить страницу аромата, статус: ${aromoRes.status}`);
             }
-            return null;
-        };
 
-        // Try og:image first
-        ogImageUrl = getMetaTagContent(html, 'og:image');
-        
-        // If not found, try parsing images from the page
-        if (!ogImageUrl) {
-            const imgMatch = html.match(/<img[^>]+src="([^"]+\.(?:jpe?g|png|webp))"/i);
-            if (imgMatch && !imgMatch[1].includes('logo') && !imgMatch[1].includes('banner') && !imgMatch[1].includes('counter')) {
-                ogImageUrl = imgMatch[1];
+            const html = await aromoRes.text();
+            const getMetaTagContent = (htmlStr, nameOrProperty) => {
+                const regex = new RegExp(`<meta[^>]+(?:name|property|data-hid)="${nameOrProperty}"[^>]*>`, 'i');
+                const matchTag = htmlStr.match(regex);
+                if (matchTag) {
+                    const contentMatch = matchTag[0].match(/content="([^"]+)"/i);
+                    return contentMatch ? contentMatch[1] : null;
+                }
+                return null;
+            };
+
+            // Try og:image first
+            ogImageUrl = getMetaTagContent(html, 'og:image');
+            
+            // If not found, try parsing images from the page
+            if (!ogImageUrl) {
+                const imgMatch = html.match(/<img[^>]+src="([^"]+\.(?:jpe?g|png|webp))"/i);
+                if (imgMatch && !imgMatch[1].includes('logo') && !imgMatch[1].includes('banner') && !imgMatch[1].includes('counter')) {
+                    ogImageUrl = imgMatch[1];
+                }
             }
         }
     }
@@ -742,7 +753,7 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
     }
 
     try {
-        const query = `(site:aromo.ru OR site:spellsmell.ru OR site:aroma-butik.ru OR site:randewoo.ru) ${brand} ${name}`;
+        const query = `(site:aromo.ru OR site:spellsmell.ru OR site:aroma-butik.ru OR site:randewoo.ru OR site:fragrantica.ru) ${brand} ${name}`;
         const searchUrl = `https://search.yahoo.com/search?p=${encodeURIComponent(query)}`;
         console.log(`[Autofill] Searching Yahoo: ${searchUrl}`);
 
@@ -761,8 +772,8 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
         const html = await searchRes.text();
         const foundUrls = [];
 
-        // Match direct and encoded links for aromo, spellsmell, aroma-butik, randewoo
-        const regexDirect = /https?:\/\/(?:www\.)?(?:aromo\.ru|spellsmell\.ru|aroma-butik\.ru|randewoo\.ru)\/[^\s"'>]+/gi;
+        // Match direct and encoded links for aromo, spellsmell, aroma-butik, randewoo, fragrantica
+        const regexDirect = /https?:\/\/(?:www\.)?(?:aromo\.ru|spellsmell\.ru|aroma-butik\.ru|randewoo\.ru|fragrantica\.ru)\/[^\s"'>]+/gi;
         let match;
         while ((match = regexDirect.exec(html)) !== null) {
             let url = match[0].split(/[?"'<>#\s]/)[0];
@@ -770,7 +781,7 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
             foundUrls.push(url);
         }
 
-        const regexEncoded = /RU=(https%3a%2f%2f(?:www\.)?(?:aromo\.ru|spellsmell\.ru|aroma-butik\.ru|randewoo\.ru)[^/&"'>\s]+)/gi;
+        const regexEncoded = /RU=(https%3a%2f%2f(?:www\.)?(?:aromo\.ru|spellsmell\.ru|aroma-butik\.ru|randewoo\.ru|fragrantica\.ru)[^/&"'>\s]+)/gi;
         while ((match = regexEncoded.exec(html)) !== null) {
             const decoded = decodeURIComponent(match[1]);
             foundUrls.push(decoded);
@@ -781,55 +792,68 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
             return res.status(404).json({ error: 'Парфюм не найден в источниках' });
         }
 
-        // Try to get descriptions from the first Aromo.ru url if possible, otherwise first url
-        let infoUrl = uniqueUrls.find(u => u.includes('aromo.ru')) || uniqueUrls[0];
-        console.log(`[Autofill] Fetching info from: ${infoUrl}`);
-        
         let description = '';
         let fullDescription = '';
         
-        try {
-            const infoRes = await fetch(infoUrl, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
-                }
-            });
-            if (infoRes.ok) {
-                const infoHtml = await infoRes.text();
-                const paragraphs = [];
-                const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
-                while ((match = pRegex.exec(infoHtml)) !== null) {
-                    const cleanText = match[1]
-                        .replace(/<[^>]*>/g, '')
-                        .replace(/\s+/g, ' ')
-                        .trim();
-                    if (cleanText && cleanText.length > 25) {
-                        if (!cleanText.includes('Политика конфиденциальности') && 
-                            !cleanText.includes('Все права защищены') &&
-                            !cleanText.includes('Aromo') &&
-                            !cleanText.includes('Зарегистрируйтесь') &&
-                            !cleanText.includes('Войти')) {
-                            paragraphs.push(cleanText);
+        // Find URLs that are likely to be scrapeable for text (aromo.ru, spellsmell.ru are open)
+        const textCandidateUrls = uniqueUrls.filter(u => 
+            !u.includes('fragrantica.ru') && 
+            !u.includes('randewoo.ru') && 
+            !u.includes('aroma-butik.ru')
+        );
+        
+        // Combine candidates with others at the end as a fallback
+        const allTextUrls = [...textCandidateUrls, ...uniqueUrls.filter(u => !textCandidateUrls.includes(u))];
+        
+        for (const url of allTextUrls) {
+            console.log(`[Autofill] Trying to fetch description from: ${url}`);
+            try {
+                const infoRes = await fetch(url, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
+                    }
+                });
+                if (infoRes.ok) {
+                    const infoHtml = await infoRes.text();
+                    const paragraphs = [];
+                    const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+                    while ((match = pRegex.exec(infoHtml)) !== null) {
+                        const cleanText = match[1]
+                            .replace(/<[^>]*>/g, '')
+                            .replace(/\s+/g, ' ')
+                            .trim();
+                        if (cleanText && cleanText.length > 25) {
+                            if (!cleanText.includes('Политика конфиденциальности') && 
+                                !cleanText.includes('Все права защищены') &&
+                                !cleanText.includes('Aromo') &&
+                                !cleanText.includes('Зарегистрируйтесь') &&
+                                !cleanText.includes('Войти')) {
+                                paragraphs.push(cleanText);
+                            }
                         }
                     }
-                }
 
-                if (paragraphs.length > 0) {
-                    description = paragraphs[0];
-                    const splitKeyword = 'Описание ';
-                    const idx = description.indexOf(splitKeyword);
-                    if (idx !== -1) {
-                        description = description.substring(idx + splitKeyword.length).trim();
+                    if (paragraphs.length > 0) {
+                        description = paragraphs[0];
+                        const splitKeyword = 'Описание ';
+                        const idx = description.indexOf(splitKeyword);
+                        if (idx !== -1) {
+                            description = description.substring(idx + splitKeyword.length).trim();
+                        }
+                        fullDescription = description;
+                        if (paragraphs.length > 1) {
+                            fullDescription += `\n\nСостав композиции:\n${paragraphs[1]}`;
+                        }
+                        console.log(`[Autofill] Successfully parsed description from: ${url}`);
+                        break;
                     }
-                    fullDescription = description;
-                    if (paragraphs.length > 1) {
-                        fullDescription += `\n\nСостав композиции:\n${paragraphs[1]}`;
-                    }
+                } else {
+                    console.warn(`[Autofill] Failed to fetch description from ${url}, status: ${infoRes.status}`);
                 }
+            } catch (err) {
+                console.error(`[Autofill] Failed to parse descriptions from ${url}:`, err.message);
             }
-        } catch (err) {
-            console.error('[Autofill] Failed to parse descriptions:', err);
         }
 
         // Loop over unique URLs and try to download the image

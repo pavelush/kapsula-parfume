@@ -42,6 +42,7 @@ export default function AdminProducts() {
     const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
     const [isUpdatingImage, setIsUpdatingImage] = useState(false);
     const [isHoveringImage, setIsHoveringImage] = useState(false);
+    const [hoveredProduct, setHoveredProduct] = useState(null);
 
     useEffect(() => {
         fetchProducts();
@@ -345,6 +346,20 @@ export default function AdminProducts() {
         }
     };
 
+    const handleTableImageHover = (e, imgUrl) => {
+        if (!imgUrl) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        setHoveredProduct({
+            imgUrl,
+            rect: {
+                top: rect.top,
+                left: rect.left,
+                width: rect.width,
+                height: rect.height
+            }
+        });
+    };
+
     const renderVolumeDetails = (product, volumeKey) => {
         const vol = product.prices?.[volumeKey];
         if (!vol || (!vol.price && !vol.sku && (vol.stock === undefined || vol.stock === ''))) {
@@ -436,8 +451,26 @@ export default function AdminProducts() {
                             {filteredProducts.length > 0 ? filteredProducts.map(product => (
                                 <tr key={product.id}>
                                     <td>
-                                        <div style={{ width: '40px', height: '40px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                            {product.imgUrl ? <img src={product.imgUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <ImageIcon size={20} color="var(--color-text-muted)" />}
+                                        <div 
+                                            onMouseEnter={(e) => handleTableImageHover(e, product.imgUrl)}
+                                            onMouseLeave={() => setHoveredProduct(null)}
+                                            style={{ 
+                                                width: '40px', 
+                                                height: '40px', 
+                                                background: 'rgba(255,255,255,0.1)', 
+                                                borderRadius: '8px', 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                justifyContent: 'center', 
+                                                overflow: 'hidden',
+                                                cursor: product.imgUrl ? 'pointer' : 'default'
+                                            }}
+                                        >
+                                            {product.imgUrl ? (
+                                                <img src={product.imgUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                            ) : (
+                                                <ImageIcon size={20} color="var(--color-text-muted)" />
+                                            )}
                                         </div>
                                     </td>
                                     <td>
@@ -940,6 +973,41 @@ export default function AdminProducts() {
                             </div>
                         </form>
                     </div>
+                </div>
+            )}
+
+            {hoveredProduct && (
+                <div style={{
+                    position: 'fixed',
+                    top: Math.max(10, Math.min(window.innerHeight - 610, hoveredProduct.rect.top + hoveredProduct.rect.height / 2 - 300)),
+                    left: hoveredProduct.rect.left + hoveredProduct.rect.width + 15 + 400 > window.innerWidth
+                        ? Math.max(10, hoveredProduct.rect.left - 415)
+                        : hoveredProduct.rect.left + hoveredProduct.rect.width + 15,
+                    zIndex: 9999,
+                    background: '#1e293b',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: '12px',
+                    padding: '8px',
+                    boxShadow: '0 10px 25px -5px rgba(0,0,0,0.7), 0 8px 10px -6px rgba(0,0,0,0.7)',
+                    maxWidth: '400px',
+                    maxHeight: '600px',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    pointerEvents: 'none',
+                    animation: 'fadeIn 0.15s ease-out'
+                }}>
+                    <img 
+                        src={hoveredProduct.imgUrl} 
+                        alt="Preview" 
+                        style={{ 
+                            maxWidth: '384px',
+                            maxHeight: '584px',
+                            objectFit: 'contain',
+                            borderRadius: '8px'
+                        }} 
+                    />
                 </div>
             )}
         </div>
