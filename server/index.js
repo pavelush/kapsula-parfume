@@ -799,7 +799,7 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
                     messages: [
                         {
                             role: 'system',
-                            content: 'Ты — профессиональный парфюмерный копирайтер. Не пиши никаких вводных слов, пояснений, примечаний, разделителей, markdown-разметки типа *** или вежливых фраз. Выводи строго запрошенный формат.'
+                            content: 'Ты — профессиональный парфюмерный копирайтер. Не пиши никаких вводных слов, пояснений, примечаний, разделителей, markdown-разметки или вежливых фраз. Не выводи заголовок "Описание аромата". Сразу начинай писать красивый эмоциональный текст описания духов.'
                         },
                         {
                             role: 'user',
@@ -813,11 +813,13 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
 
             if (deepseekRes.ok) {
                 const deepseekData = await deepseekRes.json();
-                const generatedText = deepseekData.choices?.[0]?.message?.content?.trim() || '';
+                let generatedText = deepseekData.choices?.[0]?.message?.content?.trim() || '';
                 if (generatedText) {
+                    // Remove "Описание аромата" header variations if returned by model
+                    generatedText = generatedText.replace(/^(?:\*\*|\*|#)*Описание аромата:?(?:\*\*|\*|#)*\s*/i, '').trim();
                     description = generatedText;
                     fullDescription = generatedText;
-                    console.log(`[Autofill] Successfully generated description from DeepSeek`);
+                    console.log(`[Autofill] Successfully generated description from DeepSeek (cleaned header)`);
                 } else {
                     console.warn('[Autofill] DeepSeek API response was empty');
                 }
