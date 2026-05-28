@@ -34,7 +34,8 @@ export default function AdminProducts() {
             10: { price: '', sku: '', stock: '' }
         },
         is_active: true,
-        slug: '', seoTitle: '', seoDescription: '', fsa_link: ''
+        slug: '', seoTitle: '', seoDescription: '', fsa_link: '',
+        compositionPyramid: '', characteristics: ''
     };
     const [currentProduct, setCurrentProduct] = useState(initialProductState);
     const [isAutofilling, setIsAutofilling] = useState(false);
@@ -145,7 +146,9 @@ export default function AdminProducts() {
             slug: finalSlug,
             seoTitle: finalSeoTitle,
             seoDescription: finalSeoDescription,
-            fsa_link: currentProduct.fsa_link
+            fsa_link: currentProduct.fsa_link,
+            compositionPyramid: currentProduct.compositionPyramid,
+            characteristics: currentProduct.characteristics
         };
 
         try {
@@ -196,7 +199,9 @@ export default function AdminProducts() {
             slug: product.slug || '',
             seoTitle: product.seoTitle || '',
             seoDescription: product.seoDescription || '',
-            fsa_link: product.fsa_link || ''
+            fsa_link: product.fsa_link || '',
+            compositionPyramid: product.compositionPyramid || '',
+            characteristics: product.characteristics || ''
         });
         setActiveVolumeTab(product.category === 'Аксессуары' ? '1' : '3');
         setIsModalOpen(true);
@@ -299,7 +304,9 @@ export default function AdminProducts() {
                     imgUrl: hasExistingImage ? prev.imgUrl : (data.imgUrl || prev.imgUrl),
                     slug: data.slug || prev.slug,
                     seoTitle: data.seoTitle || prev.seoTitle,
-                    seoDescription: data.seoDescription || prev.seoDescription
+                    seoDescription: data.seoDescription || prev.seoDescription,
+                    compositionPyramid: data.compositionPyramid || prev.compositionPyramid,
+                    characteristics: data.characteristics || prev.characteristics
                 }));
                 setFoundUrls(data.foundUrls || []);
                 setCurrentUrlIndex(hasExistingImage ? -1 : (data.currentUrlIndex !== undefined ? data.currentUrlIndex : 0));
@@ -658,6 +665,26 @@ export default function AdminProducts() {
                                     rows="4"
                                     value={currentProduct.fullDescription || ''}
                                     onChange={(e) => setCurrentProduct({ ...currentProduct, fullDescription: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Пирамида композиции</label>
+                                <textarea
+                                    className="form-control"
+                                    rows="4"
+                                    value={currentProduct.compositionPyramid || ''}
+                                    onChange={(e) => setCurrentProduct({ ...currentProduct, compositionPyramid: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Характеристики</label>
+                                <textarea
+                                    className="form-control"
+                                    rows="4"
+                                    value={currentProduct.characteristics || ''}
+                                    onChange={(e) => setCurrentProduct({ ...currentProduct, characteristics: e.target.value })}
                                 />
                             </div>
 

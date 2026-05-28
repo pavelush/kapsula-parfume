@@ -642,10 +642,10 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', authenticateAdmin, validateProductPayload, async (req, res) => {
     try {
-        const { name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active, slug, seoTitle, seoDescription, category, fsa_link } = req.body;
+        const { name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active, slug, seoTitle, seoDescription, category, fsa_link, compositionPyramid, characteristics } = req.body;
         const result = await pool.query(
-            'INSERT INTO products (name, brand, description, "fullDescription", "imgUrl", "colorTheme", prices, is_active, slug, "seoTitle", "seoDescription", category, fsa_link) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *',
-            [name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active !== undefined ? is_active : true, slug, seoTitle, seoDescription, category || 'Парфюмерия', fsa_link]
+            'INSERT INTO products (name, brand, description, "fullDescription", "imgUrl", "colorTheme", prices, is_active, slug, "seoTitle", "seoDescription", category, fsa_link, "compositionPyramid", "characteristics") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *',
+            [name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active !== undefined ? is_active : true, slug, seoTitle, seoDescription, category || 'Парфюмерия', fsa_link, compositionPyramid, characteristics]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -914,11 +914,11 @@ app.post('/api/products/autofill/download-image', authenticateAdmin, async (req,
 app.put('/api/products/:id', authenticateAdmin, validateProductPayload, async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active, slug, seoTitle, seoDescription, category, fsa_link } = req.body;
+        const { name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active, slug, seoTitle, seoDescription, category, fsa_link, compositionPyramid, characteristics } = req.body;
         const activeValue = is_active !== undefined ? is_active : true;
         const result = await pool.query(
-            'UPDATE products SET name = $1, brand = $2, description = $3, "fullDescription" = $4, "imgUrl" = $5, "colorTheme" = $6, prices = $7, is_active = $8, slug = $9, "seoTitle" = $10, "seoDescription" = $11, category = $12, fsa_link = $13 WHERE id = $14 RETURNING *',
-            [name, brand, description, fullDescription, imgUrl, colorTheme, prices, activeValue, slug, seoTitle, seoDescription, category || 'Парфюмерия', fsa_link, id]
+            'UPDATE products SET name = $1, brand = $2, description = $3, "fullDescription" = $4, "imgUrl" = $5, "colorTheme" = $6, prices = $7, is_active = $8, slug = $9, "seoTitle" = $10, "seoDescription" = $11, category = $12, fsa_link = $13, "compositionPyramid" = $14, "characteristics" = $15 WHERE id = $16 RETURNING *',
+            [name, brand, description, fullDescription, imgUrl, colorTheme, prices, activeValue, slug, seoTitle, seoDescription, category || 'Парфюмерия', fsa_link, compositionPyramid, characteristics, id]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Product not found' });
         res.json(result.rows[0]);

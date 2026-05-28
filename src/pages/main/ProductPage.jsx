@@ -290,6 +290,24 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                             </p>
                         </div>
 
+                        {product.compositionPyramid && (
+                            <div className="product-description-container" style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--glass-border)' }}>
+                                <h3 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.2rem' }}>Пирамида композиции</h3>
+                                <p style={{ color: 'var(--color-text-muted)', lineHeight: 1.8, fontSize: '1rem', whiteSpace: 'pre-line' }}>
+                                    {product.compositionPyramid}
+                                </p>
+                            </div>
+                        )}
+
+                        {product.characteristics && (
+                            <div className="product-description-container" style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--glass-border)' }}>
+                                <h3 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.2rem' }}>Характеристики</h3>
+                                <p style={{ color: 'var(--color-text-muted)', lineHeight: 1.8, fontSize: '1rem', whiteSpace: 'pre-line' }}>
+                                    {product.characteristics}
+                                </p>
+                            </div>
+                        )}
+
                         {product.fsa_link && (
                             <div style={{
                                 background: '#f352df2b',

@@ -87,7 +87,14 @@ async function initDB() {
                 prices JSONB,
                 "imgUrl" VARCHAR(255),
                 category VARCHAR(50) DEFAULT 'Парфюмерия',
-                fsa_link VARCHAR(1000)
+                fsa_link VARCHAR(1000),
+                "fullDescription" TEXT,
+                is_active BOOLEAN,
+                slug VARCHAR(255),
+                "seoTitle" VARCHAR(255),
+                "seoDescription" TEXT,
+                "compositionPyramid" TEXT,
+                "characteristics" TEXT
             );
         `);
         console.log("Products table created or already exists.");
