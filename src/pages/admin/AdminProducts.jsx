@@ -284,7 +284,8 @@ export default function AdminProducts() {
                 },
                 body: JSON.stringify({
                     brand: currentProduct.brand,
-                    name: currentProduct.name
+                    name: currentProduct.name,
+                    category: currentProduct.category
                 })
             });
 

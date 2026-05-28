@@ -736,7 +736,7 @@ const downloadAutofillImage = async (url) => {
 };
 
 app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
-    const { brand, name } = req.body;
+    const { brand, name, category } = req.body;
     if (!brand || !name) {
         return res.status(400).json({ error: 'Необходимо указать бренд и название товара' });
     }
@@ -871,8 +871,13 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
         const slug = `${brandSlug}-${nameSlug}`;
 
         // 4. Generate SEO metadata
-        const seoTitle = `${brand} - ${name} | Купить оригинальный парфюм`;
-        const seoDescription = `Купить оригинальный парфюм ${brand} - ${name} в интернет-магазине. ${description ? description.substring(0, 120) : ''}...`;
+        const isAccessory = category === 'Аксессуары';
+        const seoTitle = isAccessory 
+            ? `${brand} - ${name} | Купить аксессуар в магазине Kapsula Parfume`
+            : `${brand} - ${name} | Купить парфюм в магазине Kapsula Parfume`;
+        const seoDescription = isAccessory
+            ? `Купить оригинальный аксессуар ${brand} - ${name} в интернет-магазине. ${description ? description.substring(0, 120) : ''}...`
+            : `Купить оригинальный парфюм ${brand} - ${name} в интернет-магазине. ${description ? description.substring(0, 120) : ''}...`;
 
         res.json({
             description,
