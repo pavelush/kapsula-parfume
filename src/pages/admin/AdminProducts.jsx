@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, Image as ImageIcon, X, Check, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Image as ImageIcon, X, Check, Eye, EyeOff, ExternalLink, Wand2 } from 'lucide-react';
 
 const PRESET_COLORS = [
     { name: 'Золотой', value: 'rgba(251, 191, 36, 0.15)' },
@@ -37,6 +37,7 @@ export default function AdminProducts() {
         slug: '', seoTitle: '', seoDescription: '', fsa_link: ''
     };
     const [currentProduct, setCurrentProduct] = useState(initialProductState);
+    const [isAutofilling, setIsAutofilling] = useState(false);
 
     useEffect(() => {
         fetchProducts();
@@ -257,6 +258,47 @@ export default function AdminProducts() {
         }
     };
 
+    const handleAutofill = async () => {
+        if (!currentProduct.brand || !currentProduct.name) {
+            alert('Сначала выберите бренд и введите название товара');
+            return;
+        }
+
+        setIsAutofilling(true);
+        try {
+            const res = await fetch('/api/products/autofill', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    brand: currentProduct.brand,
+                    name: currentProduct.name
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                setCurrentProduct(prev => ({
+                    ...prev,
+                    description: data.description || prev.description,
+                    fullDescription: data.fullDescription || prev.fullDescription,
+                    imgUrl: data.imgUrl || prev.imgUrl,
+                    slug: data.slug || prev.slug,
+                    seoTitle: data.seoTitle || prev.seoTitle,
+                    seoDescription: data.seoDescription || prev.seoDescription
+                }));
+            } else {
+                alert(data.error || 'Произошла ошибка при автоматическом заполнении');
+            }
+        } catch (error) {
+            console.error('Autofill error:', error);
+            alert('Не удалось подключиться к серверу автозаполнения');
+        } finally {
+            setIsAutofilling(false);
+        }
+    };
+
     const renderVolumeDetails = (product, volumeKey) => {
         const vol = product.prices?.[volumeKey];
         if (!vol || (!vol.price && !vol.sku && (vol.stock === undefined || vol.stock === ''))) {
@@ -460,7 +502,53 @@ export default function AdminProducts() {
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label>Название</label>
+                                    <style>{`
+                                        @keyframes wand-spin {
+                                            from { transform: rotate(0deg); }
+                                            to { transform: rotate(360deg); }
+                                        }
+                                        .wand-spinner {
+                                            animation: wand-spin 1.5s linear infinite;
+                                        }
+                                    `}</style>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                        <label style={{ marginBottom: 0 }}>Название</label>
+                                        {currentProduct.brand && currentProduct.name && (
+                                            <button
+                                                type="button"
+                                                onClick={handleAutofill}
+                                                disabled={isAutofilling}
+                                                title="Автозаполнение полей товара (Aromo.ru)"
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px',
+                                                    background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    color: 'white',
+                                                    padding: '4px 8px',
+                                                    fontSize: '11px',
+                                                    fontWeight: '500',
+                                                    cursor: 'pointer',
+                                                    boxShadow: '0 2px 4px rgba(124, 58, 237, 0.3)',
+                                                    transition: 'all 0.2s ease',
+                                                    opacity: isAutofilling ? 0.7 : 1
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(124, 58, 237, 0.4)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.transform = 'translateY(0)';
+                                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(124, 58, 237, 0.3)';
+                                                }}
+                                            >
+                                                <Wand2 size={12} className={isAutofilling ? 'wand-spinner' : ''} />
+                                                {isAutofilling ? 'Заполнение...' : 'Автозаполнение'}
+                                            </button>
+                                        )}
+                                    </div>
                                     <input
                                         type="text"
                                         className="form-control"

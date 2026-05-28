@@ -654,6 +654,182 @@ app.post('/api/products', authenticateAdmin, validateProductPayload, async (req,
     }
 });
 
+app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
+    const { brand, name } = req.body;
+    if (!brand || !name) {
+        return res.status(400).json({ error: 'Необходимо указать бренд и название товара' });
+    }
+
+    try {
+        const fs = require('fs');
+        const query = `site:aromo.ru ${brand} ${name}`;
+        const searchUrl = `https://search.yahoo.com/search?p=${encodeURIComponent(query)}`;
+        console.log(`[Autofill] Searching Yahoo: ${searchUrl}`);
+
+        const searchRes = await fetch(searchUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
+            }
+        });
+
+        if (!searchRes.ok) {
+            return res.status(502).json({ error: 'Не удалось выполнить поиск на поисковом сервере' });
+        }
+
+        const html = await searchRes.text();
+        const aromoUrls = [];
+
+        // Match direct and encoded links
+        const regexDirect = /https?:\/\/aromo\.ru\/fragrance\/[^\s"'>]+/gi;
+        let match;
+        while ((match = regexDirect.exec(html)) !== null) {
+            let url = match[0].split(/[?"'<>#\s]/)[0];
+            if (url.endsWith(')')) url = url.slice(0, -1);
+            aromoUrls.push(url);
+        }
+
+        const regexEncoded = /RU=(https%3a%2f%2faromo\.ru%2ffragrance%2f[^/&"'>\s]+)/gi;
+        while ((match = regexEncoded.exec(html)) !== null) {
+            const decoded = decodeURIComponent(match[1]);
+            aromoUrls.push(decoded);
+        }
+
+        const uniqueUrls = [...new Set(aromoUrls)];
+        if (uniqueUrls.length === 0) {
+            return res.status(404).json({ error: 'Парфюм не найден на Aromo.ru' });
+        }
+
+        const targetUrl = uniqueUrls[0];
+        console.log(`[Autofill] Fetching target: ${targetUrl}`);
+        const aromoRes = await fetch(targetUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
+            }
+        });
+
+        if (!aromoRes.ok) {
+            return res.status(502).json({ error: 'Не удалось получить страницу товара с Aromo.ru' });
+        }
+
+        const aromoHtml = await aromoRes.text();
+
+        // 1. Extract Description and Full Description
+        const paragraphs = [];
+        const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+        while ((match = pRegex.exec(aromoHtml)) !== null) {
+            const cleanText = match[1]
+                .replace(/<[^>]*>/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+            if (cleanText && cleanText.length > 25) {
+                if (!cleanText.includes('Политика конфиденциальности') && 
+                    !cleanText.includes('Все права защищены') &&
+                    !cleanText.includes('Aromo') &&
+                    !cleanText.includes('Зарегистрируйтесь') &&
+                    !cleanText.includes('Войти')) {
+                    paragraphs.push(cleanText);
+                }
+            }
+        }
+
+        let description = '';
+        let fullDescription = '';
+
+        if (paragraphs.length > 0) {
+            description = paragraphs[0];
+            const splitKeyword = 'Описание ';
+            const idx = description.indexOf(splitKeyword);
+            if (idx !== -1) {
+                description = description.substring(idx + splitKeyword.length).trim();
+            }
+            fullDescription = description;
+            if (paragraphs.length > 1) {
+                fullDescription += `\n\nСостав композиции:\n${paragraphs[1]}`;
+            }
+        }
+
+        // 2. Extract og:image and Download locally
+        let imgUrl = '';
+        const getMetaTagContent = (htmlStr, nameOrProperty) => {
+            const regex = new RegExp(`<meta[^>]+(?:name|property|data-hid)="${nameOrProperty}"[^>]*>`, 'i');
+            const matchTag = htmlStr.match(regex);
+            if (matchTag) {
+                const contentMatch = matchTag[0].match(/content="([^"]+)"/i);
+                return contentMatch ? contentMatch[1] : null;
+            }
+            return null;
+        };
+
+        const ogImageUrl = getMetaTagContent(aromoHtml, 'og:image');
+        if (ogImageUrl) {
+            try {
+                console.log(`[Autofill] Downloading image: ${ogImageUrl}`);
+                const imgRes = await fetch(ogImageUrl);
+                if (imgRes.ok) {
+                    const buffer = Buffer.from(await imgRes.arrayBuffer());
+                    const ext = ogImageUrl.split('.').pop().split('?')[0] || 'jpg';
+                    const cleanExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext.toLowerCase()) ? ext.toLowerCase() : 'jpg';
+                    const uniqueFilename = `autofill-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${cleanExt}`;
+                    const targetDir = path.join(__dirname, 'uploads');
+                    
+                    if (!fs.existsSync(targetDir)) {
+                        fs.mkdirSync(targetDir, { recursive: true });
+                    }
+                    
+                    const targetPath = path.join(targetDir, uniqueFilename);
+                    fs.writeFileSync(targetPath, buffer);
+                    imgUrl = `/uploads/${uniqueFilename}`;
+                    console.log(`[Autofill] Saved image to: ${imgUrl}`);
+                } else {
+                    console.warn(`[Autofill] Failed to download image, status: ${imgRes.status}`);
+                }
+            } catch (err) {
+                console.error('[Autofill] Error downloading image:', err);
+            }
+        }
+
+        // 3. Generate Transliterated Slug
+        const transliterate = (text) => {
+            const rus = {
+                'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y',
+                'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f',
+                'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+                ' ': '-'
+            };
+            return text.toLowerCase().split('').map(char => {
+                return rus[char] !== undefined ? rus[char] : char;
+            }).join('')
+              .replace(/[^a-z0-9-]/g, '')
+              .replace(/-+/g, '-')
+              .replace(/^-+|-+$/g, '');
+        };
+
+        const brandSlug = transliterate(brand);
+        const nameSlug = transliterate(name);
+        const slug = `${brandSlug}-${nameSlug}`;
+
+        // 4. Generate SEO metadata
+        const seoTitle = `${brand} - ${name} | Купить оригинальный парфюм`;
+        const seoDescription = `Купить оригинальный парфюм ${brand} - ${name} в интернет-магазине. ${description ? description.substring(0, 120) : ''}...`;
+
+        res.json({
+            description,
+            fullDescription,
+            imgUrl,
+            slug,
+            seoTitle,
+            seoDescription
+        });
+
+    } catch (err) {
+        console.error('[Autofill] Error during autofill:', err);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера при автозаполнении', details: err.message });
+    }
+});
+
 app.put('/api/products/:id', authenticateAdmin, validateProductPayload, async (req, res) => {
     try {
         const { id } = req.params;
