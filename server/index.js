@@ -734,6 +734,38 @@ const downloadAutofillImage = async (url) => {
     fs.writeFileSync(targetPath, buffer);
 };
 
+const isValidProductUrl = (url) => {
+    try {
+        const parsed = new URL(url);
+        const hostname = parsed.hostname.toLowerCase();
+        
+        // Exclude search engines, yimg assets, social media, and internal pages
+        const excludedHostnames = [
+            'yahoo.', 'yimg.', 'google.', 'bing.', 'yandex.', 'facebook.', 'twitter.', 
+            'pinterest.', 'instagram.', 'youtube.', 'linkedin.', 'vk.', 'telegram.', 
+            't.me', 'uservoice.com', 'w3.org', 'oath.com'
+        ];
+        
+        if (excludedHostnames.some(h => hostname.includes(h))) {
+            return false;
+        }
+
+        const pathname = parsed.pathname.toLowerCase();
+        if (pathname.match(/\.(png|jpg|jpeg|gif|svg|css|js|ico|webp)$/i)) {
+            return false;
+        }
+
+        // Exclude root homepages to avoid cluttering foundUrls
+        if (pathname === '/' || pathname === '') {
+            return false;
+        }
+        
+        return true;
+    } catch (e) {
+        return false;
+    }
+};
+
 const extractPageText = (html) => {
     const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
     let body = bodyMatch ? bodyMatch[1] : html;
@@ -746,7 +778,7 @@ const extractPageText = (html) => {
 
     let cleanText = body.replace(/<[^>]*>/g, ' ');
     cleanText = cleanText.replace(/\s+/g, ' ').trim();
-    return cleanText.substring(0, 4000); // 4000 chars per page is plenty
+    return cleanText.substring(0, 15000); // 15000 chars of search results is plenty
 };
 
 app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
@@ -756,7 +788,10 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
     }
 
     try {
-        const query = `(site:aromo.ru OR site:parfumo.com OR site:fragrantica.ru OR site:ru.fragrantica.com OR site:fragrantica.com) ${brand} ${name}`;
+        const isAccessory = category === 'Аксессуары';
+        const query = isAccessory 
+            ? `"${brand}" "${name}" official site review`
+            : `"${brand}" "${name}" notes Fragrantica Parfumo Aromo`;
         const searchUrl = `https://search.yahoo.com/search?p=${encodeURIComponent(query)}`;
         console.log(`[Autofill] Searching Yahoo: ${searchUrl}`);
 
@@ -775,49 +810,35 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
         const html = await searchRes.text();
         const foundUrls = [];
 
-        // Match direct and encoded links for aromo.ru, parfumo.com, and fragrantica
-        const regexDirect = /https?:\/\/(?:www\.|ru\.)?(?:aromo\.ru\/fragrance|parfumo\.com\/Perfumes|fragrantica\.(?:com|ru)\/perfume)\/[^\s"'>]+/gi;
+        // Match direct URLs
+        const directRegex = /https?:\/\/[a-zA-Z0-9-._~:\/?#\[\]@!$&'()*+,;=%]+/gi;
         let match;
-        while ((match = regexDirect.exec(html)) !== null) {
+        while ((match = directRegex.exec(html)) !== null) {
             let url = match[0].split(/[?"'<>#\s]/)[0];
             if (url.endsWith(')')) url = url.slice(0, -1);
-            foundUrls.push(url);
+            if (isValidProductUrl(url)) {
+                foundUrls.push(url);
+            }
         }
 
-        const regexEncoded = /RU=(https%3a%2f%2f(?:www\.|ru\.)?(?:aromo\.ru%2ffragrance|parfumo\.com%2fPerfumes|fragrantica\.(?:com|ru)%2fperfume)[^/&"'>\s]+)/gi;
-        while ((match = regexEncoded.exec(html)) !== null) {
-            const decoded = decodeURIComponent(match[1]);
-            foundUrls.push(decoded);
+        // Match encoded URLs (RU=...)
+        const encodedRegex = /RU=(https%3a%2f%2f[^/&"'>\s]+)/gi;
+        while ((match = encodedRegex.exec(html)) !== null) {
+            try {
+                const decoded = decodeURIComponent(match[1]);
+                if (isValidProductUrl(decoded)) {
+                    foundUrls.push(decoded);
+                }
+            } catch (e) {}
         }
 
         const uniqueUrls = [...new Set(foundUrls)];
         if (uniqueUrls.length === 0) {
-            console.log(`[Autofill] No URLs found on Aromo.ru, Parfumo.com, and Fragrantica for ${brand} ${name}`);
+            console.log(`[Autofill] No URLs found on Yahoo for ${brand} ${name}`);
         }
 
-        // Harvest clean context text from top 3 matched URLs
-        let scrapedContext = '';
-        const targetUrls = uniqueUrls.slice(0, 3);
-        for (const url of targetUrls) {
-            try {
-                console.log(`[Autofill] Harvesting context from: ${url}`);
-                const pageRes = await fetch(url, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                        'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
-                    }
-                });
-                if (pageRes.ok) {
-                    const pageHtml = await pageRes.text();
-                    const cleanText = extractPageText(pageHtml);
-                    scrapedContext += `\n--- Context from ${url} ---\n${cleanText}\n`;
-                } else {
-                    console.log(`[Autofill] Failed to fetch context from ${url}, status: ${pageRes.status}`);
-                }
-            } catch (err) {
-                console.error(`[Autofill] Failed to harvest context from ${url}:`, err);
-            }
-        }
+        // Clean up the Yahoo search results page text to feed directly to DeepSeek
+        const searchPageText = extractPageText(html);
 
         // 1. Generate descriptions using DeepSeek API
         const deepseekApiKey = process.env.DEEPSEEK_API_KEY || 'sk-235ca183de5744f4a2614dfed4651ccc';
@@ -839,11 +860,11 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
                     messages: [
                         {
                             role: 'system',
-                            content: 'Ты — профессиональный парфюмерный копирайтер. Твоя задача — написать подробное описание аромата, пирамиду композиции и характеристики, основываясь СТРОГО на предоставленной официальной информации (контексте) о парфюме. Не придумывай ноты, характеристики или факты, которых нет в предоставленном контексте. Если контекст пуст или в нем отсутствует конкретная информация (например, нет пирамиды нот или концентрации/стойкости/шлейфа), напиши для этих полей "Нет данных". Выдавай ответ строго в запрашиваемом формате.'
+                            content: 'Ты — профессиональный парфюмерный копирайтер. Твоя задача — написать подробное описание аромата, пирамиду композиции и характеристики, основываясь СТРОГО на предоставленном тексте результатов поисковой выдачи (контексте). В этом контексте находятся сниппеты сайтов Fragrantica, Parfumo, Aromo, официальных сайтов брендов и других. Извлеки из них реальные ноты, характеристики (концентрация, стойкость, шлейф) и укажи источники информации. Категорически запрещено выдумывать ноты или характеристики, которых нет в предоставленном контексте. Если информация отсутствует, напиши "Нет данных". Ты можешь писать красиво и эмоционально только в разделе "{Описание аромата}", но разделы "{Пирамида композиции}" и "{Характеристики}" должны быть абсолютно точными и соответствовать контексту. Выдавай ответ строго в запрашиваемом формате.'
                         },
                         {
                             role: 'user',
-                            content: `Вот собранная официальная информация о парфюме ${brand} - ${name}:\n${scrapedContext}\n\nИсходя из этой информации, напиши подробное описание аромата в следующем формате:\n\nНазвание: ${brand} - ${name}\n\n{Описание аромата}\n[Красивый эмоциональный текст 50-100 слов]\n\n{Пирамида композиции}\nВерхние ноты: ...\nСредние ноты: ...\nБазовые ноты: ...\n\n{Характеристики}\nКонцентрация: ...\nСтойкость: ...\nШлейф: ...`
+                            content: `Вот результаты поиска в интернете о парфюме ${brand} - ${name}:\n${searchPageText}\n\nИсходя из этой информации, напиши подробное описание аромата в следующем формате:\n\nНазвание: ${brand} - ${name}\n\n{Описание аромата}\n[Красивый эмоциональный текст 50-100 слов]\n\n{Пирамида композиции}\nВерхние ноты: ...\nСредние ноты: ...\nБазовые ноты: ...\n\n{Характеристики}\nКонцентрация: ...\nСтойкость: ...\nШлейф: ...\nИсточники информации: ...`
                         }
                     ],
                     temperature: 0.1,
@@ -989,7 +1010,6 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
         const slug = `${brandSlug}-${nameSlug}`;
 
         // 4. Generate SEO metadata
-        const isAccessory = category === 'Аксессуары';
         const seoTitle = isAccessory 
             ? `${brand} - ${name} | Купить аксессуар в магазине Kapsula Parfume`
             : `${brand} - ${name} | Купить парфюм в магазине Kapsula Parfume`;
