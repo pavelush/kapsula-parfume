@@ -785,9 +785,11 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
         const deepseekApiKey = process.env.DEEPSEEK_API_KEY || 'sk-235ca183de5744f4a2614dfed4651ccc';
         let description = '';
         let fullDescription = '';
+        let compositionPyramid = '';
+        let characteristics = '';
 
         try {
-            console.log(`[Autofill] Generating description using DeepSeek for ${brand} - ${name}`);
+            console.log(`[Autofill] Generating multi-section description using DeepSeek for ${brand} - ${name}`);
             const deepseekRes = await fetch('https://api.deepseek.com/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -799,27 +801,50 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
                     messages: [
                         {
                             role: 'system',
-                            content: 'Ты — профессиональный парфюмерный копирайтер. Не пиши никаких вводных слов, пояснений, примечаний, разделителей, markdown-разметки или вежливых фраз. Не выводи заголовок "Описание аромата". Сразу начинай писать красивый эмоциональный текст описания духов.'
+                            content: 'Ты — профессиональный парфюмерный копирайтер. Твоя задача — строго следовать запрашиваемому формату разделов {Описание аромата}, {Пирамида композиции} и {Характеристики}. Не пиши никаких дополнительных примечаний, разделителей, markdown-разметки или вежливых фраз.'
                         },
                         {
                             role: 'user',
-                            content: `Мне нужно написать описание к товару духов исходя из официальной информации ${brand} - ${name}. Ты — профессиональный парфюмерный копирайтер. \nНапиши подробное описание аромата в следующем формате: Описание аромата\n[Красивый эмоциональный текст 50-100 слов]`
+                            content: `Мне нужно написать описание к товару духов исходя из официальной информации: ${brand} - ${name}. Ты — профессиональный парфюмерный копирайтер. \nНапиши подробное описание аромата в следующем формате:\n\nНазвание: ${brand} - ${name}\n\n{Описание аромата}\n[Красивый эмоциональный текст 50-100 слов]\n\n{Пирамида композиции}\nВерхние ноты: ...\nСредние ноты: ...\nБазовые ноты: ...\n\n{Характеристики}\nКонцентрация: ...\nСтойкость: ...\nШлейф: ...`
                         }
                     ],
                     temperature: 0.7,
-                    max_tokens: 500
+                    max_tokens: 800
                 })
             });
 
             if (deepseekRes.ok) {
                 const deepseekData = await deepseekRes.json();
-                let generatedText = deepseekData.choices?.[0]?.message?.content?.trim() || '';
+                const generatedText = deepseekData.choices?.[0]?.message?.content?.trim() || '';
                 if (generatedText) {
-                    // Remove "Описание аромата" header variations if returned by model
-                    generatedText = generatedText.replace(/^(?:\*\*|\*|#)*Описание аромата:?(?:\*\*|\*|#)*\s*/i, '').trim();
-                    description = generatedText;
-                    fullDescription = generatedText;
-                    console.log(`[Autofill] Successfully generated description from DeepSeek (cleaned header)`);
+                    console.log(`[Autofill] Successfully generated response from DeepSeek`);
+                    
+                    const descPattern = /(?:[\*\#\s\{\}\[\]\-:]*Описание аромата[\*\#\s\{\}\[\]\-:]*)/i;
+                    const pyrPattern = /(?:[\*\#\s\{\}\[\]\-:]*Пирамида композиции[\*\#\s\{\}\[\]\-:]*)/i;
+                    const charPattern = /(?:[\*\#\s\{\}\[\]\-:]*Характеристики[\*\#\s\{\}\[\]\-:]*)/i;
+
+                    const descIdx = generatedText.search(descPattern);
+                    const pyrIdx = generatedText.search(pyrPattern);
+                    const charIdx = generatedText.search(charPattern);
+
+                    if (descIdx !== -1) {
+                        let endIdx = pyrIdx !== -1 ? pyrIdx : (charIdx !== -1 ? charIdx : generatedText.length);
+                        description = generatedText.substring(descIdx, endIdx).replace(descPattern, '').trim();
+                        fullDescription = description;
+                    }
+                    if (pyrIdx !== -1) {
+                        let endIdx = charIdx !== -1 ? charIdx : generatedText.length;
+                        compositionPyramid = generatedText.substring(pyrIdx, endIdx).replace(pyrPattern, '').trim();
+                    }
+                    if (charIdx !== -1) {
+                        characteristics = generatedText.substring(charIdx).replace(charPattern, '').trim();
+                    }
+
+                    // Fallback in case formatting was unexpected
+                    if (!description && !compositionPyramid && !characteristics) {
+                        description = generatedText;
+                        fullDescription = generatedText;
+                    }
                 } else {
                     console.warn('[Autofill] DeepSeek API response was empty');
                 }
@@ -937,6 +962,8 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
         res.json({
             description,
             fullDescription,
+            compositionPyramid,
+            characteristics,
             imgUrl,
             slug,
             seoTitle,
