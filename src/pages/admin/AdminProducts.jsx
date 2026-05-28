@@ -41,6 +41,7 @@ export default function AdminProducts() {
     const [foundUrls, setFoundUrls] = useState([]);
     const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
     const [isUpdatingImage, setIsUpdatingImage] = useState(false);
+    const [isHoveringImage, setIsHoveringImage] = useState(false);
 
     useEffect(() => {
         fetchProducts();
@@ -179,6 +180,7 @@ export default function AdminProducts() {
     const openEditModal = (product) => {
         setFoundUrls([]);
         setCurrentUrlIndex(0);
+        setIsHoveringImage(false);
         setCurrentProduct({
             ...product,
             fullDescription: product.fullDescription || '',
@@ -219,6 +221,7 @@ export default function AdminProducts() {
     const openAddModal = () => {
         setFoundUrls([]);
         setCurrentUrlIndex(0);
+        setIsHoveringImage(false);
         setCurrentProduct(initialProductState);
         setActiveVolumeTab('3');
         setIsModalOpen(true);
@@ -296,7 +299,7 @@ export default function AdminProducts() {
                     seoDescription: data.seoDescription || prev.seoDescription
                 }));
                 setFoundUrls(data.foundUrls || []);
-                setCurrentUrlIndex(0);
+                setCurrentUrlIndex(data.currentUrlIndex !== undefined ? data.currentUrlIndex : 0);
             } else {
                 alert(data.error || 'Произошла ошибка при автоматическом заполнении');
             }
@@ -633,17 +636,23 @@ export default function AdminProducts() {
                                         onChange={handleImageUpload}
                                     />
                                     {currentProduct.imgUrl && (
-                                        <div style={{
-                                            position: 'relative',
-                                            marginTop: '10px',
-                                            width: '80px',
-                                            height: '80px',
-                                            background: 'rgba(255,255,255,0.05)',
-                                            borderRadius: '8px',
-                                            overflow: 'hidden',
-                                            border: '1px solid rgba(255,255,255,0.1)'
-                                        }}>
-                                            <img src={currentProduct.imgUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                        <div 
+                                            onMouseEnter={() => setIsHoveringImage(true)}
+                                            onMouseLeave={() => setIsHoveringImage(false)}
+                                            style={{
+                                                position: 'relative',
+                                                marginTop: '10px',
+                                                width: '80px',
+                                                height: '80px',
+                                                background: 'rgba(255,255,255,0.05)',
+                                                borderRadius: '8px',
+                                                overflow: 'visible',
+                                                border: '1px solid rgba(255,255,255,0.1)'
+                                            }}
+                                        >
+                                            <div style={{ width: '100%', height: '100%', borderRadius: '8px', overflow: 'hidden' }}>
+                                                <img src={currentProduct.imgUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                            </div>
                                             {foundUrls && foundUrls.length > 1 && (
                                                 <button
                                                     type="button"
@@ -666,7 +675,8 @@ export default function AdminProducts() {
                                                         cursor: 'pointer',
                                                         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
                                                         transition: 'all 0.2s ease',
-                                                        opacity: isUpdatingImage ? 0.6 : 1
+                                                        opacity: isUpdatingImage ? 0.6 : 1,
+                                                        zIndex: 10
                                                     }}
                                                     onMouseEnter={(e) => {
                                                         e.currentTarget.style.background = '#7c3aed';
@@ -688,6 +698,44 @@ export default function AdminProducts() {
                                                     `}</style>
                                                     <RefreshCw size={12} className={isUpdatingImage ? 'image-spinner' : ''} />
                                                 </button>
+                                            )}
+
+                                            {isHoveringImage && (
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    bottom: '90px',
+                                                    left: '0',
+                                                    zIndex: 100,
+                                                    background: '#1e293b',
+                                                    border: '1px solid rgba(255,255,255,0.2)',
+                                                    borderRadius: '12px',
+                                                    padding: '8px',
+                                                    boxShadow: '0 10px 25px -5px rgba(0,0,0,0.7), 0 8px 10px -6px rgba(0,0,0,0.7)',
+                                                    maxWidth: '400px',
+                                                    maxHeight: '600px',
+                                                    overflow: 'hidden',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    animation: 'fadeIn 0.2s ease-out'
+                                                }}>
+                                                    <style>{`
+                                                        @keyframes fadeIn {
+                                                            from { opacity: 0; transform: translateY(4px); }
+                                                            to { opacity: 1; transform: translateY(0); }
+                                                        }
+                                                    `}</style>
+                                                    <img 
+                                                        src={currentProduct.imgUrl} 
+                                                        alt="Full Preview" 
+                                                        style={{ 
+                                                            maxWidth: '384px',
+                                                            maxHeight: '584px',
+                                                            objectFit: 'contain',
+                                                            borderRadius: '8px'
+                                                        }} 
+                                                    />
+                                                </div>
                                             )}
                                         </div>
                                     )}
