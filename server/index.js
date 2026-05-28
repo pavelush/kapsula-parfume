@@ -734,6 +734,21 @@ const downloadAutofillImage = async (url) => {
     fs.writeFileSync(targetPath, buffer);
 };
 
+const extractPageText = (html) => {
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    let body = bodyMatch ? bodyMatch[1] : html;
+
+    body = body.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ');
+    body = body.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ');
+    body = body.replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, ' ');
+    body = body.replace(/<header[^>]*>[\s\S]*?<\/header>/gi, ' ');
+    body = body.replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, ' ');
+
+    let cleanText = body.replace(/<[^>]*>/g, ' ');
+    cleanText = cleanText.replace(/\s+/g, ' ').trim();
+    return cleanText.substring(0, 4000); // 4000 chars per page is plenty
+};
+
 app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
     const { brand, name, category } = req.body;
     if (!brand || !name) {
@@ -780,6 +795,30 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
             console.log(`[Autofill] No URLs found on Aromo.ru, Parfumo.com, and Fragrantica for ${brand} ${name}`);
         }
 
+        // Harvest clean context text from top 3 matched URLs
+        let scrapedContext = '';
+        const targetUrls = uniqueUrls.slice(0, 3);
+        for (const url of targetUrls) {
+            try {
+                console.log(`[Autofill] Harvesting context from: ${url}`);
+                const pageRes = await fetch(url, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
+                    }
+                });
+                if (pageRes.ok) {
+                    const pageHtml = await pageRes.text();
+                    const cleanText = extractPageText(pageHtml);
+                    scrapedContext += `\n--- Context from ${url} ---\n${cleanText}\n`;
+                } else {
+                    console.log(`[Autofill] Failed to fetch context from ${url}, status: ${pageRes.status}`);
+                }
+            } catch (err) {
+                console.error(`[Autofill] Failed to harvest context from ${url}:`, err);
+            }
+        }
+
         // 1. Generate descriptions using DeepSeek API
         const deepseekApiKey = process.env.DEEPSEEK_API_KEY || 'sk-235ca183de5744f4a2614dfed4651ccc';
         let description = '';
@@ -800,11 +839,11 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
                     messages: [
                         {
                             role: 'system',
-                            content: 'Ты — профессиональный парфюмерный копирайтер. Твоя задача — написать подробное описание аромата, пирамиду композиции и характеристики, используя свои точные знания о базах данных Fragrantica, Parfumo и официальной информации брендов. Будь абсолютно точен, ссылайся на реальные официальные источники и не выдумывай ноты (Верхние, средние, базовые), концентрацию или характеристики (стойкость, шлейф), которых нет в официальных данных парфюма. Если ты не знаешь точные ноты или характеристики аромата, укажи только те, которые подтверждены официально. Выдавай ответ строго в запрашиваемом формате.'
+                            content: 'Ты — профессиональный парфюмерный копирайтер. Твоя задача — написать подробное описание аромата, пирамиду композиции и характеристики, основываясь СТРОГО на предоставленной официальной информации (контексте) о парфюме. Не придумывай ноты, характеристики или факты, которых нет в предоставленном контексте. Если какая-то информация отсутствует в контексте, опирайся только на общеизвестные, официально подтвержденные факты об этом аромате. Выдавай ответ строго в запрашиваемом формате.'
                         },
                         {
                             role: 'user',
-                            content: `Напиши описание аромата к товару духов исходя из официальной информации бренда о парфюме ${brand} - ${name}. Напиши описание, пирамиду композиции и характеристики строго в следующем формате:\n\nНазвание: ${brand} - ${name}\n\n{Описание аромата}\n[Красивый эмоциональный текст 50-100 слов]\n\n{Пирамида композиции}\nВерхние ноты: ...\nСредние ноты: ...\nБазовые ноты: ...\n\n{Характеристики}\nКонцентрация: ...\nСтойкость: ...\nШлейф: ...`
+                            content: `Вот собранная официальная информация о парфюме ${brand} - ${name}:\n${scrapedContext}\n\nИсходя из этой информации, напиши подробное описание аромата в следующем формате:\n\nНазвание: ${brand} - ${name}\n\n{Описание аромата}\n[Красивый эмоциональный текст 50-100 слов]\n\n{Пирамида композиции}\nВерхние ноты: ...\nСредние ноты: ...\nБазовые ноты: ...\n\n{Характеристики}\nКонцентрация: ...\nСтойкость: ...\nШлейф: ...`
                         }
                     ],
                     temperature: 0.7,
