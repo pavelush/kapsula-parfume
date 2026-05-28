@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Crop, Check, RotateCcw, Scissors, Trash2, Sliders, AlertCircle } from 'lucide-react';
+import { X, Crop, Check, RotateCcw, Scissors, Trash2, Sliders, AlertCircle, Sparkles } from 'lucide-react';
 
 const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
     const [history, setHistory] = useState([]);
@@ -8,11 +8,14 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
     const [activeTab, setActiveTab] = useState('crop'); // 'crop' or 'bg-remove'
     const [tolerance, setTolerance] = useState(240);
     const [crop, setCrop] = useState({ x: 10, y: 10, width: 80, height: 80 }); // Percentages
+    const [isAiLoading, setIsAiLoading] = useState(false);
+    const [aiStatusText, setAiStatusText] = useState('');
 
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
     const originalImageRef = useRef(null);
     const tempBaselineRef = useRef(null);
+    const segmenterRef = useRef(null);
 
     // Initialize canvas with the image
     useEffect(() => {
@@ -152,6 +155,58 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
         const val = parseInt(e.target.value, 10);
         setTolerance(val);
         applyWhiteBackgroundRemoval(val);
+    };
+
+    const handleAiBackgroundRemoval = async () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        setIsAiLoading(true);
+        setAiStatusText('Загрузка нейросети (около 70 МБ)...');
+
+        try {
+            const { pipeline, env, RawImage } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.16/dist/transformers.min.js');
+
+            env.allowLocalModels = false;
+            env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.16/dist/';
+
+            if (!segmenterRef.current) {
+                setAiStatusText('Инициализация ИИ-модели...');
+                segmenterRef.current = await pipeline('image-segmentation', 'briaai/RMBG-1.4');
+            }
+
+            setAiStatusText('Анализ изображения...');
+            saveToHistory();
+
+            const rawImage = RawImage.fromCanvas(canvas);
+            const [result] = await segmenterRef.current(rawImage);
+            
+            setAiStatusText('Вырезание фона...');
+            const mask = result.mask;
+            const maskData = mask.data;
+            
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+
+            for (let i = 0; i < maskData.length; ++i) {
+                data[i * 4 + 3] = maskData[i];
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.putImageData(imgData, 0, 0);
+            
+            setHasChanges(true);
+            setAiStatusText('');
+            tempBaselineRef.current = null;
+            
+            alert('Фон успешно удален с помощью ИИ!');
+        } catch (error) {
+            console.error('AI background removal error:', error);
+            alert(`Ошибка работы ИИ: ${error.message || 'Не удалось загрузить или запустить модель'}`);
+        } finally {
+            setIsAiLoading(false);
+        }
     };
 
     const commitBackgroundRemoval = () => {
@@ -391,6 +446,37 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
                     <div style={checkerboardStyle} ref={containerRef}>
                         <canvas ref={canvasRef} style={{ display: 'block', maxWidth: '100%', maxHeight: '55vh', height: 'auto', objectFit: 'contain' }} />
 
+                        {/* AI Loading Overlay */}
+                        {isAiLoading && (
+                            <div style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                background: 'rgba(15, 23, 42, 0.85)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '1rem',
+                                zIndex: 20
+                            }}>
+                                <style>{`
+                                    @keyframes ai-spin {
+                                        from { transform: rotate(0deg); }
+                                        to { transform: rotate(360deg); }
+                                    }
+                                    .ai-spinner {
+                                        animation: ai-spin 1.5s linear infinite;
+                                        color: #a78bfa;
+                                    }
+                                `}</style>
+                                <Sparkles size={40} className="ai-spinner" />
+                                <div style={{ color: 'white', fontWeight: '500', fontSize: '14px', textAlign: 'center', padding: '0 20px' }}>{aiStatusText}</div>
+                            </div>
+                        )}
+
                         {/* Interactive Crop Overlay */}
                         {activeTab === 'crop' && (
                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }}>
@@ -445,30 +531,45 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
 
                     {/* Background Removal Tab Controls */}
                     {activeTab === 'bg-remove' && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', background: 'rgba(255,255,255,0.05)', padding: '6px 16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', minWidth: '180px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>
-                                    <span>Порог удаления белого</span>
-                                    <span style={{ color: 'var(--color-accent-gold, #fbbf24)', fontWeight: '600' }}>{256 - tolerance}</span>
-                                </div>
-                                <input
-                                    type="range"
-                                    min="150"
-                                    max="255"
-                                    value={tolerance}
-                                    onChange={handleToleranceChange}
-                                    style={{ accentColor: 'var(--color-accent-gold, #fbbf24)', cursor: 'pointer' }}
-                                />
-                            </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                             <button
                                 className="editor-btn editor-btn-primary"
-                                onClick={() => {
-                                    commitBackgroundRemoval();
-                                    alert('Белый фон успешно удален!');
-                                }}
+                                style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', border: 'none', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}
+                                onClick={handleAiBackgroundRemoval}
+                                disabled={isAiLoading || isSaving}
+                                title="Автоматическое удаление фона с помощью ИИ в браузере (RMBG-1.4)"
                             >
-                                <Check size={16} /> Подтвердить удаление
+                                <Sparkles size={16} />
+                                {isAiLoading ? 'Обработка ИИ...' : 'ИИ Удаление фона'}
                             </button>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', background: 'rgba(255,255,255,0.05)', padding: '6px 16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', minWidth: '180px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>
+                                        <span>Порог удаления белого</span>
+                                        <span style={{ color: 'var(--color-accent-gold, #fbbf24)', fontWeight: '600' }}>{256 - tolerance}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="150"
+                                        max="255"
+                                        value={tolerance}
+                                        onChange={handleToleranceChange}
+                                        style={{ accentColor: 'var(--color-accent-gold, #fbbf24)', cursor: 'pointer' }}
+                                        disabled={isAiLoading}
+                                    />
+                                </div>
+                                <button
+                                    className="editor-btn editor-btn-primary"
+                                    onClick={() => {
+                                        commitBackgroundRemoval();
+                                        alert('Белый фон успешно удален!');
+                                    }}
+                                    disabled={isAiLoading}
+                                >
+                                    <Check size={16} /> Подтвердить удаление
+                                </button>
+                            </div>
                         </div>
                     )}
 
