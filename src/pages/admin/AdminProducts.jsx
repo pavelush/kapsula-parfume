@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, Image as ImageIcon, X, Check, Eye, EyeOff, ExternalLink, Wand2, RefreshCw } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Image as ImageIcon, X, Check, Eye, EyeOff, ExternalLink, Wand2, RefreshCw, Scissors } from 'lucide-react';
+import ImageEditorModal from '../../components/ImageEditorModal';
 
 const PRESET_COLORS = [
     { name: 'Золотой', value: 'rgba(251, 191, 36, 0.15)' },
@@ -44,6 +45,7 @@ export default function AdminProducts() {
     const [isUpdatingImage, setIsUpdatingImage] = useState(false);
     const [isHoveringImage, setIsHoveringImage] = useState(false);
     const [hoveredProduct, setHoveredProduct] = useState(null);
+    const [isImageEditorOpen, setIsImageEditorOpen] = useState(false);
 
     useEffect(() => {
         fetchProducts();
@@ -741,6 +743,42 @@ export default function AdminProducts() {
                                                 <img src={currentProduct.imgUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                             </div>
 
+                                            {currentProduct.imgUrl && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsImageEditorOpen(true)}
+                                                    title="Редактировать фото (обрезка, удаление фона)"
+                                                    style={{
+                                                        position: 'absolute',
+                                                        left: '4px',
+                                                        bottom: '4px',
+                                                        background: 'rgba(15, 23, 42, 0.85)',
+                                                        border: 'none',
+                                                        borderRadius: '50%',
+                                                        width: '24px',
+                                                        height: '24px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        color: '#f8fafc',
+                                                        cursor: 'pointer',
+                                                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+                                                        transition: 'all 0.2s ease',
+                                                        zIndex: 10
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.background = '#7c3aed';
+                                                        e.currentTarget.style.transform = 'scale(1.1)';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.background = 'rgba(15, 23, 42, 0.85)';
+                                                        e.currentTarget.style.transform = 'scale(1)';
+                                                    }}
+                                                >
+                                                    <Scissors size={12} />
+                                                </button>
+                                            )}
+
                                             {foundUrls && (foundUrls.length > 1 || (foundUrls.length === 1 && currentUrlIndex === -1)) && (
                                                 <button
                                                     type="button"
@@ -1064,6 +1102,16 @@ export default function AdminProducts() {
                         }} 
                     />
                 </div>
+            )}
+            {isImageEditorOpen && (
+                <ImageEditorModal
+                    imageUrl={currentProduct.imgUrl}
+                    onSave={(newUrl) => {
+                        setCurrentProduct(prev => ({ ...prev, imgUrl: newUrl }));
+                        setIsImageEditorOpen(false);
+                    }}
+                    onClose={() => setIsImageEditorOpen(false)}
+                />
             )}
         </div>
     );
