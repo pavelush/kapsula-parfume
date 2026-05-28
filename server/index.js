@@ -654,6 +654,87 @@ app.post('/api/products', authenticateAdmin, validateProductPayload, async (req,
     }
 });
 
+const downloadAutofillImage = async (url) => {
+    const fs = require('fs');
+    
+    // Check if the URL is direct image or needs page parsing
+    const isDirectImage = /\.(?:jpe?g|png|webp|gif)(?:\?.*)?$/i.test(url);
+    let ogImageUrl = isDirectImage ? url : null;
+
+    if (!isDirectImage) {
+        console.log(`[Autofill Image] Fetching page: ${url}`);
+        const pageRes = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
+            }
+        });
+
+        if (!pageRes.ok) {
+            throw new Error(`Не удалось получить страницу аромата, статус: ${pageRes.status}`);
+        }
+
+        const html = await pageRes.text();
+        const getMetaTagContent = (htmlStr, nameOrProperty) => {
+            const regex = new RegExp(`<meta[^>]+(?:name|property|data-hid)="${nameOrProperty}"[^>]*>`, 'i');
+            const matchTag = htmlStr.match(regex);
+            if (matchTag) {
+                const contentMatch = matchTag[0].match(/content="([^"]+)"/i);
+                return contentMatch ? contentMatch[1] : null;
+            }
+            return null;
+        };
+
+        // Try og:image first
+        ogImageUrl = getMetaTagContent(html, 'og:image');
+        
+        // If not found, try parsing images from the page
+        if (!ogImageUrl) {
+            const imgMatch = html.match(/<img[^>]+src="([^"]+\.(?:jpe?g|png|webp))"/i);
+            if (imgMatch && !imgMatch[1].includes('logo') && !imgMatch[1].includes('banner') && !imgMatch[1].includes('counter')) {
+                ogImageUrl = imgMatch[1];
+            }
+        }
+    }
+
+    if (!ogImageUrl) {
+        throw new Error('Изображение не найдено на странице аромата');
+    }
+
+    // Resolve relative URLs if any
+    if (ogImageUrl.startsWith('//')) {
+        ogImageUrl = 'https:' + ogImageUrl;
+    } else if (ogImageUrl.startsWith('/')) {
+        const urlObj = new URL(url);
+        ogImageUrl = urlObj.origin + ogImageUrl;
+    }
+
+    console.log(`[Autofill Image] Downloading image: ${ogImageUrl}`);
+    const imgRes = await fetch(ogImageUrl, {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+    });
+
+    if (!imgRes.ok) {
+        throw new Error(`Не удалось скачать изображение, статус: ${imgRes.status}`);
+    }
+
+    const buffer = Buffer.from(await imgRes.arrayBuffer());
+    const ext = ogImageUrl.split('.').pop().split('?')[0] || 'jpg';
+    const cleanExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext.toLowerCase()) ? ext.toLowerCase() : 'jpg';
+    const uniqueFilename = `autofill-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${cleanExt}`;
+    const targetDir = path.join(__dirname, 'uploads');
+    
+    if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+    }
+    
+    const targetPath = path.join(targetDir, uniqueFilename);
+    fs.writeFileSync(targetPath, buffer);
+    return `/uploads/${uniqueFilename}`;
+};
+
 app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
     const { brand, name } = req.body;
     if (!brand || !name) {
@@ -661,8 +742,7 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
     }
 
     try {
-        const fs = require('fs');
-        const query = `site:aromo.ru ${brand} ${name}`;
+        const query = `(site:aromo.ru OR site:parfumo.com) ${brand} ${name}`;
         const searchUrl = `https://search.yahoo.com/search?p=${encodeURIComponent(query)}`;
         console.log(`[Autofill] Searching Yahoo: ${searchUrl}`);
 
@@ -679,115 +759,94 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
         }
 
         const html = await searchRes.text();
-        const aromoUrls = [];
+        const foundUrls = [];
 
-        // Match direct and encoded links
-        const regexDirect = /https?:\/\/aromo\.ru\/fragrance\/[^\s"'>]+/gi;
+        // Match direct and encoded links for aromo.ru and parfumo.com
+        const regexDirect = /https?:\/\/(?:www\.)?(?:aromo\.ru\/fragrance|parfumo\.com\/Perfumes)\/[^\s"'>]+/gi;
         let match;
         while ((match = regexDirect.exec(html)) !== null) {
             let url = match[0].split(/[?"'<>#\s]/)[0];
             if (url.endsWith(')')) url = url.slice(0, -1);
-            aromoUrls.push(url);
+            foundUrls.push(url);
         }
 
-        const regexEncoded = /RU=(https%3a%2f%2faromo\.ru%2ffragrance%2f[^/&"'>\s]+)/gi;
+        const regexEncoded = /RU=(https%3a%2f%2f(?:www\.)?(?:aromo\.ru%2ffragrance|parfumo\.com%2fPerfumes)[^/&"'>\s]+)/gi;
         while ((match = regexEncoded.exec(html)) !== null) {
             const decoded = decodeURIComponent(match[1]);
-            aromoUrls.push(decoded);
+            foundUrls.push(decoded);
         }
 
-        const uniqueUrls = [...new Set(aromoUrls)];
+        const uniqueUrls = [...new Set(foundUrls)];
         if (uniqueUrls.length === 0) {
-            return res.status(404).json({ error: 'Парфюм не найден на Aromo.ru' });
+            return res.status(404).json({ error: 'Парфюм не найден на Aromo.ru и Parfumo.com' });
         }
 
-        const targetUrl = uniqueUrls[0];
-        console.log(`[Autofill] Fetching target: ${targetUrl}`);
-        const aromoRes = await fetch(targetUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
-            }
-        });
-
-        if (!aromoRes.ok) {
-            return res.status(502).json({ error: 'Не удалось получить страницу товара с Aromo.ru' });
-        }
-
-        const aromoHtml = await aromoRes.text();
-
-        // 1. Extract Description and Full Description
-        const paragraphs = [];
-        const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
-        while ((match = pRegex.exec(aromoHtml)) !== null) {
-            const cleanText = match[1]
-                .replace(/<[^>]*>/g, '')
-                .replace(/\s+/g, ' ')
-                .trim();
-            if (cleanText && cleanText.length > 25) {
-                if (!cleanText.includes('Политика конфиденциальности') && 
-                    !cleanText.includes('Все права защищены') &&
-                    !cleanText.includes('Aromo') &&
-                    !cleanText.includes('Зарегистрируйтесь') &&
-                    !cleanText.includes('Войти')) {
-                    paragraphs.push(cleanText);
-                }
-            }
-        }
-
+        // 1. Try to get descriptions from the first Aromo.ru url if possible
+        const aromoUrl = uniqueUrls.find(u => u.includes('aromo.ru'));
         let description = '';
         let fullDescription = '';
 
-        if (paragraphs.length > 0) {
-            description = paragraphs[0];
-            const splitKeyword = 'Описание ';
-            const idx = description.indexOf(splitKeyword);
-            if (idx !== -1) {
-                description = description.substring(idx + splitKeyword.length).trim();
-            }
-            fullDescription = description;
-            if (paragraphs.length > 1) {
-                fullDescription += `\n\nСостав композиции:\n${paragraphs[1]}`;
+        if (aromoUrl) {
+            console.log(`[Autofill] Fetching target for description: ${aromoUrl}`);
+            try {
+                const aromoRes = await fetch(aromoUrl, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
+                    }
+                });
+
+                if (aromoRes.ok) {
+                    const aromoHtml = await aromoRes.text();
+                    const paragraphs = [];
+                    const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+                    while ((match = pRegex.exec(aromoHtml)) !== null) {
+                        const cleanText = match[1]
+                            .replace(/<[^>]*>/g, '')
+                            .replace(/\s+/g, ' ')
+                            .trim();
+                        if (cleanText && cleanText.length > 25) {
+                            if (!cleanText.includes('Политика конфиденциальности') && 
+                                !cleanText.includes('Все права защищены') &&
+                                !cleanText.includes('Aromo') &&
+                                !cleanText.includes('Зарегистрируйтесь') &&
+                                !cleanText.includes('Войти')) {
+                                paragraphs.push(cleanText);
+                            }
+                        }
+                    }
+
+                    if (paragraphs.length > 0) {
+                        description = paragraphs[0];
+                        const splitKeyword = 'Описание ';
+                        const idx = description.indexOf(splitKeyword);
+                        if (idx !== -1) {
+                            description = description.substring(idx + splitKeyword.length).trim();
+                        }
+                        fullDescription = description;
+                        if (paragraphs.length > 1) {
+                            fullDescription += `\n\nСостав композиции:\n${paragraphs[1]}`;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('[Autofill] Failed to parse descriptions from Aromo:', err);
             }
         }
 
-        // 2. Extract og:image and Download locally
+        // 2. Loop over unique URLs and try to download the image
         let imgUrl = '';
-        const getMetaTagContent = (htmlStr, nameOrProperty) => {
-            const regex = new RegExp(`<meta[^>]+(?:name|property|data-hid)="${nameOrProperty}"[^>]*>`, 'i');
-            const matchTag = htmlStr.match(regex);
-            if (matchTag) {
-                const contentMatch = matchTag[0].match(/content="([^"]+)"/i);
-                return contentMatch ? contentMatch[1] : null;
-            }
-            return null;
-        };
-
-        const ogImageUrl = getMetaTagContent(aromoHtml, 'og:image');
-        if (ogImageUrl) {
+        let downloadedIndex = 0;
+        
+        for (let i = 0; i < uniqueUrls.length; i++) {
             try {
-                console.log(`[Autofill] Downloading image: ${ogImageUrl}`);
-                const imgRes = await fetch(ogImageUrl);
-                if (imgRes.ok) {
-                    const buffer = Buffer.from(await imgRes.arrayBuffer());
-                    const ext = ogImageUrl.split('.').pop().split('?')[0] || 'jpg';
-                    const cleanExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext.toLowerCase()) ? ext.toLowerCase() : 'jpg';
-                    const uniqueFilename = `autofill-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${cleanExt}`;
-                    const targetDir = path.join(__dirname, 'uploads');
-                    
-                    if (!fs.existsSync(targetDir)) {
-                        fs.mkdirSync(targetDir, { recursive: true });
-                    }
-                    
-                    const targetPath = path.join(targetDir, uniqueFilename);
-                    fs.writeFileSync(targetPath, buffer);
-                    imgUrl = `/uploads/${uniqueFilename}`;
-                    console.log(`[Autofill] Saved image to: ${imgUrl}`);
-                } else {
-                    console.warn(`[Autofill] Failed to download image, status: ${imgRes.status}`);
+                imgUrl = await downloadAutofillImage(uniqueUrls[i]);
+                if (imgUrl) {
+                    downloadedIndex = i;
+                    break;
                 }
             } catch (err) {
-                console.error('[Autofill] Error downloading image:', err);
+                console.warn(`[Autofill] Failed to get image for URL ${uniqueUrls[i]}: ${err.message}`);
             }
         }
 
@@ -821,12 +880,29 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
             imgUrl,
             slug,
             seoTitle,
-            seoDescription
+            seoDescription,
+            foundUrls: uniqueUrls,
+            currentUrlIndex: downloadedIndex
         });
 
     } catch (err) {
         console.error('[Autofill] Error during autofill:', err);
         res.status(500).json({ error: 'Внутренняя ошибка сервера при автозаполнении', details: err.message });
+    }
+});
+
+app.post('/api/products/autofill/download-image', authenticateAdmin, async (req, res) => {
+    const { url } = req.body;
+    if (!url) {
+        return res.status(400).json({ error: 'Не указан URL страницы аромата' });
+    }
+
+    try {
+        const imgUrl = await downloadAutofillImage(url);
+        res.json({ imgUrl });
+    } catch (err) {
+        console.error('[Autofill Image] Error downloading image:', err);
+        res.status(500).json({ error: err.message || 'Ошибка при загрузке изображения с указанного ресурса' });
     }
 });
 

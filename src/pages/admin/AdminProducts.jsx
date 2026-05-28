@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, Image as ImageIcon, X, Check, Eye, EyeOff, ExternalLink, Wand2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Image as ImageIcon, X, Check, Eye, EyeOff, ExternalLink, Wand2, RefreshCw } from 'lucide-react';
 
 const PRESET_COLORS = [
     { name: 'Золотой', value: 'rgba(251, 191, 36, 0.15)' },
@@ -38,6 +38,9 @@ export default function AdminProducts() {
     };
     const [currentProduct, setCurrentProduct] = useState(initialProductState);
     const [isAutofilling, setIsAutofilling] = useState(false);
+    const [foundUrls, setFoundUrls] = useState([]);
+    const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
+    const [isUpdatingImage, setIsUpdatingImage] = useState(false);
     const [isHoveringImage, setIsHoveringImage] = useState(false);
     const [hoveredProduct, setHoveredProduct] = useState(null);
 
@@ -176,6 +179,8 @@ export default function AdminProducts() {
     };
 
     const openEditModal = (product) => {
+        setFoundUrls([]);
+        setCurrentUrlIndex(0);
         setIsHoveringImage(false);
         setCurrentProduct({
             ...product,
@@ -215,6 +220,8 @@ export default function AdminProducts() {
     };
 
     const openAddModal = () => {
+        setFoundUrls([]);
+        setCurrentUrlIndex(0);
         setIsHoveringImage(false);
         setCurrentProduct(initialProductState);
         setActiveVolumeTab('3');
@@ -292,6 +299,8 @@ export default function AdminProducts() {
                     seoTitle: data.seoTitle || prev.seoTitle,
                     seoDescription: data.seoDescription || prev.seoDescription
                 }));
+                setFoundUrls(data.foundUrls || []);
+                setCurrentUrlIndex(data.currentUrlIndex !== undefined ? data.currentUrlIndex : 0);
             } else {
                 alert(data.error || 'Произошла ошибка при автоматическом заполнении');
             }
@@ -300,6 +309,40 @@ export default function AdminProducts() {
             alert('Не удалось подключиться к серверу автозаполнения');
         } finally {
             setIsAutofilling(false);
+        }
+    };
+
+    const handleNextImage = async () => {
+        if (!foundUrls || foundUrls.length <= 1) return;
+
+        const nextIndex = (currentUrlIndex + 1) % foundUrls.length;
+        const targetUrl = foundUrls[nextIndex];
+
+        setIsUpdatingImage(true);
+        try {
+            const res = await fetch('/api/products/autofill/download-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: targetUrl })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                setCurrentProduct(prev => ({
+                    ...prev,
+                    imgUrl: data.imgUrl
+                }));
+                setCurrentUrlIndex(nextIndex);
+            } else {
+                alert(data.error || 'Ошибка при загрузке следующего изображения');
+            }
+        } catch (error) {
+            console.error('Error fetching next image:', error);
+            alert('Не удалось загрузить следующее изображение');
+        } finally {
+            setIsUpdatingImage(false);
         }
     };
 
@@ -644,6 +687,52 @@ export default function AdminProducts() {
                                                 <img src={currentProduct.imgUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                             </div>
 
+                                            {foundUrls && foundUrls.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleNextImage}
+                                                    disabled={isUpdatingImage}
+                                                    title={`Найти другое фото (вариант ${currentUrlIndex + 1} из ${foundUrls.length})`}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        right: '4px',
+                                                        bottom: '4px',
+                                                        background: 'rgba(15, 23, 42, 0.85)',
+                                                        border: 'none',
+                                                        borderRadius: '50%',
+                                                        width: '24px',
+                                                        height: '24px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        color: '#f8fafc',
+                                                        cursor: 'pointer',
+                                                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+                                                        transition: 'all 0.2s ease',
+                                                        opacity: isUpdatingImage ? 0.6 : 1,
+                                                        zIndex: 10
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.background = '#7c3aed';
+                                                        e.currentTarget.style.transform = 'scale(1.1)';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.background = 'rgba(15, 23, 42, 0.85)';
+                                                        e.currentTarget.style.transform = 'scale(1)';
+                                                    }}
+                                                >
+                                                    <style>{`
+                                                        @keyframes image-spin {
+                                                            from { transform: rotate(0deg); }
+                                                            to { transform: rotate(360deg); }
+                                                        }
+                                                        .image-spinner {
+                                                            animation: image-spin 1s linear infinite;
+                                                        }
+                                                    `}</style>
+                                                    <RefreshCw size={12} className={isUpdatingImage ? 'image-spinner' : ''} />
+                                                </button>
+                                            )}
 
                                             {isHoveringImage && (
                                                 <div style={{
