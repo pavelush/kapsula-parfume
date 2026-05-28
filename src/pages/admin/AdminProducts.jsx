@@ -290,17 +290,18 @@ export default function AdminProducts() {
 
             const data = await res.json();
             if (res.ok) {
+                const hasExistingImage = !!currentProduct.imgUrl;
                 setCurrentProduct(prev => ({
                     ...prev,
                     description: data.description || prev.description,
                     fullDescription: data.fullDescription || prev.fullDescription,
-                    imgUrl: data.imgUrl || prev.imgUrl,
+                    imgUrl: hasExistingImage ? prev.imgUrl : (data.imgUrl || prev.imgUrl),
                     slug: data.slug || prev.slug,
                     seoTitle: data.seoTitle || prev.seoTitle,
                     seoDescription: data.seoDescription || prev.seoDescription
                 }));
                 setFoundUrls(data.foundUrls || []);
-                setCurrentUrlIndex(data.currentUrlIndex !== undefined ? data.currentUrlIndex : 0);
+                setCurrentUrlIndex(hasExistingImage ? -1 : (data.currentUrlIndex !== undefined ? data.currentUrlIndex : 0));
             } else {
                 alert(data.error || 'Произошла ошибка при автоматическом заполнении');
             }
@@ -313,7 +314,8 @@ export default function AdminProducts() {
     };
 
     const handleNextImage = async () => {
-        if (!foundUrls || foundUrls.length <= 1) return;
+        if (!foundUrls || foundUrls.length === 0) return;
+        if (foundUrls.length === 1 && currentUrlIndex !== -1) return;
 
         const nextIndex = (currentUrlIndex + 1) % foundUrls.length;
         const targetUrl = foundUrls[nextIndex];
@@ -687,12 +689,12 @@ export default function AdminProducts() {
                                                 <img src={currentProduct.imgUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                                             </div>
 
-                                            {foundUrls && foundUrls.length > 1 && (
+                                            {foundUrls && (foundUrls.length > 1 || (foundUrls.length === 1 && currentUrlIndex === -1)) && (
                                                 <button
                                                     type="button"
                                                     onClick={handleNextImage}
                                                     disabled={isUpdatingImage}
-                                                    title={`Найти другое фото (вариант ${currentUrlIndex + 1} из ${foundUrls.length})`}
+                                                    title={currentUrlIndex === -1 ? 'Загрузить фото из найденных источников' : `Найти другое фото (вариант ${currentUrlIndex + 1} из ${foundUrls.length})`}
                                                     style={{
                                                         position: 'absolute',
                                                         right: '4px',
