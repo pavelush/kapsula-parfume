@@ -176,8 +176,6 @@ export default function AdminProducts() {
     };
 
     const openEditModal = (product) => {
-        setFoundUrls([]);
-        setCurrentUrlIndex(0);
         setIsHoveringImage(false);
         setCurrentProduct({
             ...product,
@@ -217,8 +215,6 @@ export default function AdminProducts() {
     };
 
     const openAddModal = () => {
-        setFoundUrls([]);
-        setCurrentUrlIndex(0);
         setIsHoveringImage(false);
         setCurrentProduct(initialProductState);
         setActiveVolumeTab('3');
