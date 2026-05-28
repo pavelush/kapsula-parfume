@@ -44,7 +44,8 @@ export default function AdminBrands() {
                 setIsModalOpen(false);
                 setCurrentBrand({ name: '' });
             } else {
-                alert('Ошибка при сохранении бренда');
+                const errorData = await res.json().catch(() => ({}));
+                alert(errorData.error || 'Ошибка при сохранении бренда');
             }
         } catch (error) {
             console.error('Error saving brand:', error);
@@ -76,7 +77,9 @@ export default function AdminBrands() {
         setIsModalOpen(true);
     };
 
-    const filteredBrands = brands.filter(b => b.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const filteredBrands = brands
+        .filter(b => b.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        .sort((a, b) => a.name.localeCompare(b.name, ['ru', 'en'], { sensitivity: 'base' }));
 
     return (
         <div>

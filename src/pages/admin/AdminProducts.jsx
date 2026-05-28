@@ -88,7 +88,11 @@ export default function AdminProducts() {
     const fetchBrands = async () => {
         try {
             const res = await fetch('/api/brands');
-            if (res.ok) setBrands(await res.json());
+            if (res.ok) {
+                const data = await res.json();
+                data.sort((a, b) => a.name.localeCompare(b.name, ['ru', 'en'], { sensitivity: 'base' }));
+                setBrands(data);
+            }
         } catch (err) { }
     };
 

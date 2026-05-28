@@ -686,7 +686,7 @@ app.delete('/api/products/:id', authenticateAdmin, async (req, res) => {
 // --- BRANDS ---
 app.get('/api/brands', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM brands ORDER BY id ASC');
+        const result = await pool.query('SELECT * FROM brands ORDER BY name ASC');
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: 'Internal server error' });
@@ -696,9 +696,21 @@ app.get('/api/brands', async (req, res) => {
 app.post('/api/brands', authenticateAdmin, async (req, res) => {
     try {
         const { name } = req.body;
-        const result = await pool.query('INSERT INTO brands (name) VALUES ($1) RETURNING *', [name]);
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Название бренда не может быть пустым' });
+        }
+        const trimmedName = name.trim();
+
+        // Case-insensitive duplicate check
+        const dupCheck = await pool.query('SELECT 1 FROM brands WHERE LOWER(name) = LOWER($1)', [trimmedName]);
+        if (dupCheck.rows.length > 0) {
+            return res.status(400).json({ error: 'Бренд с таким названием уже существует' });
+        }
+
+        const result = await pool.query('INSERT INTO brands (name) VALUES ($1) RETURNING *', [trimmedName]);
         res.status(201).json(result.rows[0]);
     } catch (err) {
+        console.error('Error in POST /api/brands:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -707,10 +719,22 @@ app.put('/api/brands/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { name } = req.body;
-        const result = await pool.query('UPDATE brands SET name = $1 WHERE id = $2 RETURNING *', [name, id]);
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Название бренда не может быть пустым' });
+        }
+        const trimmedName = name.trim();
+
+        // Case-insensitive duplicate check excluding current brand
+        const dupCheck = await pool.query('SELECT 1 FROM brands WHERE LOWER(name) = LOWER($1) AND id != $2', [trimmedName, id]);
+        if (dupCheck.rows.length > 0) {
+            return res.status(400).json({ error: 'Бренд с таким названием уже существует' });
+        }
+
+        const result = await pool.query('UPDATE brands SET name = $1 WHERE id = $2 RETURNING *', [trimmedName, id]);
         if (result.rows.length === 0) return res.status(404).json({ error: 'Brand not found' });
         res.json(result.rows[0]);
     } catch (err) {
+        console.error('Error in PUT /api/brands/:id:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
