@@ -778,60 +778,113 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
 
         const uniqueUrls = [...new Set(foundUrls)];
         if (uniqueUrls.length === 0) {
-            return res.status(404).json({ error: 'Парфюм не найден на Aromo.ru и Parfumo.com' });
+            console.log(`[Autofill] No URLs found on Aromo.ru and Parfumo.com for ${brand} ${name}`);
         }
 
-        // 1. Try to get descriptions from the first Aromo.ru url if possible
-        const aromoUrl = uniqueUrls.find(u => u.includes('aromo.ru'));
+        // 1. Generate descriptions using DeepSeek API
+        const deepseekApiKey = process.env.DEEPSEEK_API_KEY || 'sk-235ca183de5744f4a2614dfed4651ccc';
         let description = '';
         let fullDescription = '';
 
-        if (aromoUrl) {
-            console.log(`[Autofill] Fetching target for description: ${aromoUrl}`);
-            try {
-                const aromoRes = await fetch(aromoUrl, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                        'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
-                    }
-                });
+        try {
+            console.log(`[Autofill] Generating description using DeepSeek for ${brand} - ${name}`);
+            const deepseekRes = await fetch('https://api.deepseek.com/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${deepseekApiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'deepseek-chat',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'Ты — профессиональный парфюмерный копирайтер. Не пиши никаких вводных слов, пояснений, примечаний, разделителей, markdown-разметки типа *** или вежливых фраз. Выводи строго запрошенный формат.'
+                        },
+                        {
+                            role: 'user',
+                            content: `Мне нужно написать описание к товару духов исходя из официальной информации ${brand} - ${name}. Ты — профессиональный парфюмерный копирайтер. \nНапиши подробное описание аромата в следующем формате: Описание аромата\n[Красивый эмоциональный текст 50-100 слов]`
+                        }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 500
+                })
+            });
 
-                if (aromoRes.ok) {
-                    const aromoHtml = await aromoRes.text();
-                    const paragraphs = [];
-                    const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
-                    while ((match = pRegex.exec(aromoHtml)) !== null) {
-                        const cleanText = match[1]
-                            .replace(/<[^>]*>/g, '')
-                            .replace(/\s+/g, ' ')
-                            .trim();
-                        if (cleanText && cleanText.length > 25) {
-                            if (!cleanText.includes('Политика конфиденциальности') && 
-                                !cleanText.includes('Все права защищены') &&
-                                !cleanText.includes('Aromo') &&
-                                !cleanText.includes('Зарегистрируйтесь') &&
-                                !cleanText.includes('Войти')) {
-                                paragraphs.push(cleanText);
+            if (deepseekRes.ok) {
+                const deepseekData = await deepseekRes.json();
+                const generatedText = deepseekData.choices?.[0]?.message?.content?.trim() || '';
+                if (generatedText) {
+                    description = generatedText;
+                    fullDescription = generatedText;
+                    console.log(`[Autofill] Successfully generated description from DeepSeek`);
+                } else {
+                    console.warn('[Autofill] DeepSeek API response was empty');
+                }
+            } else {
+                console.error(`[Autofill] DeepSeek API returned status ${deepseekRes.status}`);
+                const errText = await deepseekRes.text();
+                console.error(`[Autofill] DeepSeek error payload: ${errText}`);
+            }
+        } catch (dsErr) {
+            console.error('[Autofill] Failed to call DeepSeek API:', dsErr);
+        }
+
+        // Fallback to parsing description from Aromo.ru if DeepSeek failed
+        if (!description && uniqueUrls.length > 0) {
+            const aromoUrl = uniqueUrls.find(u => u.includes('aromo.ru'));
+            if (aromoUrl) {
+                console.log(`[Autofill] Fallback: Fetching target for description: ${aromoUrl}`);
+                try {
+                    const aromoRes = await fetch(aromoUrl, {
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                            'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
+                        }
+                    });
+
+                    if (aromoRes.ok) {
+                        const aromoHtml = await aromoRes.text();
+                        const paragraphs = [];
+                        const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+                        while ((match = pRegex.exec(aromoHtml)) !== null) {
+                            const cleanText = match[1]
+                                .replace(/<[^>]*>/g, '')
+                                .replace(/\s+/g, ' ')
+                                .trim();
+                            if (cleanText && cleanText.length > 25) {
+                                if (!cleanText.includes('Политика конфиденциальности') && 
+                                    !cleanText.includes('Все права защищены') &&
+                                    !cleanText.includes('Aromo') &&
+                                    !cleanText.includes('Зарегистрируйтесь') &&
+                                    !cleanText.includes('Войти')) {
+                                    paragraphs.push(cleanText);
+                                }
+                            }
+                        }
+
+                        if (paragraphs.length > 0) {
+                            description = paragraphs[0];
+                            const splitKeyword = 'Описание ';
+                            const idx = description.indexOf(splitKeyword);
+                            if (idx !== -1) {
+                                description = description.substring(idx + splitKeyword.length).trim();
+                            }
+                            fullDescription = description;
+                            if (paragraphs.length > 1) {
+                                fullDescription += `\n\nСостав композиции:\n${paragraphs[1]}`;
                             }
                         }
                     }
-
-                    if (paragraphs.length > 0) {
-                        description = paragraphs[0];
-                        const splitKeyword = 'Описание ';
-                        const idx = description.indexOf(splitKeyword);
-                        if (idx !== -1) {
-                            description = description.substring(idx + splitKeyword.length).trim();
-                        }
-                        fullDescription = description;
-                        if (paragraphs.length > 1) {
-                            fullDescription += `\n\nСостав композиции:\n${paragraphs[1]}`;
-                        }
-                    }
+                } catch (err) {
+                    console.error('[Autofill] Failed to parse descriptions from Aromo fallback:', err);
                 }
-            } catch (err) {
-                console.error('[Autofill] Failed to parse descriptions from Aromo:', err);
             }
+        }
+
+        // If both failed and we have no content
+        if (!description && uniqueUrls.length === 0) {
+            return res.status(404).json({ error: 'Не удалось сгенерировать описание и найти товар на Aromo.ru / Parfumo.com' });
         }
 
         // 2. Loop over unique URLs and try to download the image
