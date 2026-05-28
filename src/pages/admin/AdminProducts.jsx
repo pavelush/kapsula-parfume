@@ -325,35 +325,59 @@ export default function AdminProducts() {
         if (!foundUrls || foundUrls.length === 0) return;
         if (foundUrls.length === 1 && currentUrlIndex !== -1) return;
 
-        const nextIndex = (currentUrlIndex + 1) % foundUrls.length;
-        const targetUrl = foundUrls[nextIndex];
-
         setIsUpdatingImage(true);
-        try {
-            const res = await fetch('/api/products/autofill/download-image', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ url: targetUrl })
-            });
+        let success = false;
+        let lastError = null;
 
-            const data = await res.json();
-            if (res.ok) {
-                setCurrentProduct(prev => ({
-                    ...prev,
-                    imgUrl: data.imgUrl
-                }));
-                setCurrentUrlIndex(nextIndex);
-            } else {
-                alert(data.error || 'Ошибка при загрузке следующего изображения');
+        // Start checking from the next item in the list
+        let nextIndex = (currentUrlIndex + 1) % foundUrls.length;
+        const startIndex = currentUrlIndex === -1 ? 0 : currentUrlIndex;
+        let attempts = 0;
+
+        while (attempts < foundUrls.length) {
+            const targetUrl = foundUrls[nextIndex];
+            console.log(`[handleNextImage] Attempting to download next image from: ${targetUrl}`);
+            try {
+                const res = await fetch('/api/products/autofill/download-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url: targetUrl })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    setCurrentProduct(prev => ({
+                        ...prev,
+                        imgUrl: data.imgUrl
+                    }));
+                    setCurrentUrlIndex(nextIndex);
+                    success = true;
+                    break;
+                } else {
+                    lastError = data.error || 'Ошибка при загрузке изображения';
+                    console.warn(`[handleNextImage] Failed download for ${targetUrl}:`, lastError);
+                }
+            } catch (error) {
+                lastError = error.message || 'Не удалось подключиться к серверу';
+                console.error(`[handleNextImage] Connection error for ${targetUrl}:`, error);
             }
-        } catch (error) {
-            console.error('Error fetching next image:', error);
-            alert('Не удалось загрузить следующее изображение');
-        } finally {
-            setIsUpdatingImage(false);
+
+            nextIndex = (nextIndex + 1) % foundUrls.length;
+            attempts++;
+
+            // If we've circled back to the starting index (in case currentUrlIndex !== -1),
+            // and we didn't succeed, we stop to prevent infinite looping.
+            if (currentUrlIndex !== -1 && nextIndex === startIndex) {
+                break;
+            }
         }
+
+        if (!success) {
+            alert(lastError || 'Не удалось загрузить ни одно из найденных изображений');
+        }
+        setIsUpdatingImage(false);
     };
 
     const handleTableImageHover = (e, imgUrl) => {

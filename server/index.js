@@ -994,7 +994,7 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
 
         // 2. Try to download the image chosen by DeepSeek, fallback to uniqueUrls scraping
         let imgUrl = '';
-        let downloadedIndex = 0;
+        let downloadedUrl = '';
         let imageDownloaded = false;
 
         if (dsImgUrl && !dsImgUrl.includes('Нет данных') && dsImgUrl.startsWith('http')) {
@@ -1003,14 +1003,8 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
                 const savedPath = await downloadAutofillImage(dsImgUrl);
                 if (savedPath) {
                     imgUrl = savedPath;
+                    downloadedUrl = dsImgUrl;
                     imageDownloaded = true;
-                    try {
-                        const dsHostname = new URL(dsImgUrl).hostname;
-                        const foundIdx = uniqueUrls.findIndex(u => u.includes(dsHostname));
-                        downloadedIndex = foundIdx !== -1 ? foundIdx : 0;
-                    } catch (e) {
-                        downloadedIndex = 0;
-                    }
                 }
             } catch (err) {
                 console.warn(`[Autofill] Failed to download DeepSeek selected image: ${err.message}`);
@@ -1024,7 +1018,7 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
                     const savedPath = await downloadAutofillImage(uniqueUrls[i]);
                     if (savedPath) {
                         imgUrl = savedPath;
-                        downloadedIndex = i;
+                        downloadedUrl = uniqueUrls[i];
                         imageDownloaded = true;
                         break;
                     }
@@ -1062,6 +1056,9 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
             ? `Купить оригинальный аксессуар ${brand} - ${name} в интернет-магазине. ${description ? description.substring(0, 120) : ''}...`
             : `Купить оригинальный парфюм ${brand} - ${name} в интернет-магазине. ${description ? description.substring(0, 120) : ''}...`;
 
+        const combinedUrls = [...uniqueCdnImages, ...uniqueUrls];
+        const downloadedIndex = imageDownloaded ? combinedUrls.indexOf(downloadedUrl) : -1;
+
         res.json({
             description,
             fullDescription,
@@ -1071,7 +1068,7 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
             slug,
             seoTitle,
             seoDescription,
-            foundUrls: uniqueUrls,
+            foundUrls: combinedUrls,
             currentUrlIndex: downloadedIndex
         });
 
