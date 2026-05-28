@@ -658,7 +658,7 @@ const downloadAutofillImage = async (url) => {
     const fs = require('fs');
     
     // Check if the URL is direct image or needs page parsing
-    const isDirectImage = /\.(?:jpe?g|png|webp|gif)(?:\?.*)?$/i.test(url);
+    const isDirectImage = /\.(?:jpe?g|png|webp|gif)(?:\?.*)?$/i.test(url) || url.includes('yimg.com') || url.includes('fimgs.net');
     let ogImageUrl = isDirectImage ? url : null;
 
     if (!isDirectImage) {
@@ -732,6 +732,8 @@ const downloadAutofillImage = async (url) => {
     
     const targetPath = path.join(targetDir, uniqueFilename);
     fs.writeFileSync(targetPath, buffer);
+    
+    return `/uploads/${uniqueFilename}`;
 };
 
 const isValidProductUrl = (url) => {
@@ -837,11 +839,21 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
             console.log(`[Autofill] No URLs found on Yahoo for ${brand} ${name}`);
         }
 
+        // Extract CDN preview images from Yahoo search HTML
+        const cdnImages = [];
+        const imgUrlRegex = /https:\/\/up\.yimg\.com\/ib\/th\/id\/OIP\.[a-zA-Z0-9_-]+/gi;
+        let imgMatch;
+        while ((imgMatch = imgUrlRegex.exec(html)) !== null) {
+            cdnImages.push(imgMatch[0]);
+        }
+        const uniqueCdnImages = [...new Set(cdnImages)].slice(0, 10);
+
         // Clean up the Yahoo search results page text to feed directly to DeepSeek
         const searchPageText = extractPageText(html);
 
         // 1. Generate descriptions using DeepSeek API
         const deepseekApiKey = process.env.DEEPSEEK_API_KEY || 'sk-235ca183de5744f4a2614dfed4651ccc';
+        let dsImgUrl = '';
         let description = '';
         let fullDescription = '';
         let compositionPyramid = '';
@@ -860,11 +872,11 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
                     messages: [
                         {
                             role: 'system',
-                            content: 'Ты — профессиональный парфюмерный копирайтер. Твоя задача — написать подробное описание аромата, пирамиду композиции и характеристики, основываясь СТРОГО на предоставленном тексте результатов поисковой выдачи (контексте). В этом контексте находятся сниппеты сайтов Fragrantica, Parfumo, Aromo, официальных сайтов брендов и других. Извлеки из них реальные ноты и характеристики (концентрация, стойкость, шлейф). Категорически запрещено выдумывать ноты или характеристики, которых нет в предоставленном контексте. Если информация отсутствует, напиши "Нет данных". Ты можешь писать красиво и эмоционально только в разделе "{Описание аромата}", но разделы "{Пирамида композиции}" и "{Характеристики}" должны быть абсолютно точными и соответствовать контексту. Выдавай ответ строго в запрашиваемом формате.'
+                            content: 'Ты — профессиональный парфюмерный копирайтер. Твоя задача — написать подробное описание аромата, пирамиду композиции и характеристики, а также выбрать ссылку на изображение флакона парфюма. Ниже предоставлен контекст поисковой выдачи, а также список найденных картинок-превью (в формате https://up.yimg.com/...). Выбери наиболее подходящую прямую ссылку на изображение флакона духов из этого списка. Если список пуст или в нем нет подходящего изображения духов, попробуй найти/сгенерировать прямую ссылку на изображение этого парфюма с Fragrantica (обычно формат https://fimgs.net/images/perfume/37891.jpg или аналогичный) или Parfumo, либо с официального сайта. Категорически запрещено выдумывать ноты или характеристики, которых нет в предоставленном контексте. Если информация отсутствует, напиши "Нет данных". Ты можешь писать красиво и эмоционально только в разделе "{Описание аромата}", но разделы "{Пирамида композиции}" и "{Характеристики}" должны быть абсолютно точными и соответствовать контексту. Выдавай ответ строго в запрашиваемом формате.'
                         },
                         {
                             role: 'user',
-                            content: `Вот результаты поиска в интернете о парфюме ${brand} - ${name}:\n${searchPageText}\n\nИсходя из этой информации, напиши подробное описание аромата в следующем формате:\n\nНазвание: ${brand} - ${name}\n\n{Описание аромата}\n[Красивый эмоциональный текст 50-100 слов]\n\n{Пирамида композиции}\nВерхние ноты: ...\nСредние ноты: ...\nБазовые ноты: ...\n\n{Характеристики}\nКонцентрация: ...\nСтойкость: ...\nШлейф: ...`
+                            content: `Вот результаты поиска в интернете о парфюме ${brand} - ${name}:\n${searchPageText}\n\nСписок найденных картинок-превью: ${JSON.stringify(uniqueCdnImages)}\n\nИсходя из этой информации, напиши подробное описание аромата в следующем формате:\n\nНазвание: ${brand} - ${name}\n\n{Изображение}\n[URL-ссылка на картинку]\n\n{Описание аромата}\n[Красивый эмоциональный текст 50-100 слов]\n\n{Пирамида композиции}\nВерхние ноты: ...\nСредние ноты: ...\nБазовые ноты: ...\n\n{Характеристики}\nКонцентрация: ...\nСтойкость: ...\nШлейф: ...`
                         }
                     ],
                     temperature: 0.1,
@@ -878,14 +890,21 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
                 if (generatedText) {
                     console.log(`[Autofill] Successfully generated response from DeepSeek`);
                     
+                    const imgPattern = /(?:[\*\#\s\{\}\[\]\-:]*Изображение[\*\#\s\{\}\[\]\-:]*)/i;
                     const descPattern = /(?:[\*\#\s\{\}\[\]\-:]*Описание аромата[\*\#\s\{\}\[\]\-:]*)/i;
                     const pyrPattern = /(?:[\*\#\s\{\}\[\]\-:]*Пирамида композиции[\*\#\s\{\}\[\]\-:]*)/i;
                     const charPattern = /(?:[\*\#\s\{\}\[\]\-:]*Характеристики[\*\#\s\{\}\[\]\-:]*)/i;
 
+                    const imgIdx = generatedText.search(imgPattern);
                     const descIdx = generatedText.search(descPattern);
                     const pyrIdx = generatedText.search(pyrPattern);
                     const charIdx = generatedText.search(charPattern);
 
+                    if (imgIdx !== -1) {
+                        let endIdx = descIdx !== -1 ? descIdx : (pyrIdx !== -1 ? pyrIdx : (charIdx !== -1 ? charIdx : generatedText.length));
+                        dsImgUrl = generatedText.substring(imgIdx, endIdx).replace(imgPattern, '').trim();
+                        dsImgUrl = dsImgUrl.replace(/[\[\]\(\)]/g, '').trim();
+                    }
                     if (descIdx !== -1) {
                         let endIdx = pyrIdx !== -1 ? pyrIdx : (charIdx !== -1 ? charIdx : generatedText.length);
                         description = generatedText.substring(descIdx, endIdx).replace(descPattern, '').trim();
@@ -973,19 +992,45 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
             return res.status(404).json({ error: 'Не удалось сгенерировать описание и найти товар на Aromo.ru / Parfumo.com' });
         }
 
-        // 2. Loop over unique URLs and try to download the image
+        // 2. Try to download the image chosen by DeepSeek, fallback to uniqueUrls scraping
         let imgUrl = '';
         let downloadedIndex = 0;
-        
-        for (let i = 0; i < uniqueUrls.length; i++) {
+        let imageDownloaded = false;
+
+        if (dsImgUrl && !dsImgUrl.includes('Нет данных') && dsImgUrl.startsWith('http')) {
             try {
-                imgUrl = await downloadAutofillImage(uniqueUrls[i]);
-                if (imgUrl) {
-                    downloadedIndex = i;
-                    break;
+                console.log(`[Autofill] Attempting to download DeepSeek selected image: ${dsImgUrl}`);
+                const savedPath = await downloadAutofillImage(dsImgUrl);
+                if (savedPath) {
+                    imgUrl = savedPath;
+                    imageDownloaded = true;
+                    try {
+                        const dsHostname = new URL(dsImgUrl).hostname;
+                        const foundIdx = uniqueUrls.findIndex(u => u.includes(dsHostname));
+                        downloadedIndex = foundIdx !== -1 ? foundIdx : 0;
+                    } catch (e) {
+                        downloadedIndex = 0;
+                    }
                 }
             } catch (err) {
-                console.warn(`[Autofill] Failed to get image for URL ${uniqueUrls[i]}: ${err.message}`);
+                console.warn(`[Autofill] Failed to download DeepSeek selected image: ${err.message}`);
+            }
+        }
+
+        if (!imageDownloaded) {
+            console.log('[Autofill] Falling back to default image harvesting from uniqueUrls');
+            for (let i = 0; i < uniqueUrls.length; i++) {
+                try {
+                    const savedPath = await downloadAutofillImage(uniqueUrls[i]);
+                    if (savedPath) {
+                        imgUrl = savedPath;
+                        downloadedIndex = i;
+                        imageDownloaded = true;
+                        break;
+                    }
+                } catch (err) {
+                    console.warn(`[Autofill] Failed to get image for URL ${uniqueUrls[i]}: ${err.message}`);
+                }
             }
         }
 
