@@ -821,12 +821,78 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
             imgUrl,
             slug,
             seoTitle,
-            seoDescription
+            seoDescription,
+            foundUrls: uniqueUrls
         });
 
     } catch (err) {
         console.error('[Autofill] Error during autofill:', err);
         res.status(500).json({ error: 'Внутренняя ошибка сервера при автозаполнении', details: err.message });
+    }
+});
+
+app.post('/api/products/autofill/download-image', authenticateAdmin, async (req, res) => {
+    const { url } = req.body;
+    if (!url) {
+        return res.status(400).json({ error: 'Не указан URL страницы аромата' });
+    }
+
+    try {
+        const fs = require('fs');
+        console.log(`[Autofill Image] Fetching page: ${url}`);
+        const aromoRes = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
+            }
+        });
+
+        if (!aromoRes.ok) {
+            return res.status(502).json({ error: 'Не удалось получить страницу аромата с Aromo.ru' });
+        }
+
+        const html = await aromoRes.text();
+        
+        const getMetaTagContent = (htmlStr, nameOrProperty) => {
+            const regex = new RegExp(`<meta[^>]+(?:name|property|data-hid)="${nameOrProperty}"[^>]*>`, 'i');
+            const matchTag = htmlStr.match(regex);
+            if (matchTag) {
+                const contentMatch = matchTag[0].match(/content="([^"]+)"/i);
+                return contentMatch ? contentMatch[1] : null;
+            }
+            return null;
+        };
+
+        const ogImageUrl = getMetaTagContent(html, 'og:image');
+        if (!ogImageUrl) {
+            return res.status(404).json({ error: 'Изображение не найдено на указанной странице' });
+        }
+
+        console.log(`[Autofill Image] Downloading image: ${ogImageUrl}`);
+        const imgRes = await fetch(ogImageUrl);
+        if (!imgRes.ok) {
+            return res.status(502).json({ error: 'Не удалось скачать изображение по ссылке' });
+        }
+
+        const buffer = Buffer.from(await imgRes.arrayBuffer());
+        const ext = ogImageUrl.split('.').pop().split('?')[0] || 'jpg';
+        const cleanExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext.toLowerCase()) ? ext.toLowerCase() : 'jpg';
+        const uniqueFilename = `autofill-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${cleanExt}`;
+        const targetDir = path.join(__dirname, 'uploads');
+        
+        if (!fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir, { recursive: true });
+        }
+        
+        const targetPath = path.join(targetDir, uniqueFilename);
+        fs.writeFileSync(targetPath, buffer);
+        const imgUrl = `/uploads/${uniqueFilename}`;
+        console.log(`[Autofill Image] Saved image to: ${imgUrl}`);
+
+        res.json({ imgUrl });
+    } catch (err) {
+        console.error('[Autofill Image] Error downloading image:', err);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера при загрузке изображения', details: err.message });
     }
 });
 
