@@ -262,16 +262,6 @@ export default function AdminProductEditForm({
                             />
                         </div>
 
-                        <div className="form-group">
-                            <label>Ссылка на реестр Росаккредитации (FSA)</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                value={currentProduct.fsa_link || ''}
-                                onChange={(e) => setCurrentProduct({ ...currentProduct, fsa_link: e.target.value })}
-                                placeholder="https://pub.fsa.gov.ru/rds/declaration/..."
-                            />
-                        </div>
 
                         {/* Prices & Stocks */}
                         <h3 className="editor-section-title" style={{ marginTop: '1.5rem' }}>
@@ -680,6 +670,23 @@ export default function AdminProductEditForm({
                                         value={currentProduct.seoDescription || ''}
                                         onChange={(e) => setCurrentProduct({ ...currentProduct, seoDescription: e.target.value })}
                                         placeholder="Описание для поисковиков (оставьте пустым для автозаполнения из краткого описания)"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* FSA Registry Link */}
+                        <div>
+                            <h3 className="editor-section-title">Декларация Росаккредитации</h3>
+                            <div style={{ background: 'rgba(0, 0, 0, 0.2)', padding: '1.2rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label>Ссылка на реестр (FSA)</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        value={currentProduct.fsa_link || ''}
+                                        onChange={(e) => setCurrentProduct({ ...currentProduct, fsa_link: e.target.value })}
+                                        placeholder="https://pub.fsa.gov.ru/rds/declaration/..."
                                     />
                                 </div>
                             </div>
