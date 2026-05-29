@@ -408,7 +408,7 @@ app.post('/api/remove-background', authenticateAdmin, (req, res) => {
                         'Content-Length': body.length,
                         'Authorization': `Bearer ${secretKey}`
                     },
-                    timeout: 120000 // 2 minutes timeout
+                    timeout: 300000 // 5 minutes timeout for CPU inference
                 };
 
                 const proxyReq = requestLib.request(options, (proxyRes) => {
@@ -435,7 +435,7 @@ app.post('/api/remove-background', authenticateAdmin, (req, res) => {
 
                 proxyReq.on('timeout', () => {
                     proxyReq.destroy();
-                    reject(new Error('Таймаут обработки изображения (более 2 минут)'));
+                    reject(new Error('Таймаут обработки изображения (более 5 минут)'));
                 });
 
                 proxyReq.write(body);

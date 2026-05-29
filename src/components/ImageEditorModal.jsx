@@ -122,16 +122,45 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
         const ctx = canvas.getContext('2d');
 
         setIsAiLoading(true);
-        setAiStatusText('Отправка изображения на сервер...');
+        setAiStatusText('Подготовка изображения...');
 
         try {
             saveToHistory();
 
-            // Convert canvas to blob
-            const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+            // Resize canvas if it is too large to speed up upload & processing
+            const MAX_DIMENSION = 1600;
+            let exportCanvas = canvas;
+            
+            if (canvas.width > MAX_DIMENSION || canvas.height > MAX_DIMENSION) {
+                const scale = Math.min(MAX_DIMENSION / canvas.width, MAX_DIMENSION / canvas.height);
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width * scale;
+                tempCanvas.height = canvas.height * scale;
+                const tempCtx = tempCanvas.getContext('2d');
+                // Fill with white background before drawing to avoid black background on jpeg conversion if there is transparency
+                tempCtx.fillStyle = '#FFFFFF';
+                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                tempCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+                exportCanvas = tempCanvas;
+            } else {
+                // If it doesn't need resizing, we still fill transparent areas with white before converting to JPEG
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.fillStyle = '#FFFFFF';
+                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                tempCtx.drawImage(canvas, 0, 0);
+                exportCanvas = tempCanvas;
+            }
+
+            setAiStatusText('Отправка изображения на сервер...');
+
+            // Convert canvas to a compressed JPEG blob (JPEG is ~10x smaller than PNG)
+            const blob = await new Promise((resolve) => exportCanvas.toBlob(resolve, 'image/jpeg', 0.95));
             
             const formData = new FormData();
-            formData.append('image', blob, 'image.png');
+            formData.append('image', blob, 'image.jpg');
 
             // Get admin token from localStorage
             const token = localStorage.getItem('adminToken');
