@@ -6,6 +6,8 @@ const multer = require('multer');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const http = require('http');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
@@ -362,6 +364,96 @@ app.post('/api/upload', authenticateAdmin, (req, res) => {
 
         const imageUrl = `/uploads/${req.file.filename}`;
         res.json({ url: imageUrl });
+    });
+});
+
+// --- AI BACKGROUND REMOVAL (RMBG-2.0 via Python microservice) ---
+app.post('/api/remove-background', authenticateAdmin, (req, res) => {
+    upload.single('image')(req, res, async function (err) {
+        if (err) {
+            return res.status(400).json({ error: err.message });
+        }
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+
+        const inputPath = path.join(__dirname, 'uploads', req.file.filename);
+
+        try {
+            // Read the uploaded file
+            const imageBuffer = fs.readFileSync(inputPath);
+
+            // Build multipart/form-data request to Python service
+            const boundary = '----FormBoundary' + crypto.randomBytes(16).toString('hex');
+            const header = Buffer.from(
+                `--${boundary}\r\n` +
+                `Content-Disposition: form-data; name="image"; filename="${req.file.filename}"\r\n` +
+                `Content-Type: ${req.file.mimetype}\r\n\r\n`
+            );
+            const footer = Buffer.from(`\r\n--${boundary}--\r\n`);
+            const body = Buffer.concat([header, imageBuffer, footer]);
+
+            const result = await new Promise((resolve, reject) => {
+                const options = {
+                    hostname: '127.0.0.1',
+                    port: parseInt(process.env.RMBG_PORT || '5001'),
+                    path: '/remove-bg',
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+                        'Content-Length': body.length
+                    },
+                    timeout: 120000 // 2 minutes timeout
+                };
+
+                const proxyReq = http.request(options, (proxyRes) => {
+                    const chunks = [];
+                    proxyRes.on('data', (chunk) => chunks.push(chunk));
+                    proxyRes.on('end', () => {
+                        const responseBuffer = Buffer.concat(chunks);
+                        if (proxyRes.statusCode === 200) {
+                            resolve(responseBuffer);
+                        } else {
+                            try {
+                                const errorData = JSON.parse(responseBuffer.toString());
+                                reject(new Error(errorData.error || 'Python service error'));
+                            } catch {
+                                reject(new Error(`Python service returned status ${proxyRes.statusCode}`));
+                            }
+                        }
+                    });
+                });
+
+                proxyReq.on('error', (e) => {
+                    reject(new Error(`Сервис удаления фона недоступен. Убедитесь, что Python RMBG-2.0 сервис запущен. (${e.message})`));
+                });
+
+                proxyReq.on('timeout', () => {
+                    proxyReq.destroy();
+                    reject(new Error('Таймаут обработки изображения (более 2 минут)'));
+                });
+
+                proxyReq.write(body);
+                proxyReq.end();
+            });
+
+            // Save the result as PNG
+            const outputFilename = `rmbg-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.png`;
+            const outputPath = path.join(__dirname, 'uploads', outputFilename);
+            fs.writeFileSync(outputPath, result);
+
+            // Clean up original uploaded file
+            try { fs.unlinkSync(inputPath); } catch {}
+
+            const imageUrl = `/uploads/${outputFilename}`;
+            res.json({ url: imageUrl });
+
+        } catch (error) {
+            // Clean up on error
+            try { fs.unlinkSync(inputPath); } catch {}
+            console.error('Background removal error:', error.message);
+            res.status(500).json({ error: error.message });
+        }
     });
 });
 

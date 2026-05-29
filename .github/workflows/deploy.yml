@@ -58,6 +58,7 @@ jobs:
             --exclude 'node_modules' \
             --exclude '.env' \
             --exclude 'uploads' \
+            --exclude 'venv' \
             ./server/ $SERVER_USER@$SERVER_HOST:/var/www/kapsula/data/www/api-server/
             
       - name: Ensure Uploads Symlink
@@ -75,3 +76,34 @@ jobs:
           SERVER_USER: ${{ secrets.SERVER_USER }}
         run: |
           ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "export NVM_DIR=\"\$HOME/.nvm\" && [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\" && cd /var/www/kapsula/data/www/api-server && npm ci && pm2 restart kapsula-backend --update-env || pm2 start index.js --name kapsula-backend --update-env"
+
+      - name: Setup Python RMBG-2.0 Service
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST bash -s << 'REMOTE_SCRIPT'
+            cd /var/www/kapsula/data/www/api-server
+
+            # Create Python venv if not exists
+            [ -d venv ] || python3 -m venv venv
+
+            # Install Python dependencies
+            ./venv/bin/pip install -q -r requirements.txt
+
+            # Write HF_TOKEN to .env if not already present
+            grep -q "^HF_TOKEN=" .env 2>/dev/null || echo "HF_TOKEN=${HF_TOKEN}" >> .env
+
+            # Set HF_HOME for model caching
+            grep -q "^HF_HOME=" .env 2>/dev/null || echo "HF_HOME=/var/www/kapsula/data/www/api-server/.hf_cache" >> .env
+
+            # Source .env and start/restart the RMBG service
+            set -a; source .env; set +a
+            export HF_TOKEN HF_HOME
+
+            pm2 describe rmbg-service > /dev/null 2>&1 && pm2 delete rmbg-service
+            HF_TOKEN="$HF_TOKEN" HF_HOME="$HF_HOME" pm2 start ecosystem.rmbg.config.js
+            pm2 save
+          REMOTE_SCRIPT

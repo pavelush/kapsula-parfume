@@ -15,7 +15,6 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
     const containerRef = useRef(null);
     const originalImageRef = useRef(null);
     const tempBaselineRef = useRef(null);
-    const segmenterRef = useRef(null);
 
     // Initialize canvas with the image
     useEffect(() => {
@@ -163,51 +162,61 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
         const ctx = canvas.getContext('2d');
 
         setIsAiLoading(true);
-        setAiStatusText('Загрузка нейросети (около 70 МБ)...');
+        setAiStatusText('Отправка изображения на сервер...');
 
         try {
-            // Using latest v4 version which supports modnet natively
-            const { pipeline, env, RawImage } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0/dist/transformers.min.js');
-
-            env.allowLocalModels = false;
-            // In v4, WASM files are in the separate onnxruntime-web package
-            env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0-dev.20260416-b7804b056c/dist/';
-
-            if (!segmenterRef.current) {
-                setAiStatusText('Инициализация ИИ-модели...');
-                // We use Xenova/modnet because it is natively supported by transformers.js
-                // and does not require brittle class mapping patches that break in production
-                segmenterRef.current = await pipeline('image-segmentation', 'Xenova/modnet');
-            }
-
-            setAiStatusText('Анализ изображения...');
             saveToHistory();
 
-            const rawImage = RawImage.fromCanvas(canvas);
-            const [result] = await segmenterRef.current(rawImage);
+            // Convert canvas to blob
+            const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
             
-            setAiStatusText('Вырезание фона...');
-            const mask = result.mask;
-            const maskData = mask.data;
-            
-            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imgData.data;
+            const formData = new FormData();
+            formData.append('image', blob, 'image.png');
 
-            for (let i = 0; i < maskData.length; ++i) {
-                data[i * 4 + 3] = maskData[i];
+            // Get admin token from localStorage
+            const token = localStorage.getItem('adminToken');
+
+            setAiStatusText('Удаление фона нейросетью RMBG-2.0...');
+
+            const response = await fetch('/api/remove-background', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `Ошибка сервера: ${response.status}`);
             }
 
+            const data = await response.json();
+
+            setAiStatusText('Применение результата...');
+
+            // Load the processed image and draw on canvas
+            const resultImg = new Image();
+            resultImg.crossOrigin = 'anonymous';
+            await new Promise((resolve, reject) => {
+                resultImg.onload = resolve;
+                resultImg.onerror = () => reject(new Error('Не удалось загрузить обработанное изображение'));
+                resultImg.src = data.url;
+            });
+
+            canvas.width = resultImg.width;
+            canvas.height = resultImg.height;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.putImageData(imgData, 0, 0);
-            
+            ctx.drawImage(resultImg, 0, 0);
+
             setHasChanges(true);
             setAiStatusText('');
             tempBaselineRef.current = null;
-            
-            alert('Фон успешно удален с помощью ИИ!');
+
+            alert('Фон успешно удален с помощью ИИ (RMBG-2.0)!');
         } catch (error) {
             console.error('AI background removal error:', error);
-            alert(`Ошибка работы ИИ: ${error.message || 'Не удалось загрузить или запустить модель'}`);
+            alert(`Ошибка работы ИИ: ${error.message || 'Не удалось обработать изображение'}`);
         } finally {
             setIsAiLoading(false);
         }
