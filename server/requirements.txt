@@ -5,3 +5,4 @@ transformers
 Pillow
 flask
 huggingface_hub
+numpy==1.26.4
