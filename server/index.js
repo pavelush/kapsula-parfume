@@ -393,7 +393,7 @@ app.post('/api/remove-background', authenticateAdmin, (req, res) => {
             const footer = Buffer.from(`\r\n--${boundary}--\r\n`);
             const body = Buffer.concat([header, imageBuffer, footer]);
 
-            const rmbgUrl = new URL(process.env.RMBG_URL || 'http://138.124.97.185:5001/remove-bg');
+            const rmbgUrl = new URL(process.env.RMBG_URL || 'http://2.27.52.9:5001/remove-bg');
             const secretKey = process.env.RMBG_SECRET_KEY || 'a7ad32861e31aa9dade80326b17fbf63a94a165be4c71218';
             const requestLib = rmbgUrl.protocol === 'https:' ? require('https') : require('http');
 

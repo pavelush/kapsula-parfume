@@ -79,7 +79,7 @@ jobs:
             cd /var/www/kapsula/data/www/api-server
             touch .env
             sed -i '/^RMBG_URL=/d' .env
-            echo "RMBG_URL=http://138.124.97.185:5001/remove-bg" >> .env
+            echo "RMBG_URL=http://2.27.52.9:5001/remove-bg" >> .env
             sed -i '/^RMBG_SECRET_KEY=/d' .env
             echo "RMBG_SECRET_KEY=a7ad32861e31aa9dade80326b17fbf63a94a165be4c71218" >> .env
           REMOTE_SCRIPT
