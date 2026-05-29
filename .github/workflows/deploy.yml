@@ -84,8 +84,14 @@ jobs:
           SERVER_USER: ${{ secrets.SERVER_USER }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST bash -s << 'REMOTE_SCRIPT'
+          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST bash -s "${HF_TOKEN}" << 'REMOTE_SCRIPT'
+            # Load NVM (Node Version Manager) to ensure pm2 is available
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
             cd /var/www/kapsula/data/www/api-server
+
+            HF_TOKEN_VAL="$1"
 
             # Clean up broken venv if exists
             if [ -d venv ] && [ ! -f venv/bin/pip ]; then
@@ -112,7 +118,7 @@ jobs:
             # Write HF_TOKEN to .env (remove old line if present to update value)
             touch .env
             sed -i '/^HF_TOKEN=/d' .env
-            echo "HF_TOKEN=${HF_TOKEN}" >> .env
+            echo "HF_TOKEN=${HF_TOKEN_VAL}" >> .env
 
             # Set HF_HOME for model caching
             sed -i '/^HF_HOME=/d' .env
