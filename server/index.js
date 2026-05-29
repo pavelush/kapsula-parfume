@@ -393,20 +393,25 @@ app.post('/api/remove-background', authenticateAdmin, (req, res) => {
             const footer = Buffer.from(`\r\n--${boundary}--\r\n`);
             const body = Buffer.concat([header, imageBuffer, footer]);
 
+            const rmbgUrl = new URL(process.env.RMBG_URL || 'http://138.124.97.185:5001/remove-bg');
+            const secretKey = process.env.RMBG_SECRET_KEY || 'a7ad32861e31aa9dade80326b17fbf63a94a165be4c71218';
+            const requestLib = rmbgUrl.protocol === 'https:' ? require('https') : require('http');
+
             const result = await new Promise((resolve, reject) => {
                 const options = {
-                    hostname: '127.0.0.1',
-                    port: parseInt(process.env.RMBG_PORT || '5001'),
-                    path: '/remove-bg',
+                    hostname: rmbgUrl.hostname,
+                    port: rmbgUrl.port || (rmbgUrl.protocol === 'https:' ? 443 : 80),
+                    path: rmbgUrl.pathname + rmbgUrl.search,
                     method: 'POST',
                     headers: {
                         'Content-Type': `multipart/form-data; boundary=${boundary}`,
-                        'Content-Length': body.length
+                        'Content-Length': body.length,
+                        'Authorization': `Bearer ${secretKey}`
                     },
                     timeout: 120000 // 2 minutes timeout
                 };
 
-                const proxyReq = http.request(options, (proxyRes) => {
+                const proxyReq = requestLib.request(options, (proxyRes) => {
                     const chunks = [];
                     proxyRes.on('data', (chunk) => chunks.push(chunk));
                     proxyRes.on('end', () => {
@@ -425,7 +430,7 @@ app.post('/api/remove-background', authenticateAdmin, (req, res) => {
                 });
 
                 proxyReq.on('error', (e) => {
-                    reject(new Error(`Сервис удаления фона недоступен. Убедитесь, что Python RMBG-2.0 сервис запущен. (${e.message})`));
+                    reject(new Error(`Сервис удаления фона недоступен. Убедитесь, что выделенный Python RMBG-2.0 сервис запущен. (${e.message})`));
                 });
 
                 proxyReq.on('timeout', () => {

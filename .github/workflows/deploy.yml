@@ -77,58 +77,18 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "export NVM_DIR=\"\$HOME/.nvm\" && [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\" && cd /var/www/kapsula/data/www/api-server && npm ci && pm2 restart kapsula-backend --update-env || pm2 start index.js --name kapsula-backend --update-env"
 
-      - name: Setup Python RMBG-2.0 Service
+      - name: Configure RMBG API on Main Server
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST bash -s "${HF_TOKEN}" << 'REMOTE_SCRIPT'
-            # Load NVM (Node Version Manager) to ensure pm2 is available
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
+          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST bash -s << 'REMOTE_SCRIPT'
             cd /var/www/kapsula/data/www/api-server
-
-            HF_TOKEN_VAL="$1"
-
-            # Clean up broken venv if exists
-            if [ -d venv ] && [ ! -f venv/bin/pip ]; then
-              echo "Found broken venv (missing pip), removing..."
-              rm -rf venv
-            fi
-
-            # Create Python venv if not exists
-            if [ ! -d venv ]; then
-              echo "Creating virtual environment..."
-              python3 -m venv venv || {
-                echo "python3 -m venv failed. Trying to install python3-venv using sudo -n..."
-                sudo -n apt-get update -y && sudo -n apt-get install -y python3-venv && python3 -m venv venv
-              } || {
-                echo "Sudo installation failed. Trying to install virtualenv via pip..."
-                python3 -m pip install --user --upgrade pip virtualenv
-                python3 -m virtualenv venv
-              }
-            fi
-
-            # Install Python dependencies
-            ./venv/bin/pip install -q -r requirements.txt
-
-            # Write HF_TOKEN to .env (remove old line if present to update value)
             touch .env
-            sed -i '/^HF_TOKEN=/d' .env
-            echo "HF_TOKEN=${HF_TOKEN_VAL}" >> .env
-
-            # Set HF_HOME for model caching
-            sed -i '/^HF_HOME=/d' .env
-            echo "HF_HOME=/var/www/kapsula/data/www/api-server/.hf_cache" >> .env
-
-            # Source .env and start/restart the RMBG service
-            set -a; source .env; set +a
-            export HF_TOKEN HF_HOME
-
-            pm2 describe rmbg-service > /dev/null 2>&1 && pm2 delete rmbg-service
-            HF_TOKEN="$HF_TOKEN" HF_HOME="$HF_HOME" pm2 start ecosystem.rmbg.config.js
-            pm2 save
+            sed -i '/^RMBG_URL=/d' .env
+            echo "RMBG_URL=http://138.124.97.185:5001/remove-bg" >> .env
+            sed -i '/^RMBG_SECRET_KEY=/d' .env
+            echo "RMBG_SECRET_KEY=a7ad32861e31aa9dade80326b17fbf63a94a165be4c71218" >> .env
           REMOTE_SCRIPT
+
