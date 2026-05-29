@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, Wand2, RefreshCw, Scissors, Image as ImageIcon, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Wand2, RefreshCw, Scissors, Image as ImageIcon, Check, ExternalLink } from 'lucide-react';
 import ImageEditorModal from '../../components/ImageEditorModal';
 
 export default function AdminProductEditForm({
@@ -389,7 +389,33 @@ export default function AdminProductEditForm({
                         
                         {/* Product Status */}
                         <div>
-                            <h3 className="editor-section-title" style={{ borderBottom: 'none', marginBottom: '0.5rem', paddingBottom: 0 }}>Статус товара</h3>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                <h3 className="editor-section-title" style={{ borderBottom: 'none', marginBottom: 0, paddingBottom: 0 }}>Статус товара</h3>
+                                {currentProduct.id && currentProduct.slug && (
+                                    <a
+                                        href={`/product/${currentProduct.slug}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Открыть товар на сайте"
+                                        style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            color: 'var(--color-accent-gold)',
+                                            fontSize: '0.85rem',
+                                            textDecoration: 'none',
+                                            transition: 'opacity 0.2s',
+                                            cursor: 'pointer',
+                                            marginTop: '-4px'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                                        onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                                    >
+                                        <span>На сайт</span>
+                                        <ExternalLink size={16} />
+                                    </a>
+                                )}
+                            </div>
                             <div className="form-group" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                 <input
                                     type="checkbox"
