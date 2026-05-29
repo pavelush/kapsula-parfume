@@ -6,7 +6,6 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
     const [hasChanges, setHasChanges] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('crop'); // 'crop' or 'bg-remove'
-    const [tolerance, setTolerance] = useState(240);
     const [crop, setCrop] = useState({ x: 10, y: 10, width: 80, height: 80 }); // Percentages
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [aiStatusText, setAiStatusText] = useState('');
@@ -14,7 +13,6 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
     const originalImageRef = useRef(null);
-    const tempBaselineRef = useRef(null);
 
     // Initialize canvas with the image
     useEffect(() => {
@@ -47,8 +45,7 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
 
-        // Clear temporary baseline
-        tempBaselineRef.current = null;
+
 
         const prevDataUrl = history[history.length - 1];
         setHistory(prev => prev.slice(0, -1));
@@ -72,7 +69,6 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
 
-        tempBaselineRef.current = null;
         setHistory([]);
         setHasChanges(false);
 
@@ -116,45 +112,9 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
 
         setCrop({ x: 10, y: 10, width: 80, height: 80 });
         setHasChanges(true);
-        tempBaselineRef.current = null; // Clear baseline
     };
 
-    const applyWhiteBackgroundRemoval = (tolValue) => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
 
-        // If we don't have a baseline captured for this session, capture it
-        if (!tempBaselineRef.current) {
-            tempBaselineRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        }
-
-        const base = tempBaselineRef.current;
-        const imgData = ctx.createImageData(base.width, base.height);
-        imgData.data.set(base.data);
-        const data = imgData.data;
-
-        // Replace near-white pixels with transparent ones
-        for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i+1];
-            const b = data[i+2];
-
-            if (r >= tolValue && g >= tolValue && b >= tolValue) {
-                data[i+3] = 0; // Set alpha to 0 (transparent)
-            }
-        }
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.putImageData(imgData, 0, 0);
-        setHasChanges(true);
-    };
-
-    const handleToleranceChange = (e) => {
-        const val = parseInt(e.target.value, 10);
-        setTolerance(val);
-        applyWhiteBackgroundRemoval(val);
-    };
 
     const handleAiBackgroundRemoval = async () => {
         const canvas = canvasRef.current;
@@ -211,7 +171,6 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
 
             setHasChanges(true);
             setAiStatusText('');
-            tempBaselineRef.current = null;
 
             alert('Фон успешно удален с помощью ИИ (RMBG-2.0)!');
         } catch (error) {
@@ -222,21 +181,13 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
         }
     };
 
-    const commitBackgroundRemoval = () => {
-        if (tempBaselineRef.current) {
-            // Save to history list to allow undoing this background removal step
-            saveToHistory();
-            tempBaselineRef.current = null;
-        }
-    };
+
 
     const handleSave = () => {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
         setIsSaving(true);
-        // Clear any active baseline edits
-        tempBaselineRef.current = null;
 
         canvas.toBlob(async (blob) => {
             const formData = new FormData();
@@ -436,7 +387,6 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
                     <button
                         className={`editor-tab ${activeTab === 'crop' ? 'active' : ''}`}
                         onClick={() => {
-                            commitBackgroundRemoval();
                             setActiveTab('crop');
                         }}
                     >
@@ -450,7 +400,7 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
                         }}
                     >
                         <Scissors size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                        Удаление белого фона
+                        Удаление фона
                     </button>
                 </div>
 
@@ -544,46 +494,16 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
 
                     {/* Background Removal Tab Controls */}
                     {activeTab === 'bg-remove' && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <button
-                                className="editor-btn editor-btn-primary"
-                                style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', border: 'none', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}
-                                onClick={handleAiBackgroundRemoval}
-                                disabled={isAiLoading || isSaving}
-                                title="Автоматическое удаление фона с помощью ИИ в браузере (RMBG-1.4)"
-                            >
-                                <Sparkles size={16} />
-                                {isAiLoading ? 'Обработка ИИ...' : 'ИИ Удаление фона'}
-                            </button>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', background: 'rgba(255,255,255,0.05)', padding: '6px 16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', minWidth: '180px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}>
-                                        <span>Порог удаления белого</span>
-                                        <span style={{ color: 'var(--color-accent-gold, #fbbf24)', fontWeight: '600' }}>{256 - tolerance}</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="150"
-                                        max="255"
-                                        value={tolerance}
-                                        onChange={handleToleranceChange}
-                                        style={{ accentColor: 'var(--color-accent-gold, #fbbf24)', cursor: 'pointer' }}
-                                        disabled={isAiLoading}
-                                    />
-                                </div>
-                                <button
-                                    className="editor-btn editor-btn-primary"
-                                    onClick={() => {
-                                        commitBackgroundRemoval();
-                                        alert('Белый фон успешно удален!');
-                                    }}
-                                    disabled={isAiLoading}
-                                >
-                                    <Check size={16} /> Подтвердить удаление
-                                </button>
-                            </div>
-                        </div>
+                        <button
+                            className="editor-btn editor-btn-primary"
+                            style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)', border: 'none', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}
+                            onClick={handleAiBackgroundRemoval}
+                            disabled={isAiLoading || isSaving}
+                            title="Автоматическое удаление фона с помощью ИИ (RMBG-2.0)"
+                        >
+                            <Sparkles size={16} />
+                            {isAiLoading ? 'Обработка ИИ...' : 'ИИ Удаление фона'}
+                        </button>
                     )}
 
                     <div style={{ display: 'flex', gap: '10px' }}>
