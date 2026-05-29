@@ -369,38 +369,7 @@ export default function AdminProductEditForm({
                             </div>
                         )}
 
-                        {/* SEO Settings */}
-                        <h3 className="editor-section-title" style={{ marginTop: '1.5rem' }}>SEO настройки</h3>
-                        <div className="form-group">
-                            <label>URL (slug)</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                value={currentProduct.slug || ''}
-                                onChange={(e) => setCurrentProduct({ ...currentProduct, slug: e.target.value })}
-                                placeholder="bleu-de-chanel (оставьте пустым для автогенерации из названия)"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>SEO Title</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                value={currentProduct.seoTitle || ''}
-                                onChange={(e) => setCurrentProduct({ ...currentProduct, seoTitle: e.target.value })}
-                                placeholder="Заголовок для поисковиков (оставьте пустым для автозаполнения)"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>SEO Description</label>
-                            <textarea
-                                className="form-control"
-                                rows="2"
-                                value={currentProduct.seoDescription || ''}
-                                onChange={(e) => setCurrentProduct({ ...currentProduct, seoDescription: e.target.value })}
-                                placeholder="Описание для поисковиков (оставьте пустым для автозаполнения из краткого описания)"
-                            />
-                        </div>
+
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
                             <button type="button" onClick={handleBack} className="btn-secondary" style={{ padding: '8px 24px' }} disabled={isSavingProduct}>Закрыть</button>
@@ -623,6 +592,43 @@ export default function AdminProductEditForm({
                                     onChange={(e) => setCurrentProduct({ ...currentProduct, colorTheme: e.target.value })}
                                     style={{ fontSize: '0.8rem', opacity: 0.8 }}
                                 />
+                            </div>
+                        </div>
+
+                        {/* SEO Settings */}
+                        <div>
+                            <h3 className="editor-section-title">SEO настройки</h3>
+                            <div style={{ background: 'rgba(0, 0, 0, 0.2)', padding: '1.2rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label>URL (slug)</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        value={currentProduct.slug || ''}
+                                        onChange={(e) => setCurrentProduct({ ...currentProduct, slug: e.target.value })}
+                                        placeholder="bleu-de-chanel (оставьте пустым для автогенерации из названия)"
+                                    />
+                                </div>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label>SEO Title</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        value={currentProduct.seoTitle || ''}
+                                        onChange={(e) => setCurrentProduct({ ...currentProduct, seoTitle: e.target.value })}
+                                        placeholder="Заголовок для поисковиков (оставьте пустым для автозаполнения)"
+                                    />
+                                </div>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label>SEO Description</label>
+                                    <textarea
+                                        className="form-control"
+                                        rows="3"
+                                        value={currentProduct.seoDescription || ''}
+                                        onChange={(e) => setCurrentProduct({ ...currentProduct, seoDescription: e.target.value })}
+                                        placeholder="Описание для поисковиков (оставьте пустым для автозаполнения из краткого описания)"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
