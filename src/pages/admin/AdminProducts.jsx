@@ -46,6 +46,7 @@ export default function AdminProducts() {
     const [isHoveringImage, setIsHoveringImage] = useState(false);
     const [hoveredProduct, setHoveredProduct] = useState(null);
     const [isImageEditorOpen, setIsImageEditorOpen] = useState(false);
+    const [isSavingProduct, setIsSavingProduct] = useState(false);
 
     useEffect(() => {
         fetchProducts();
@@ -107,6 +108,8 @@ export default function AdminProducts() {
 
     const handleSave = async (e) => {
         e.preventDefault();
+        if (isSavingProduct) return;
+        setIsSavingProduct(true);
 
         // Format prices back to JSON
         let pricesJson = {};
@@ -171,6 +174,8 @@ export default function AdminProducts() {
             }
         } catch (error) {
             console.error('Error saving product:', error);
+        } finally {
+            setIsSavingProduct(false);
         }
     };
 
@@ -573,10 +578,16 @@ export default function AdminProducts() {
                                 {currentProduct.id ? 'Редактировать товар' : 'Новый товар'}
                             </h3>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-                                <button type="submit" form="product-form" className="btn-primary" style={{ padding: '8px 20px', fontSize: '0.9rem' }}>
-                                    Сохранить товар
+                                <button 
+                                    type="submit" 
+                                    form="product-form" 
+                                    className="btn-primary" 
+                                    disabled={isSavingProduct}
+                                    style={{ padding: '8px 20px', fontSize: '0.9rem', opacity: isSavingProduct ? 0.7 : 1 }}
+                                >
+                                    {isSavingProduct ? 'Сохранение...' : 'Сохранить товар'}
                                 </button>
-                                <button type="button" onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                                <button type="button" onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center' }} disabled={isSavingProduct}>
                                     <X size={24} />
                                 </button>
                             </div>
@@ -1070,8 +1081,15 @@ export default function AdminProducts() {
                             )}
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary" style={{ padding: '8px 24px' }}>Отмена</button>
-                                <button type="submit" className="btn-primary" style={{ padding: '8px 24px' }}>Сохранить товар</button>
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary" style={{ padding: '8px 24px' }} disabled={isSavingProduct}>Отмена</button>
+                                <button 
+                                    type="submit" 
+                                    className="btn-primary" 
+                                    disabled={isSavingProduct}
+                                    style={{ padding: '8px 24px', opacity: isSavingProduct ? 0.7 : 1 }}
+                                >
+                                    {isSavingProduct ? 'Сохранение...' : 'Сохранить товар'}
+                                </button>
                             </div>
                         </form>
                     </div>
