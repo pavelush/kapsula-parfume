@@ -87,8 +87,24 @@ jobs:
           ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST bash -s << 'REMOTE_SCRIPT'
             cd /var/www/kapsula/data/www/api-server
 
+            # Clean up broken venv if exists
+            if [ -d venv ] && [ ! -f venv/bin/pip ]; then
+              echo "Found broken venv (missing pip), removing..."
+              rm -rf venv
+            fi
+
             # Create Python venv if not exists
-            [ -d venv ] || python3 -m venv venv
+            if [ ! -d venv ]; then
+              echo "Creating virtual environment..."
+              python3 -m venv venv || {
+                echo "python3 -m venv failed. Trying to install python3-venv using sudo -n..."
+                sudo -n apt-get update -y && sudo -n apt-get install -y python3-venv && python3 -m venv venv
+              } || {
+                echo "Sudo installation failed. Trying to install virtualenv via pip..."
+                python3 -m pip install --user --upgrade pip virtualenv
+                python3 -m virtualenv venv
+              }
+            fi
 
             # Install Python dependencies
             ./venv/bin/pip install -q -r requirements.txt
