@@ -568,12 +568,21 @@ export default function AdminProducts() {
             {isModalOpen && (
                 <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
                     <div className="admin-card" style={{ width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h3 className="text-xl text-white m-0">{currentProduct.id ? 'Редактировать товар' : 'Новый товар'}</h3>
-                            <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}><X size={24} /></button>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
+                            <h3 className="text-xl text-white m-0" style={{ flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {currentProduct.id ? 'Редактировать товар' : 'Новый товар'}
+                            </h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+                                <button type="submit" form="product-form" className="btn-primary" style={{ padding: '8px 20px', fontSize: '0.9rem' }}>
+                                    Сохранить товар
+                                </button>
+                                <button type="button" onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                                    <X size={24} />
+                                </button>
+                            </div>
                         </div>
 
-                        <form onSubmit={handleSave}>
+                        <form id="product-form" onSubmit={handleSave}>
                             <div className="form-group" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <input
                                     type="checkbox"
