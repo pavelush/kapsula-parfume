@@ -43,7 +43,8 @@ login(token=HF_TOKEN)
 # Load the model
 model = AutoModelForImageSegmentation.from_pretrained(
     "briaai/RMBG-2.0",
-    trust_remote_code=True
+    trust_remote_code=True,
+    torch_dtype=torch.bfloat16
 )
 model.eval()
 
@@ -51,7 +52,7 @@ model.eval()
 device = torch.device('cpu')
 model.to(device)
 
-logger.info("RMBG-2.0 model loaded successfully!")
+logger.info("RMBG-2.0 model loaded successfully in bfloat16!")
 
 # ── Image preprocessing ─────────────────────────────────────────────────────
 transform_pipeline = transforms.Compose([
@@ -88,12 +89,12 @@ def remove_bg():
         
         logger.info(f"Processing image: {original_size[0]}x{original_size[1]}")
         
-        # Preprocess
-        input_tensor = transform_pipeline(image).unsqueeze(0).to(device)
+        # Preprocess (convert tensor to bfloat16)
+        input_tensor = transform_pipeline(image).unsqueeze(0).to(device, dtype=torch.bfloat16)
         
         # Inference
         with torch.no_grad():
-            preds = model(input_tensor)[-1].sigmoid()
+            preds = model(input_tensor)[-1].sigmoid().to(torch.float32)
         
         # Post-process: resize mask back to original image size
         mask = preds[0].squeeze()
