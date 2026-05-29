@@ -166,26 +166,17 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
         setAiStatusText('Загрузка нейросети (около 70 МБ)...');
 
         try {
-            // Updated to version 3.3.3 to better support newer models
-            const { pipeline, env, RawImage, AutoModelForImageSegmentation } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3/dist/transformers.min.js');
+            // Using latest v3 version
+            const { pipeline, env, RawImage } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3/dist/transformers.min.js');
 
             env.allowLocalModels = false;
             env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3/dist/';
 
-            // Register mapping for custom model type "SegformerForSemanticSegmentation" to the supported IS-Net class
-            if (AutoModelForImageSegmentation && AutoModelForImageSegmentation.MODEL_CLASS_MAPPINGS) {
-                const mappings = AutoModelForImageSegmentation.MODEL_CLASS_MAPPINGS[0];
-                const isnetClass = mappings.get('isnet') || mappings.get('bria-rmbg');
-                if (isnetClass) {
-                    mappings.set('SegformerForSemanticSegmentation', isnetClass);
-                    mappings.set('BriaRMBG', isnetClass);
-                }
-            }
-
             if (!segmenterRef.current) {
                 setAiStatusText('Инициализация ИИ-модели...');
-                // Note: We use RMBG-1.4 because RMBG-2.0 is gated and requires HF token authentication
-                segmenterRef.current = await pipeline('image-segmentation', 'briaai/RMBG-1.4');
+                // We use Xenova/modnet because it is natively supported by transformers.js
+                // and does not require brittle class mapping patches that break in production
+                segmenterRef.current = await pipeline('image-segmentation', 'Xenova/modnet');
             }
 
             setAiStatusText('Анализ изображения...');
