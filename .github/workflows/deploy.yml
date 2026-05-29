@@ -109,11 +109,14 @@ jobs:
             # Install Python dependencies
             ./venv/bin/pip install -q -r requirements.txt
 
-            # Write HF_TOKEN to .env if not already present
-            grep -q "^HF_TOKEN=" .env 2>/dev/null || echo "HF_TOKEN=${HF_TOKEN}" >> .env
+            # Write HF_TOKEN to .env (remove old line if present to update value)
+            touch .env
+            sed -i '/^HF_TOKEN=/d' .env
+            echo "HF_TOKEN=${HF_TOKEN}" >> .env
 
             # Set HF_HOME for model caching
-            grep -q "^HF_HOME=" .env 2>/dev/null || echo "HF_HOME=/var/www/kapsula/data/www/api-server/.hf_cache" >> .env
+            sed -i '/^HF_HOME=/d' .env
+            echo "HF_HOME=/var/www/kapsula/data/www/api-server/.hf_cache" >> .env
 
             # Source .env and start/restart the RMBG service
             set -a; source .env; set +a
