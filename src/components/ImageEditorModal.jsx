@@ -589,6 +589,28 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
                                     }}
                                     onMouseDown={(e) => handleCropMouseDown(e, 'move')}
                                 >
+                                    {/* Crop size badge inside/above the selection box */}
+                                    {dimensions.width > 0 && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: crop.y < 8 ? '6px' : '-26px',
+                                            left: crop.y < 8 ? '6px' : '0',
+                                            background: 'rgba(15, 23, 42, 0.85)',
+                                            color: 'var(--color-accent-gold, #fbbf24)',
+                                            padding: '2px 6px',
+                                            borderRadius: '4px',
+                                            fontSize: '11px',
+                                            fontWeight: '600',
+                                            whiteSpace: 'nowrap',
+                                            pointerEvents: 'none',
+                                            border: '1px solid rgba(251, 191, 36, 0.3)',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
+                                            backdropFilter: 'blur(4px)',
+                                            zIndex: 20
+                                        }}>
+                                            {Math.round((crop.width / 100) * dimensions.width)} × {Math.round((crop.height / 100) * dimensions.height)} px
+                                        </div>
+                                    )}
                                     {/* Corner handles */}
                                     <div className="editor-handle" style={{ top: -6, left: -6, cursor: 'nwse-resize' }} onMouseDown={(e) => handleCropMouseDown(e, 'tl')} />
                                     <div className="editor-handle" style={{ top: -6, right: -6, cursor: 'nesw-resize' }} onMouseDown={(e) => handleCropMouseDown(e, 'tr')} />
