@@ -353,9 +353,6 @@ export default function AdminProductEditForm({
                                 />
                             </div>
                         </div>
-                        <div style={{ marginTop: '-0.5rem', paddingLeft: '0.2rem' }}>
-                            <small style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>Если остаток 0, кнопка покупки скроется на сайте.</small>
-                        </div>
 
                         {currentProduct.volumes[activeVolumeTab]?.sku && (
                             <div style={{ marginTop: '1rem', padding: '1.2rem', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)' }}>
