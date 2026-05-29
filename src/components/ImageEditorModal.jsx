@@ -200,8 +200,6 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
 
             setHasChanges(true);
             setAiStatusText('');
-
-            alert('Фон успешно удален с помощью ИИ (RMBG-2.0)!');
         } catch (error) {
             console.error('AI background removal error:', error);
             alert(`Ошибка работы ИИ: ${error.message || 'Не удалось обработать изображение'}`);
