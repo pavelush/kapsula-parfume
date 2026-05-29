@@ -170,7 +170,8 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
             const { pipeline, env, RawImage } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0/dist/transformers.min.js');
 
             env.allowLocalModels = false;
-            env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0/dist/';
+            // In v4, WASM files are in the separate onnxruntime-web package
+            env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0-dev.20260416-b7804b056c/dist/';
 
             if (!segmenterRef.current) {
                 setAiStatusText('Инициализация ИИ-модели...');
