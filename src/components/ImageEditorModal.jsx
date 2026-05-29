@@ -18,6 +18,17 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
     const containerRef = useRef(null);
     const originalImageRef = useRef(null);
 
+    const resetCropToDefault = (w, h) => {
+        const defaultCropWidth = 400;
+        if (w > defaultCropWidth) {
+            const widthPercent = (defaultCropWidth / w) * 100;
+            const xPercent = ((w - defaultCropWidth) / 2) / w * 100;
+            setCrop({ x: xPercent, y: 0, width: widthPercent, height: 100 });
+        } else {
+            setCrop({ x: 0, y: 0, width: 100, height: 100 });
+        }
+    };
+
     // Initialize canvas with the image
     useEffect(() => {
         const img = new Image();
@@ -32,6 +43,7 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
             setDimensions({ width: img.width, height: img.height });
+            resetCropToDefault(img.width, img.height);
         };
         img.src = imageUrl;
     }, [imageUrl]);
@@ -62,6 +74,7 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
             setDimensions({ width: img.width, height: img.height });
+            resetCropToDefault(img.width, img.height);
         };
         img.src = prevDataUrl;
 
@@ -85,6 +98,7 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
             setDimensions({ width: img.width, height: img.height });
+            resetCropToDefault(img.width, img.height);
         }
     };
 
@@ -117,9 +131,9 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
         ctx.clearRect(0, 0, cropW, cropH);
         ctx.drawImage(tempCanvas, 0, 0);
 
-        setCrop({ x: 10, y: 10, width: 80, height: 80 });
         setHasChanges(true);
         setDimensions({ width: Math.round(cropW), height: Math.round(cropH) });
+        resetCropToDefault(Math.round(cropW), Math.round(cropH));
     };
 
 
@@ -208,6 +222,7 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
 
             setHasChanges(true);
             setDimensions({ width: resultImg.width, height: resultImg.height });
+            resetCropToDefault(resultImg.width, resultImg.height);
             setAiStatusText('');
         } catch (error) {
             console.error('AI background removal error:', error);
@@ -276,6 +291,7 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
 
         setHasChanges(true);
         setDimensions({ width: newWidth, height: newHeight });
+        resetCropToDefault(newWidth, newHeight);
     };
 
     useEffect(() => {
