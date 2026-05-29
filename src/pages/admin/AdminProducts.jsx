@@ -169,8 +169,32 @@ export default function AdminProducts() {
             });
 
             if (res.ok) {
+                const savedProduct = await res.json();
                 fetchProducts();
-                setViewMode('list');
+                
+                const prepared = {
+                    ...savedProduct,
+                    fullDescription: savedProduct.fullDescription || '',
+                    category: savedProduct.category || 'Парфюмерия',
+                    volumes: {
+                        1: { price: savedProduct.prices?.['1']?.price || '', sku: savedProduct.prices?.['1']?.sku || '', stock: savedProduct.prices?.['1']?.stock ?? '' },
+                        3: { price: savedProduct.prices?.['3']?.price || '', sku: savedProduct.prices?.['3']?.sku || '', stock: savedProduct.prices?.['3']?.stock ?? '' },
+                        5: { price: savedProduct.prices?.['5']?.price || '', sku: savedProduct.prices?.['5']?.sku || '', stock: savedProduct.prices?.['5']?.stock ?? '' },
+                        10: { price: savedProduct.prices?.['10']?.price || '', sku: savedProduct.prices?.['10']?.sku || '', stock: savedProduct.prices?.['10']?.stock ?? '' }
+                    },
+                    is_active: savedProduct.is_active !== undefined ? savedProduct.is_active : true,
+                    slug: savedProduct.slug || '',
+                    seoTitle: savedProduct.seoTitle || '',
+                    seoDescription: savedProduct.seoDescription || '',
+                    fsa_link: savedProduct.fsa_link || '',
+                    compositionPyramid: savedProduct.compositionPyramid || '',
+                    characteristics: savedProduct.characteristics || ''
+                };
+                
+                setCurrentProduct(prepared);
+                setOriginalProduct(prepared);
+                setViewMode('edit');
+                alert('Товар успешно сохранен');
             } else {
                 alert('Ошибка при сохранении товара');
             }

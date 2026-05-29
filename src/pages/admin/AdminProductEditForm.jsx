@@ -92,7 +92,7 @@ export default function AdminProductEditForm({
                         style={{ padding: '10px 24px', borderRadius: '8px' }}
                         disabled={isSavingProduct}
                     >
-                        Отмена
+                        Закрыть
                     </button>
                     <button 
                         type="submit" 
@@ -403,7 +403,7 @@ export default function AdminProductEditForm({
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
-                            <button type="button" onClick={handleBack} className="btn-secondary" style={{ padding: '8px 24px' }} disabled={isSavingProduct}>Отмена</button>
+                            <button type="button" onClick={handleBack} className="btn-secondary" style={{ padding: '8px 24px' }} disabled={isSavingProduct}>Закрыть</button>
                             <button 
                                 type="submit" 
                                 className="btn-primary" 
