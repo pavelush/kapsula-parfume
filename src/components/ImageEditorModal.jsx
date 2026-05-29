@@ -658,7 +658,7 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
 
                     {/* Resize Tab Controls */}
                     {activeTab === 'resize' && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                             <input
                                 type="number"
                                 value={resizeWidth}
@@ -666,17 +666,18 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
                                 placeholder="Ширина"
                                 title="Ширина"
                                 style={{
-                                    width: '70px',
-                                    padding: '6px 8px',
+                                    width: '64px',
+                                    padding: '6px',
                                     background: 'rgba(0,0,0,0.3)',
                                     border: '1px solid rgba(255,255,255,0.2)',
                                     borderRadius: '6px',
                                     color: 'white',
                                     textAlign: 'center',
-                                    outline: 'none'
+                                    outline: 'none',
+                                    fontSize: '13px'
                                 }}
                             />
-                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>×</span>
+                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>×</span>
                             <input
                                 type="number"
                                 value={resizeHeight}
@@ -684,18 +685,19 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
                                 placeholder="Высота"
                                 title="Высота"
                                 style={{
-                                    width: '70px',
-                                    padding: '6px 8px',
+                                    width: '64px',
+                                    padding: '6px',
                                     background: 'rgba(0,0,0,0.3)',
                                     border: '1px solid rgba(255,255,255,0.2)',
                                     borderRadius: '6px',
                                     color: 'white',
                                     textAlign: 'center',
-                                    outline: 'none'
+                                    outline: 'none',
+                                    fontSize: '13px'
                                 }}
                             />
                             
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginLeft: '4px', marginRight: '4px', userSelect: 'none' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginLeft: '2px', marginRight: '2px', userSelect: 'none', whiteSpace: 'nowrap' }}>
                                 <input
                                     type="checkbox"
                                     checked={keepAspectRatio}
@@ -705,8 +707,8 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
                                 Пропорции
                             </label>
 
-                            <button className="editor-btn editor-btn-primary" onClick={applyResize} style={{ padding: '8px 12px', fontSize: '14px' }}>
-                                <Maximize2 size={14} /> Применить
+                            <button className="editor-btn editor-btn-primary" onClick={applyResize} style={{ padding: '6px 10px', fontSize: '13px', whiteSpace: 'nowrap', gap: '4px' }}>
+                                <Maximize2 size={13} /> Применить
                             </button>
                         </div>
                     )}
