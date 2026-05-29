@@ -377,28 +377,6 @@ export default function AdminProductEditForm({
 
 
 
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem', marginTop: '2rem' }}>
-                            {saveMessage && (
-                                <span style={{ 
-                                    color: saveMessage.includes('Ошибка') ? '#EF4444' : '#10B981', 
-                                    fontSize: '0.85rem', 
-                                    fontWeight: '600',
-                                    marginRight: 'auto',
-                                    animation: 'fadeIn 0.25s ease-out'
-                                }}>
-                                    {saveMessage}
-                                </span>
-                            )}
-                            <button type="button" onClick={handleBack} className="btn-secondary" style={{ padding: '8px 24px' }} disabled={isSavingProduct}>Закрыть</button>
-                            <button 
-                                type="submit" 
-                                className="btn-primary" 
-                                disabled={isSavingProduct}
-                                style={{ padding: '8px 24px', opacity: isSavingProduct ? 0.7 : 1 }}
-                            >
-                                {isSavingProduct ? 'Сохранение...' : 'Сохранить'}
-                            </button>
-                        </div>
                     </div>
 
                     {/* Right Column: Widgets */}
