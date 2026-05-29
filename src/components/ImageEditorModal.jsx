@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Crop, Check, RotateCcw, Scissors, Trash2, Sliders, AlertCircle, Sparkles } from 'lucide-react';
+import { X, Crop, Check, RotateCcw, Scissors, Trash2, Sliders, AlertCircle, Sparkles, Maximize2 } from 'lucide-react';
 
 const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
     const [history, setHistory] = useState([]);
@@ -9,6 +9,10 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
     const [crop, setCrop] = useState({ x: 10, y: 10, width: 80, height: 80 }); // Percentages
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [aiStatusText, setAiStatusText] = useState('');
+    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+    const [resizeWidth, setResizeWidth] = useState('');
+    const [resizeHeight, setResizeHeight] = useState('');
+    const [keepAspectRatio, setKeepAspectRatio] = useState(true);
 
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
@@ -27,6 +31,7 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
             canvas.height = img.height;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
+            setDimensions({ width: img.width, height: img.height });
         };
         img.src = imageUrl;
     }, [imageUrl]);
@@ -56,6 +61,7 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
             canvas.height = img.height;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
+            setDimensions({ width: img.width, height: img.height });
         };
         img.src = prevDataUrl;
 
@@ -78,6 +84,7 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
             canvas.height = img.height;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
+            setDimensions({ width: img.width, height: img.height });
         }
     };
 
@@ -112,6 +119,7 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
 
         setCrop({ x: 10, y: 10, width: 80, height: 80 });
         setHasChanges(true);
+        setDimensions({ width: Math.round(cropW), height: Math.round(cropH) });
     };
 
 
@@ -199,6 +207,7 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
             ctx.drawImage(resultImg, 0, 0);
 
             setHasChanges(true);
+            setDimensions({ width: resultImg.width, height: resultImg.height });
             setAiStatusText('');
         } catch (error) {
             console.error('AI background removal error:', error);
@@ -207,6 +216,75 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
             setIsAiLoading(false);
         }
     };
+
+    const handleWidthChange = (e) => {
+        const val = e.target.value;
+        setResizeWidth(val);
+        if (keepAspectRatio && dimensions.width > 0 && val) {
+            const parsedVal = parseInt(val, 10);
+            if (!isNaN(parsedVal)) {
+                const ratio = dimensions.height / dimensions.width;
+                setResizeHeight(Math.round(parsedVal * ratio).toString());
+            }
+        }
+    };
+
+    const handleHeightChange = (e) => {
+        const val = e.target.value;
+        setResizeHeight(val);
+        if (keepAspectRatio && dimensions.height > 0 && val) {
+            const parsedVal = parseInt(val, 10);
+            if (!isNaN(parsedVal)) {
+                const ratio = dimensions.width / dimensions.height;
+                setResizeWidth(Math.round(parsedVal * ratio).toString());
+            }
+        }
+    };
+
+    const applyResize = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        const newWidth = parseInt(resizeWidth, 10);
+        const newHeight = parseInt(resizeHeight, 10);
+
+        if (isNaN(newWidth) || isNaN(newHeight) || newWidth <= 0 || newHeight <= 0) {
+            alert('Пожалуйста, введите корректные размеры больше 0');
+            return;
+        }
+
+        saveToHistory();
+
+        // Create temporary canvas to hold current content
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(canvas, 0, 0);
+
+        // Update canvas size
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        ctx.clearRect(0, 0, newWidth, newHeight);
+
+        // Enable smoothing for better scaling quality
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, 0, 0, newWidth, newHeight);
+
+        setHasChanges(true);
+        setDimensions({ width: newWidth, height: newHeight });
+    };
+
+    useEffect(() => {
+        if (activeTab === 'resize' && dimensions.width > 0) {
+            setResizeWidth(dimensions.width.toString());
+            setResizeHeight(dimensions.height.toString());
+        }
+    }, [activeTab, dimensions]);
+
 
 
 
@@ -403,6 +481,18 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <h3 className="text-xl text-white m-0">Редактор изображения</h3>
+                        {dimensions.width > 0 && (
+                            <span style={{
+                                background: 'rgba(255, 255, 255, 0.1)',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                color: 'rgba(255,255,255,0.7)',
+                                border: '1px solid rgba(255,255,255,0.05)'
+                            }}>
+                                {dimensions.width} × {dimensions.height} px
+                            </span>
+                        )}
                     </div>
                     <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}>
                         <X size={24} />
@@ -419,6 +509,15 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
                     >
                         <Crop size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
                         Обрезка
+                    </button>
+                    <button
+                        className={`editor-tab ${activeTab === 'resize' ? 'active' : ''}`}
+                        onClick={() => {
+                            setActiveTab('resize');
+                        }}
+                    >
+                        <Maximize2 size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                        Размер
                     </button>
                     <button
                         className={`editor-tab ${activeTab === 'bg-remove' ? 'active' : ''}`}
@@ -517,6 +616,61 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
                         <button className="editor-btn editor-btn-primary" onClick={applyCrop}>
                             <Crop size={16} /> Применить обрезку
                         </button>
+                    )}
+
+                    {/* Resize Tab Controls */}
+                    {activeTab === 'resize' && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <input
+                                type="number"
+                                value={resizeWidth}
+                                onChange={handleWidthChange}
+                                placeholder="Ширина"
+                                title="Ширина"
+                                style={{
+                                    width: '70px',
+                                    padding: '6px 8px',
+                                    background: 'rgba(0,0,0,0.3)',
+                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    borderRadius: '6px',
+                                    color: 'white',
+                                    textAlign: 'center',
+                                    outline: 'none'
+                                }}
+                            />
+                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>×</span>
+                            <input
+                                type="number"
+                                value={resizeHeight}
+                                onChange={handleHeightChange}
+                                placeholder="Высота"
+                                title="Высота"
+                                style={{
+                                    width: '70px',
+                                    padding: '6px 8px',
+                                    background: 'rgba(0,0,0,0.3)',
+                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    borderRadius: '6px',
+                                    color: 'white',
+                                    textAlign: 'center',
+                                    outline: 'none'
+                                }}
+                            />
+                            
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginLeft: '4px', marginRight: '4px', userSelect: 'none' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={keepAspectRatio}
+                                    onChange={(e) => setKeepAspectRatio(e.target.checked)}
+                                    style={{ accentColor: 'var(--color-accent-gold, #fbbf24)', cursor: 'pointer' }}
+                                />
+                                Пропорции
+                            </label>
+
+                            <button className="editor-btn editor-btn-primary" onClick={applyResize} style={{ padding: '8px 12px', fontSize: '14px' }}>
+                                <Maximize2 size={14} /> Применить
+                            </button>
+                        </div>
                     )}
 
                     {/* Background Removal Tab Controls */}
