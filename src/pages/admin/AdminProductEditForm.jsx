@@ -30,7 +30,8 @@ export default function AdminProductEditForm({
     hasUnsavedChanges,
     activeVolumeTab,
     setActiveVolumeTab,
-    PRESET_COLORS
+    PRESET_COLORS,
+    saveMessage
 }) {
     const currentIndex = viewMode === 'edit' ? filteredProducts.findIndex(p => p.id === currentProduct.id) : -1;
     const totalFiltered = filteredProducts.length;
@@ -85,6 +86,24 @@ export default function AdminProductEditForm({
                         </div>
                     )}
 
+                    {saveMessage && (
+                        <span style={{ 
+                            color: saveMessage.includes('Ошибка') ? '#EF4444' : '#10B981', 
+                            fontSize: '0.9rem', 
+                            fontWeight: '600', 
+                            marginRight: '8px',
+                            background: saveMessage.includes('Ошибка') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            border: saveMessage.includes('Ошибка') ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            animation: 'fadeIn 0.25s ease-out'
+                        }}>
+                            {saveMessage}
+                        </span>
+                    )}
                     <button 
                         type="button" 
                         onClick={handleBack} 
@@ -101,7 +120,7 @@ export default function AdminProductEditForm({
                         style={{ padding: '10px 24px', borderRadius: '8px', opacity: isSavingProduct ? 0.7 : 1 }}
                         disabled={isSavingProduct}
                     >
-                        {isSavingProduct ? 'Сохранение...' : 'Сохранить товар'}
+                        {isSavingProduct ? 'Сохранение...' : 'Сохранить'}
                     </button>
                 </div>
             </div>
@@ -371,7 +390,18 @@ export default function AdminProductEditForm({
 
 
 
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem', marginTop: '2rem' }}>
+                            {saveMessage && (
+                                <span style={{ 
+                                    color: saveMessage.includes('Ошибка') ? '#EF4444' : '#10B981', 
+                                    fontSize: '0.85rem', 
+                                    fontWeight: '600',
+                                    marginRight: 'auto',
+                                    animation: 'fadeIn 0.25s ease-out'
+                                }}>
+                                    {saveMessage}
+                                </span>
+                            )}
                             <button type="button" onClick={handleBack} className="btn-secondary" style={{ padding: '8px 24px' }} disabled={isSavingProduct}>Закрыть</button>
                             <button 
                                 type="submit" 
@@ -379,7 +409,7 @@ export default function AdminProductEditForm({
                                 disabled={isSavingProduct}
                                 style={{ padding: '8px 24px', opacity: isSavingProduct ? 0.7 : 1 }}
                             >
-                                {isSavingProduct ? 'Сохранение...' : 'Сохранить товар'}
+                                {isSavingProduct ? 'Сохранение...' : 'Сохранить'}
                             </button>
                         </div>
                     </div>

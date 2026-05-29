@@ -20,6 +20,7 @@ export default function AdminProducts() {
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState('list'); // 'list' | 'edit' | 'create'
     const [originalProduct, setOriginalProduct] = useState(null);
+    const [saveMessage, setSaveMessage] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategoryFilter, setActiveCategoryFilter] = useState('Парфюмерия');
 
@@ -194,9 +195,11 @@ export default function AdminProducts() {
                 setCurrentProduct(prepared);
                 setOriginalProduct(prepared);
                 setViewMode('edit');
-                alert('Товар успешно сохранен');
+                setSaveMessage('Успешно сохранено');
+                setTimeout(() => setSaveMessage(''), 3000);
             } else {
-                alert('Ошибка при сохранении товара');
+                setSaveMessage('Ошибка при сохранении');
+                setTimeout(() => setSaveMessage(''), 3000);
             }
         } catch (error) {
             console.error('Error saving product:', error);
@@ -559,6 +562,7 @@ export default function AdminProducts() {
                 activeVolumeTab={activeVolumeTab}
                 setActiveVolumeTab={setActiveVolumeTab}
                 PRESET_COLORS={PRESET_COLORS}
+                saveMessage={saveMessage}
             />
         );
     }
