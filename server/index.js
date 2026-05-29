@@ -969,11 +969,11 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
                     messages: [
                         {
                             role: 'system',
-                            content: 'Ты — профессиональный парфюмерный копирайтер. Твоя задача — написать подробное описание аромата, пирамиду композиции и характеристики, а также выбрать ссылку на изображение флакона парфюма. Ниже предоставлен контекст поисковой выдачи, а также список найденных картинок-превью (в формате https://up.yimg.com/...). Выбери наиболее подходящую прямую ссылку на изображение флакона духов из этого списка. Если список пуст или в нем нет подходящего изображения духов, попробуй найти/сгенерировать прямую ссылку на изображение этого парфюма с Fragrantica (обычно формат https://fimgs.net/images/perfume/37891.jpg или аналогичный) или Parfumo, либо с официального сайта. Категорически запрещено выдумывать ноты или характеристики, которых нет в предоставленном контексте. Если информация отсутствует, напиши "Нет данных". Ты можешь писать красиво и эмоционально только в разделе "{Описание аромата}", но разделы "{Пирамида композиции}" и "{Характеристики}" должны быть абсолютно точными и соответствовать контексту. Выдавай ответ строго в запрашиваемом формате.'
+                            content: 'Ты — профессиональный парфюмерный копирайтер. Твоя задача — написать подробное описание аромата, пирамиду композиции и характеристики, а также выбрать ссылку на изображение флакона парфюма. Ниже предоставлен контекст поисковой выдачи, а также список найденных картинок-превью (в формате https://up.yimg.com/...). Выбери наиболее подходящую прямую ссылку на изображение флакона духов из этого списка. Если список пуст или в нем нет подходящего изображения духов, попробуй найти/сгенерировать прямую ссылку на изображение этого парфюма с Fragrantica (обычно формат https://fimgs.net/images/perfume/37891.jpg или аналогичный) или Parfumo, либо с официального сайта. Категорически запрещено выдумывать ноты или характеристики, которых нет в предоставленном контексте. Если информация отсутствует, напиши "Нет данных". Ты можешь писать красиво и эмоционально в разделе "{Описание аромата}" и кратко в разделе "{Краткое описание}" (строго не более 10 слов), но разделы "{Пирамида композиции}" и "{Характеристики}" должны быть абсолютно точными и соответствовать контексту. Выдавай ответ строго в запрашиваемом формате.'
                         },
                         {
                             role: 'user',
-                            content: `Вот результаты поиска в интернете о парфюме ${brand} - ${name}:\n${searchPageText}\n\nСписок найденных картинок-превью: ${JSON.stringify(uniqueCdnImages)}\n\nИсходя из этой информации, напиши подробное описание аромата в следующем формате:\n\nНазвание: ${brand} - ${name}\n\n{Изображение}\n[URL-ссылка на картинку]\n\n{Описание аромата}\n[Красивый эмоциональный текст 50-100 слов]\n\n{Пирамида композиции}\nВерхние ноты: ...\nСредние ноты: ...\nБазовые ноты: ...\n\n{Характеристики}\nКонцентрация: ...\nСтойкость: ...\nШлейф: ...`
+                            content: `Вот результаты поиска в интернете о парфюме ${brand} - ${name}:\n${searchPageText}\n\nСписок найденных картинок-превью: ${JSON.stringify(uniqueCdnImages)}\n\nИсходя из этой информации, напиши подробное описание аромата в следующем формате:\n\nНазвание: ${brand} - ${name}\n\n{Изображение}\n[URL-ссылка на картинку]\n\n{Краткое описание}\n[Краткое описание аромата емкой привлекательной фразой, строго не более 10 слов]\n\n{Описание аромата}\n[Красивый эмоциональный текст 50-100 слов]\n\n{Пирамида композиции}\nВерхние ноты: ...\nСредние ноты: ...\nБазовые ноты: ...\n\n{Характеристики}\nКонцентрация: ...\nСтойкость: ...\nШлейф: ...`
                         }
                     ],
                     temperature: 0.1,
@@ -988,24 +988,29 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
                     console.log(`[Autofill] Successfully generated response from DeepSeek`);
                     
                     const imgPattern = /(?:[\*\#\s\{\}\[\]\-:]*Изображение[\*\#\s\{\}\[\]\-:]*)/i;
+                    const shortDescPattern = /(?:[\*\#\s\{\}\[\]\-:]*Краткое описание[\*\#\s\{\}\[\]\-:]*)/i;
                     const descPattern = /(?:[\*\#\s\{\}\[\]\-:]*Описание аромата[\*\#\s\{\}\[\]\-:]*)/i;
                     const pyrPattern = /(?:[\*\#\s\{\}\[\]\-:]*Пирамида композиции[\*\#\s\{\}\[\]\-:]*)/i;
                     const charPattern = /(?:[\*\#\s\{\}\[\]\-:]*Характеристики[\*\#\s\{\}\[\]\-:]*)/i;
 
                     const imgIdx = generatedText.search(imgPattern);
+                    const shortDescIdx = generatedText.search(shortDescPattern);
                     const descIdx = generatedText.search(descPattern);
                     const pyrIdx = generatedText.search(pyrPattern);
                     const charIdx = generatedText.search(charPattern);
 
                     if (imgIdx !== -1) {
-                        let endIdx = descIdx !== -1 ? descIdx : (pyrIdx !== -1 ? pyrIdx : (charIdx !== -1 ? charIdx : generatedText.length));
+                        let endIdx = shortDescIdx !== -1 ? shortDescIdx : (descIdx !== -1 ? descIdx : (pyrIdx !== -1 ? pyrIdx : (charIdx !== -1 ? charIdx : generatedText.length)));
                         dsImgUrl = generatedText.substring(imgIdx, endIdx).replace(imgPattern, '').trim();
                         dsImgUrl = dsImgUrl.replace(/[\[\]\(\)]/g, '').trim();
                     }
+                    if (shortDescIdx !== -1) {
+                        let endIdx = descIdx !== -1 ? descIdx : (pyrIdx !== -1 ? pyrIdx : (charIdx !== -1 ? charIdx : generatedText.length));
+                        description = generatedText.substring(shortDescIdx, endIdx).replace(shortDescPattern, '').trim();
+                    }
                     if (descIdx !== -1) {
                         let endIdx = pyrIdx !== -1 ? pyrIdx : (charIdx !== -1 ? charIdx : generatedText.length);
-                        description = generatedText.substring(descIdx, endIdx).replace(descPattern, '').trim();
-                        fullDescription = description;
+                        fullDescription = generatedText.substring(descIdx, endIdx).replace(descPattern, '').trim();
                     }
                     if (pyrIdx !== -1) {
                         let endIdx = charIdx !== -1 ? charIdx : generatedText.length;
@@ -1015,8 +1020,15 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
                         characteristics = generatedText.substring(charIdx).replace(charPattern, '').trim();
                     }
 
-                    // Fallback in case formatting was unexpected
-                    if (!description && !compositionPyramid && !characteristics) {
+                    // Fallbacks
+                    if (fullDescription && !description) {
+                        description = fullDescription;
+                    } else if (description && !fullDescription) {
+                        fullDescription = description;
+                    }
+
+                    // Fallback in case formatting was totally unexpected
+                    if (!description && !fullDescription && !compositionPyramid && !characteristics) {
                         description = generatedText;
                         fullDescription = generatedText;
                     }
@@ -1048,6 +1060,7 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
                     if (aromoRes.ok) {
                         const aromoHtml = await aromoRes.text();
                         const paragraphs = [];
+                        let match;
                         const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
                         while ((match = pRegex.exec(aromoHtml)) !== null) {
                             const cleanText = match[1]
@@ -1085,7 +1098,7 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
         }
 
         // If both failed and we have no content
-        if (!description && uniqueUrls.length === 0) {
+        if (!description && !fullDescription && uniqueUrls.length === 0) {
             return res.status(404).json({ error: 'Не удалось сгенерировать описание и найти товар на Aromo.ru / Parfumo.com' });
         }
 
@@ -1150,15 +1163,24 @@ app.post('/api/products/autofill', authenticateAdmin, async (req, res) => {
             ? `${brand} - ${name} | Купить аксессуар в магазине Kapsula Parfume`
             : `${brand} - ${name} | Купить парфюм в магазине Kapsula Parfume`;
         const seoDescription = isAccessory
-            ? `Купить оригинальный аксессуар ${brand} - ${name} в интернет-магазине. ${description ? description.substring(0, 120) : ''}...`
-            : `Купить оригинальный парфюм ${brand} - ${name} в интернет-магазине. ${description ? description.substring(0, 120) : ''}...`;
+            ? `Купить оригинальный аксессуар ${brand} - ${name} в интернет-магазине. ${fullDescription ? fullDescription.substring(0, 120) : ''}...`
+            : `Купить оригинальный парфюм ${brand} - ${name} в интернет-магазине. ${fullDescription ? fullDescription.substring(0, 120) : ''}...`;
 
         const combinedUrls = [...uniqueCdnImages, ...uniqueUrls];
         const downloadedIndex = imageDownloaded ? combinedUrls.indexOf(downloadedUrl) : -1;
 
+        // Limit words function to guarantee maximum of 10 words for the short description
+        const limitWords = (text, maxWords) => {
+            if (!text) return '';
+            const cleanText = text.replace(/\s+/g, ' ').trim();
+            const words = cleanText.split(' ');
+            if (words.length <= maxWords) return cleanText;
+            return words.slice(0, maxWords).join(' ') + '...';
+        };
+
         res.json({
-            description,
-            fullDescription,
+            description: limitWords(description || fullDescription, 10),
+            fullDescription: fullDescription || description,
             compositionPyramid,
             characteristics,
             imgUrl,
