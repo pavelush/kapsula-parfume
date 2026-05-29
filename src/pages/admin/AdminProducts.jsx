@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Search, Image as ImageIcon, X, Check, Eye, EyeOff, ExternalLink, Wand2, RefreshCw, Scissors } from 'lucide-react';
 import ImageEditorModal from '../../components/ImageEditorModal';
+import AdminProductEditForm from './AdminProductEditForm';
 
 const PRESET_COLORS = [
     { name: 'Золотой', value: 'rgba(251, 191, 36, 0.15)' },
@@ -17,7 +18,8 @@ export default function AdminProducts() {
     const [products, setProducts] = useState([]);
     const [brands, setBrands] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [viewMode, setViewMode] = useState('list'); // 'list' | 'edit' | 'create'
+    const [originalProduct, setOriginalProduct] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategoryFilter, setActiveCategoryFilter] = useState('Парфюмерия');
 
@@ -76,12 +78,12 @@ export default function AdminProducts() {
     };
 
     useEffect(() => {
-        if (isModalOpen) {
+        if (viewMode !== 'list') {
             fetchMsStock(currentProduct.volumes[activeVolumeTab]?.sku);
         } else {
             setMsWarehouseStock([]);
         }
-    }, [activeVolumeTab, isModalOpen]);
+    }, [activeVolumeTab, viewMode]);
 
     const fetchProducts = async () => {
         setLoading(true);
@@ -168,7 +170,7 @@ export default function AdminProducts() {
 
             if (res.ok) {
                 fetchProducts();
-                setIsModalOpen(false);
+                setViewMode('list');
             } else {
                 alert('Ошибка при сохранении товара');
             }
@@ -188,19 +190,72 @@ export default function AdminProducts() {
         } catch (error) { }
     };
 
-    const openEditModal = (product) => {
+    const isProductEqual = (p1, p2) => {
+        if (!p1 || !p2) return p1 === p2;
+        
+        const basicFields = [
+            'name', 'description', 'fullDescription', 'brand', 'category', 
+            'colorTheme', 'imgUrl', 'is_active', 'slug', 'seoTitle', 
+            'seoDescription', 'fsa_link', 'compositionPyramid', 'characteristics'
+        ];
+        for (const field of basicFields) {
+            const val1 = p1[field] ?? '';
+            const val2 = p2[field] ?? '';
+            if (val1 !== val2) return false;
+        }
+
+        const vols = ['1', '3', '5', '10'];
+        for (const vol of vols) {
+            const v1 = p1.volumes?.[vol] || {};
+            const v2 = p2.volumes?.[vol] || {};
+            
+            const price1 = String(v1.price || '').trim();
+            const price2 = String(v2.price || '').trim();
+            const sku1 = String(v1.sku || '').trim();
+            const sku2 = String(v2.sku || '').trim();
+            
+            const stock1 = v1.stock !== undefined && v1.stock !== null ? String(v1.stock).trim() : '';
+            const stock2 = v2.stock !== undefined && v2.stock !== null ? String(v2.stock).trim() : '';
+
+            if (price1 !== price2 || sku1 !== sku2 || stock1 !== stock2) {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    const hasUnsavedChanges = () => {
+        return !isProductEqual(currentProduct, originalProduct);
+    };
+
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (viewMode !== 'list' && hasUnsavedChanges()) {
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [viewMode, currentProduct, originalProduct]);
+
+    const openEditMode = (product) => {
         setFoundUrls([]);
         setCurrentUrlIndex(0);
         setIsHoveringImage(false);
-        setCurrentProduct({
+        const prepared = {
             ...product,
             fullDescription: product.fullDescription || '',
             category: product.category || 'Парфюмерия',
             volumes: {
-                1: { price: product.prices['1']?.price || '', sku: product.prices['1']?.sku || '', stock: product.prices['1']?.stock ?? '' },
-                3: { price: product.prices['3']?.price || '', sku: product.prices['3']?.sku || '', stock: product.prices['3']?.stock ?? '' },
-                5: { price: product.prices['5']?.price || '', sku: product.prices['5']?.sku || '', stock: product.prices['5']?.stock ?? '' },
-                10: { price: product.prices['10']?.price || '', sku: product.prices['10']?.sku || '', stock: product.prices['10']?.stock ?? '' }
+                1: { price: product.prices?.['1']?.price || '', sku: product.prices?.['1']?.sku || '', stock: product.prices?.['1']?.stock ?? '' },
+                3: { price: product.prices?.['3']?.price || '', sku: product.prices?.['3']?.sku || '', stock: product.prices?.['3']?.stock ?? '' },
+                5: { price: product.prices?.['5']?.price || '', sku: product.prices?.['5']?.sku || '', stock: product.prices?.['5']?.stock ?? '' },
+                10: { price: product.prices?.['10']?.price || '', sku: product.prices?.['10']?.sku || '', stock: product.prices?.['10']?.stock ?? '' }
             },
             is_active: product.is_active !== undefined ? product.is_active : true,
             slug: product.slug || '',
@@ -209,9 +264,33 @@ export default function AdminProducts() {
             fsa_link: product.fsa_link || '',
             compositionPyramid: product.compositionPyramid || '',
             characteristics: product.characteristics || ''
-        });
+        };
+        setCurrentProduct(prepared);
+        setOriginalProduct(prepared);
         setActiveVolumeTab(product.category === 'Аксессуары' ? '1' : '3');
-        setIsModalOpen(true);
+        setViewMode('edit');
+    };
+
+    const handlePrevProduct = () => {
+        const currentIndex = filteredProducts.findIndex(p => p.id === currentProduct.id);
+        if (currentIndex > 0) {
+            if (hasUnsavedChanges()) {
+                const confirm = window.confirm('У вас есть несохраненные изменения. Перейти к другому товару без сохранения?');
+                if (!confirm) return;
+            }
+            openEditMode(filteredProducts[currentIndex - 1]);
+        }
+    };
+
+    const handleNextProduct = () => {
+        const currentIndex = filteredProducts.findIndex(p => p.id === currentProduct.id);
+        if (currentIndex !== -1 && currentIndex < filteredProducts.length - 1) {
+            if (hasUnsavedChanges()) {
+                const confirm = window.confirm('У вас есть несохраненные изменения. Перейти к другому товару без сохранения?');
+                if (!confirm) return;
+            }
+            openEditMode(filteredProducts[currentIndex + 1]);
+        }
     };
 
     const handleToggleActive = async (product) => {
@@ -231,13 +310,14 @@ export default function AdminProducts() {
         }
     };
 
-    const openAddModal = () => {
+    const openAddMode = () => {
         setFoundUrls([]);
         setCurrentUrlIndex(0);
         setIsHoveringImage(false);
         setCurrentProduct(initialProductState);
+        setOriginalProduct(initialProductState);
         setActiveVolumeTab('3');
-        setIsModalOpen(true);
+        setViewMode('create');
     };
 
     const filteredProducts = products.filter(p => {
@@ -424,11 +504,46 @@ export default function AdminProducts() {
         );
     };
 
+    if (viewMode !== 'list') {
+        return (
+            <AdminProductEditForm
+                viewMode={viewMode}
+                currentProduct={currentProduct}
+                setCurrentProduct={setCurrentProduct}
+                setViewMode={setViewMode}
+                brands={brands}
+                isSavingProduct={isSavingProduct}
+                handleSave={handleSave}
+                fetchMsStock={fetchMsStock}
+                msWarehouseStock={msWarehouseStock}
+                loadingMsStock={loadingMsStock}
+                handleAutofill={handleAutofill}
+                isAutofilling={isAutofilling}
+                handleImageUpload={handleImageUpload}
+                foundUrls={foundUrls}
+                currentUrlIndex={currentUrlIndex}
+                handleNextImage={handleNextImage}
+                isUpdatingImage={isUpdatingImage}
+                isImageEditorOpen={isImageEditorOpen}
+                setIsImageEditorOpen={setIsImageEditorOpen}
+                isHoveringImage={isHoveringImage}
+                setIsHoveringImage={setIsHoveringImage}
+                filteredProducts={filteredProducts}
+                handlePrevProduct={handlePrevProduct}
+                handleNextProduct={handleNextProduct}
+                hasUnsavedChanges={hasUnsavedChanges}
+                activeVolumeTab={activeVolumeTab}
+                setActiveVolumeTab={setActiveVolumeTab}
+                PRESET_COLORS={PRESET_COLORS}
+            />
+        );
+    }
+
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h2 className="text-2xl text-white">Управление товарами</h2>
-                <button onClick={openAddModal} className="btn-primary" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button onClick={openAddMode} className="btn-primary" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Plus size={18} /> Добавить товар
                 </button>
             </div>
@@ -517,7 +632,7 @@ export default function AdminProducts() {
                                     <td>
                                         <div style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', textTransform: 'uppercase' }}>{product.category || 'Парфюмерия'} | {product.brand}</div>
                                         <div 
-                                            onClick={() => openEditModal(product)}
+                                            onClick={() => openEditMode(product)}
                                             style={{ 
                                                 fontWeight: 500, 
                                                 color: 'white', 
@@ -550,7 +665,7 @@ export default function AdminProducts() {
                                             <button onClick={() => handleToggleActive(product)} className="admin-action-btn" title={product.is_active ? "Скрыть из каталога" : "Показать в каталоге"} style={{ color: product.is_active ? 'var(--color-text)' : 'var(--color-text-muted)', display: 'inline-flex', alignItems: 'center' }}>
                                                 {product.is_active ? <Eye size={18} /> : <EyeOff size={18} />}
                                             </button>
-                                            <button onClick={() => openEditModal(product)} className="admin-action-btn" title="Редактировать" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                            <button onClick={() => openEditMode(product)} className="admin-action-btn" title="Редактировать" style={{ display: 'inline-flex', alignItems: 'center' }}>
                                                 <Edit2 size={18} />
                                             </button>
                                             <button onClick={() => handleDelete(product.id)} className="admin-action-btn danger" title="Удалить" style={{ display: 'inline-flex', alignItems: 'center' }}>
@@ -566,533 +681,6 @@ export default function AdminProducts() {
                             )}
                         </tbody>
                     </table>
-                </div>
-            )}
-
-            {/* Modal */}
-            {isModalOpen && (
-                <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
-                    <div className="admin-card" style={{ width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
-                            <h3 className="text-xl text-white m-0" style={{ flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {currentProduct.id ? 'Редактировать товар' : 'Новый товар'}
-                            </h3>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-                                <button 
-                                    type="submit" 
-                                    form="product-form" 
-                                    className="btn-primary" 
-                                    disabled={isSavingProduct}
-                                    style={{ padding: '8px 20px', fontSize: '0.9rem', opacity: isSavingProduct ? 0.7 : 1 }}
-                                >
-                                    {isSavingProduct ? 'Сохранение...' : 'Сохранить товар'}
-                                </button>
-                                <button type="button" onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center' }} disabled={isSavingProduct}>
-                                    <X size={24} />
-                                </button>
-                            </div>
-                        </div>
-
-                        <form id="product-form" onSubmit={handleSave}>
-                            <div className="form-group" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <input
-                                    type="checkbox"
-                                    id="is_active"
-                                    checked={currentProduct.is_active}
-                                    onChange={(e) => setCurrentProduct({ ...currentProduct, is_active: e.target.checked })}
-                                    style={{ width: '18px', height: '18px', accentColor: 'var(--color-accent-gold)' }}
-                                />
-                                <label htmlFor="is_active" style={{ marginBottom: 0, cursor: 'pointer', color: 'white' }}>Показывать этот товар в каталоге</label>
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem' }}>
-                                <div className="form-group">
-                                    <label>Категория</label>
-                                    <select
-                                        className="form-control"
-                                        value={currentProduct.category}
-                                        onChange={(e) => {
-                                            const newCategory = e.target.value;
-                                            setCurrentProduct({ ...currentProduct, category: newCategory });
-                                            setActiveVolumeTab(newCategory === 'Аксессуары' ? '1' : '3');
-                                        }}
-                                        required
-                                    >
-                                        <option value="Парфюмерия">Парфюмерия</option>
-                                        <option value="Аксессуары">Аксессуары</option>
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label>Бренд</label>
-                                    <select
-                                        className="form-control"
-                                        value={currentProduct.brand}
-                                        onChange={(e) => setCurrentProduct({ ...currentProduct, brand: e.target.value })}
-                                        required
-                                    >
-                                        <option value="">Выберите бренд</option>
-                                        {brands.map(b => (
-                                            <option key={b.id} value={b.name}>{b.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <style>{`
-                                        @keyframes wand-spin {
-                                            from { transform: rotate(0deg); }
-                                            to { transform: rotate(360deg); }
-                                        }
-                                        .wand-spinner {
-                                            animation: wand-spin 1.5s linear infinite;
-                                        }
-                                    `}</style>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                        <label style={{ marginBottom: 0 }}>Название</label>
-                                        {currentProduct.brand && currentProduct.name && (
-                                            <button
-                                                type="button"
-                                                onClick={handleAutofill}
-                                                disabled={isAutofilling}
-                                                title="Автозаполнение полей товара (Aromo.ru)"
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '4px',
-                                                    background: 'linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)',
-                                                    border: 'none',
-                                                    borderRadius: '4px',
-                                                    color: 'white',
-                                                    padding: '4px 8px',
-                                                    fontSize: '11px',
-                                                    fontWeight: '500',
-                                                    cursor: 'pointer',
-                                                    boxShadow: '0 2px 4px rgba(124, 58, 237, 0.3)',
-                                                    transition: 'all 0.2s ease',
-                                                    opacity: isAutofilling ? 0.7 : 1
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.transform = 'translateY(-1px)';
-                                                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(124, 58, 237, 0.4)';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.transform = 'translateY(0)';
-                                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(124, 58, 237, 0.3)';
-                                                }}
-                                            >
-                                                <Wand2 size={12} className={isAutofilling ? 'wand-spinner' : ''} />
-                                                {isAutofilling ? 'Заполнение...' : 'Автозаполнение'}
-                                            </button>
-                                        )}
-                                    </div>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={currentProduct.name}
-                                        onChange={(e) => setCurrentProduct({ ...currentProduct, name: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="form-group">
-                                <label>Краткое описание</label>
-                                <textarea
-                                    className="form-control"
-                                    rows="2"
-                                    value={currentProduct.description || ''}
-                                    onChange={(e) => setCurrentProduct({ ...currentProduct, description: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Полное описание</label>
-                                <textarea
-                                    className="form-control"
-                                    rows="4"
-                                    value={currentProduct.fullDescription || ''}
-                                    onChange={(e) => setCurrentProduct({ ...currentProduct, fullDescription: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Пирамида композиции</label>
-                                <textarea
-                                    className="form-control"
-                                    rows="4"
-                                    value={currentProduct.compositionPyramid || ''}
-                                    onChange={(e) => setCurrentProduct({ ...currentProduct, compositionPyramid: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Характеристики</label>
-                                <textarea
-                                    className="form-control"
-                                    rows="4"
-                                    value={currentProduct.characteristics || ''}
-                                    onChange={(e) => setCurrentProduct({ ...currentProduct, characteristics: e.target.value })}
-                                />
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                <div className="form-group">
-                                    <label>Изображение товара (загрузить файл)</label>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="form-control"
-                                        style={{ padding: '6px' }}
-                                        onChange={handleImageUpload}
-                                    />
-                                    {currentProduct.imgUrl && (
-                                        <div 
-                                            onMouseEnter={() => setIsHoveringImage(true)}
-                                            onMouseLeave={() => setIsHoveringImage(false)}
-                                            style={{
-                                                position: 'relative',
-                                                marginTop: '10px',
-                                                width: '80px',
-                                                height: '80px',
-                                                background: 'rgba(255,255,255,0.05)',
-                                                borderRadius: '8px',
-                                                overflow: 'visible',
-                                                border: '1px solid rgba(255,255,255,0.1)'
-                                            }}
-                                        >
-                                            <div style={{ width: '100%', height: '100%', borderRadius: '8px', overflow: 'hidden' }}>
-                                                <img src={currentProduct.imgUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                            </div>
-
-                                            {currentProduct.imgUrl && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setIsImageEditorOpen(true)}
-                                                    title="Редактировать фото (обрезка, удаление фона)"
-                                                    style={{
-                                                        position: 'absolute',
-                                                        left: '4px',
-                                                        bottom: '4px',
-                                                        background: 'rgba(15, 23, 42, 0.85)',
-                                                        border: 'none',
-                                                        borderRadius: '50%',
-                                                        width: '24px',
-                                                        height: '24px',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        color: '#f8fafc',
-                                                        cursor: 'pointer',
-                                                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
-                                                        transition: 'all 0.2s ease',
-                                                        zIndex: 10
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                        e.currentTarget.style.background = '#7c3aed';
-                                                        e.currentTarget.style.transform = 'scale(1.1)';
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                        e.currentTarget.style.background = 'rgba(15, 23, 42, 0.85)';
-                                                        e.currentTarget.style.transform = 'scale(1)';
-                                                    }}
-                                                >
-                                                    <Scissors size={12} />
-                                                </button>
-                                            )}
-
-                                            {foundUrls && (foundUrls.length > 1 || (foundUrls.length === 1 && currentUrlIndex === -1)) && (
-                                                <button
-                                                    type="button"
-                                                    onClick={handleNextImage}
-                                                    disabled={isUpdatingImage}
-                                                    title={currentUrlIndex === -1 ? 'Загрузить фото из найденных источников' : `Найти другое фото (вариант ${currentUrlIndex + 1} из ${foundUrls.length})`}
-                                                    style={{
-                                                        position: 'absolute',
-                                                        right: '4px',
-                                                        bottom: '4px',
-                                                        background: 'rgba(15, 23, 42, 0.85)',
-                                                        border: 'none',
-                                                        borderRadius: '50%',
-                                                        width: '24px',
-                                                        height: '24px',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        color: '#f8fafc',
-                                                        cursor: 'pointer',
-                                                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
-                                                        transition: 'all 0.2s ease',
-                                                        opacity: isUpdatingImage ? 0.6 : 1,
-                                                        zIndex: 10
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                        e.currentTarget.style.background = '#7c3aed';
-                                                        e.currentTarget.style.transform = 'scale(1.1)';
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                        e.currentTarget.style.background = 'rgba(15, 23, 42, 0.85)';
-                                                        e.currentTarget.style.transform = 'scale(1)';
-                                                    }}
-                                                >
-                                                    <style>{`
-                                                        @keyframes image-spin {
-                                                            from { transform: rotate(0deg); }
-                                                            to { transform: rotate(360deg); }
-                                                        }
-                                                        .image-spinner {
-                                                            animation: image-spin 1s linear infinite;
-                                                        }
-                                                    `}</style>
-                                                    <RefreshCw size={12} className={isUpdatingImage ? 'image-spinner' : ''} />
-                                                </button>
-                                            )}
-
-                                            {isHoveringImage && (
-                                                <div style={{
-                                                    position: 'absolute',
-                                                    bottom: '90px',
-                                                    left: '0',
-                                                    zIndex: 100,
-                                                    background: '#1e293b',
-                                                    border: '1px solid rgba(255,255,255,0.2)',
-                                                    borderRadius: '12px',
-                                                    padding: '8px',
-                                                    boxShadow: '0 10px 25px -5px rgba(0,0,0,0.7), 0 8px 10px -6px rgba(0,0,0,0.7)',
-                                                    maxWidth: '400px',
-                                                    maxHeight: '600px',
-                                                    overflow: 'hidden',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    animation: 'fadeIn 0.2s ease-out'
-                                                }}>
-                                                    <style>{`
-                                                        @keyframes fadeIn {
-                                                            from { opacity: 0; transform: translateY(4px); }
-                                                            to { opacity: 1; transform: translateY(0); }
-                                                        }
-                                                    `}</style>
-                                                    <img 
-                                                        src={currentProduct.imgUrl} 
-                                                        alt="Full Preview" 
-                                                        style={{ 
-                                                            maxWidth: '384px',
-                                                            maxHeight: '584px',
-                                                            objectFit: 'contain',
-                                                            borderRadius: '8px'
-                                                        }} 
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="form-group">
-                                    <label>Цветовая тема (свечение)</label>
-                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                                        {PRESET_COLORS.map(color => (
-                                            <button
-                                                key={color.value}
-                                                type="button"
-                                                title={color.name}
-                                                onClick={() => setCurrentProduct({ ...currentProduct, colorTheme: color.value })}
-                                                style={{
-                                                    width: '30px',
-                                                    height: '30px',
-                                                    borderRadius: '50%',
-                                                    border: currentProduct.colorTheme === color.value ? '2px solid white' : '1px solid rgba(255,255,255,0.2)',
-                                                    background: color.value.replace('0.15', '1'), // Solid color for the button
-                                                    cursor: 'pointer',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    transition: 'all 0.2s ease',
-                                                    transform: currentProduct.colorTheme === color.value ? 'scale(1.15)' : 'scale(1)'
-                                                }}
-                                            >
-                                                {currentProduct.colorTheme === color.value && <Check size={16} color="white" />}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={currentProduct.colorTheme}
-                                        placeholder="rgba(251, 191, 36, 0.15)"
-                                        onChange={(e) => setCurrentProduct({ ...currentProduct, colorTheme: e.target.value })}
-                                        style={{ fontSize: '0.8rem', opacity: 0.7 }}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="form-group">
-                                <label>Ссылка на реестр Росаккредитации (FSA)</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    value={currentProduct.fsa_link || ''}
-                                    onChange={(e) => setCurrentProduct({ ...currentProduct, fsa_link: e.target.value })}
-                                    placeholder="https://pub.fsa.gov.ru/..."
-                                />
-                            </div>
-
-                            <h4 style={{ color: 'white', marginBottom: '1rem', marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>SEO настройки</h4>
-                            <div className="form-group">
-                                <label>URL (slug)</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    value={currentProduct.slug || ''}
-                                    onChange={(e) => setCurrentProduct({ ...currentProduct, slug: e.target.value })}
-                                    placeholder="nazvanie-tovara (оставьте пустым для автогенерации)"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>SEO Title</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    value={currentProduct.seoTitle || ''}
-                                    onChange={(e) => setCurrentProduct({ ...currentProduct, seoTitle: e.target.value })}
-                                    placeholder="Заголовок для поисковиков (оставьте пустым для автозаполнения)"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>SEO Description</label>
-                                <textarea
-                                    className="form-control"
-                                    rows="2"
-                                    value={currentProduct.seoDescription || ''}
-                                    onChange={(e) => setCurrentProduct({ ...currentProduct, seoDescription: e.target.value })}
-                                    placeholder="Описание для поисковиков (оставьте пустым для автозаполнения из краткого описания)"
-                                />
-                            </div>
-
-                            {currentProduct.category !== 'Аксессуары' ? (
-                                <>
-                                    <h4 style={{ color: 'white', marginBottom: '1rem', marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>Настройка объемов и цен (МойСклад)</h4>
-                                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
-                                        {['3', '5', '10'].map(vol => (
-                                            <button
-                                                key={vol}
-                                                type="button"
-                                                onClick={() => setActiveVolumeTab(vol)}
-                                                style={{
-                                                    padding: '8px 16px',
-                                                    background: activeVolumeTab === vol ? 'var(--color-accent-gold)' : 'transparent',
-                                                    color: activeVolumeTab === vol ? 'black' : 'white',
-                                                    border: 'none',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer',
-                                                    fontWeight: activeVolumeTab === vol ? '600' : '400',
-                                                    transition: 'all 0.2s',
-                                                }}
-                                            >
-                                                {vol} мл
-                                            </button>
-                                        ))}
-                                    </div>
-                                </>
-                            ) : (
-                                <h4 style={{ color: 'white', marginBottom: '1rem', marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>Настройка цены и остатка (МойСклад)</h4>
-                            )}
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                <div className="form-group" style={{ marginBottom: 0 }}>
-                                    <label>Цена (₽)</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={currentProduct.volumes[activeVolumeTab].price}
-                                        onChange={(e) => setCurrentProduct({
-                                            ...currentProduct,
-                                            volumes: {
-                                                ...currentProduct.volumes,
-                                                [activeVolumeTab]: { ...currentProduct.volumes[activeVolumeTab], price: e.target.value }
-                                            }
-                                        })}
-                                        placeholder="Например: 1 500"
-                                    />
-                                </div>
-                                <div className="form-group" style={{ marginBottom: 0 }}>
-                                    <label>Код товара (MS SKU)</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={currentProduct.volumes[activeVolumeTab].sku}
-                                        onChange={(e) => setCurrentProduct({
-                                            ...currentProduct,
-                                            volumes: {
-                                                ...currentProduct.volumes,
-                                                [activeVolumeTab]: { ...currentProduct.volumes[activeVolumeTab], sku: e.target.value }
-                                            }
-                                        })}
-                                        onBlur={(e) => fetchMsStock(e.target.value)}
-                                        placeholder="Например: ART-123"
-                                    />
-                                </div>
-                                <div className="form-group" style={{ marginBottom: 0 }}>
-                                    <label>Остаток на складе</label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        value={currentProduct.volumes[activeVolumeTab].stock}
-                                        onChange={(e) => setCurrentProduct({
-                                            ...currentProduct,
-                                            volumes: {
-                                                ...currentProduct.volumes,
-                                                [activeVolumeTab]: { ...currentProduct.volumes[activeVolumeTab], stock: e.target.value }
-                                            }
-                                        })}
-                                        placeholder="Например: 10"
-                                    />
-                                    <small style={{ color: 'var(--color-text-muted)', display: 'block', marginTop: '0.4rem', fontSize: '0.75rem' }}>Если остаток 0, кнопка скроется на сайте.</small>
-                                </div>
-                            </div>
-
-                            {currentProduct.volumes[activeVolumeTab]?.sku && (
-                                <div style={{ marginTop: '1.5rem', padding: '1.2rem', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between' }}>
-                                        <span>Остатки по складам (МойСклад):</span>
-                                        {loadingMsStock && <span style={{ color: 'var(--color-accent-gold)' }}>Загрузка...</span>}
-                                    </div>
-                                    {loadingMsStock ? (
-                                        <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)' }}>Получение данных из МойСклад...</div>
-                                    ) : msWarehouseStock && msWarehouseStock.length > 0 ? (
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.75rem' }}>
-                                            {msWarehouseStock.map((wh) => {
-                                                const available = (wh.stock || 0) - (wh.reserve || 0);
-                                                return (
-                                                    <div key={wh.name} style={{ background: 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                        <div style={{ fontWeight: '500', color: 'white', fontSize: '0.9rem', marginBottom: '2px' }}>{wh.name}</div>
-                                                        <div style={{ fontSize: '0.8rem', color: available > 0 ? 'var(--color-accent-gold)' : 'var(--color-text-muted)' }}>
-                                                            Доступно: <strong style={{ color: available > 0 ? '#10B981' : '#EF4444' }}>{available}</strong> 
-                                                            <span style={{ opacity: 0.7, marginLeft: '6px' }}>(физ: {wh.stock || 0}, рез: {wh.reserve || 0})</span>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-                                            Нет данных по складам или товар с кодом "{currentProduct.volumes[activeVolumeTab]?.sku}" не найден в МойСклад.
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary" style={{ padding: '8px 24px' }} disabled={isSavingProduct}>Отмена</button>
-                                <button 
-                                    type="submit" 
-                                    className="btn-primary" 
-                                    disabled={isSavingProduct}
-                                    style={{ padding: '8px 24px', opacity: isSavingProduct ? 0.7 : 1 }}
-                                >
-                                    {isSavingProduct ? 'Сохранение...' : 'Сохранить товар'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
                 </div>
             )}
 
@@ -1129,16 +717,6 @@ export default function AdminProducts() {
                         }} 
                     />
                 </div>
-            )}
-            {isImageEditorOpen && (
-                <ImageEditorModal
-                    imageUrl={currentProduct.imgUrl}
-                    onSave={(newUrl) => {
-                        setCurrentProduct(prev => ({ ...prev, imgUrl: newUrl }));
-                        setIsImageEditorOpen(false);
-                    }}
-                    onClose={() => setIsImageEditorOpen(false)}
-                />
             )}
         </div>
     );
