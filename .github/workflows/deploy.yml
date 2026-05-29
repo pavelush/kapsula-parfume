@@ -69,14 +69,6 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "ln -sfn /var/www/kapsula/data/www/api-server/uploads /var/www/kapsula/data/www/kapsula-parfume.ru/uploads"
 
-      - name: Restart Backend with PM2
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-        run: |
-          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "export NVM_DIR=\"\$HOME/.nvm\" && [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\" && cd /var/www/kapsula/data/www/api-server && npm ci && pm2 restart kapsula-backend --update-env || pm2 start index.js --name kapsula-backend --update-env"
-
       - name: Configure RMBG API on Main Server
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -91,4 +83,13 @@ jobs:
             sed -i '/^RMBG_SECRET_KEY=/d' .env
             echo "RMBG_SECRET_KEY=a7ad32861e31aa9dade80326b17fbf63a94a165be4c71218" >> .env
           REMOTE_SCRIPT
+
+      - name: Restart Backend with PM2
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          ssh -i ~/.ssh/id_ed25519 $SERVER_USER@$SERVER_HOST "export NVM_DIR=\"\$HOME/.nvm\" && [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\" && cd /var/www/kapsula/data/www/api-server && npm ci && pm2 restart kapsula-backend --update-env || pm2 start index.js --name kapsula-backend --update-env"
+
 

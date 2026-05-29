@@ -3,8 +3,6 @@ RMBG-2.0 Background Removal Microservice
 =========================================
 Lightweight Flask service that loads the RMBG-2.0 model once at startup
 and exposes an HTTP endpoint for background removal.
-
-Runs on localhost:5001, managed by PM2 alongside the Node.js backend.
 """
 
 import os
@@ -34,17 +32,15 @@ import torch
 from torchvision import transforms
 from transformers import AutoModelForImageSegmentation
 from PIL import Image
-import numpy as np
 from huggingface_hub import login
 
 # Authenticate with HuggingFace
 login(token=HF_TOKEN)
 
-# Load the model
+# Load the model (use float32 on CPU for native AVX2 speedup; bfloat16 is extremely slow on CPU)
 model = AutoModelForImageSegmentation.from_pretrained(
     "briaai/RMBG-2.0",
-    trust_remote_code=True,
-    torch_dtype=torch.bfloat16
+    trust_remote_code=True
 )
 model.eval()
 
@@ -52,7 +48,7 @@ model.eval()
 device = torch.device('cpu')
 model.to(device)
 
-logger.info("RMBG-2.0 model loaded successfully in bfloat16!")
+logger.info("RMBG-2.0 model loaded successfully in float32!")
 
 # ── Image preprocessing ─────────────────────────────────────────────────────
 transform_pipeline = transforms.Compose([
@@ -63,6 +59,8 @@ transform_pipeline = transforms.Compose([
 
 # ── Flask app ────────────────────────────────────────────────────────────────
 app = Flask(__name__)
+
+SECRET_KEY = os.environ.get('RMBG_SECRET_KEY')
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -77,6 +75,12 @@ def remove_bg():
     Expects: multipart/form-data with field 'image'
     Returns: PNG image with transparent background
     """
+    if SECRET_KEY:
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or auth_header != f"Bearer {SECRET_KEY}":
+            logger.warning("Unauthorized access attempt")
+            return jsonify({"error": "Unauthorized"}), 401
+
     if 'image' not in request.files:
         return jsonify({"error": "No image file provided"}), 400
 
@@ -89,12 +93,12 @@ def remove_bg():
         
         logger.info(f"Processing image: {original_size[0]}x{original_size[1]}")
         
-        # Preprocess (convert tensor to bfloat16)
-        input_tensor = transform_pipeline(image).unsqueeze(0).to(device, dtype=torch.bfloat16)
+        # Preprocess (convert tensor)
+        input_tensor = transform_pipeline(image).unsqueeze(0).to(device)
         
         # Inference
         with torch.no_grad():
-            preds = model(input_tensor)[-1].sigmoid().to(torch.float32)
+            preds = model(input_tensor)[-1].sigmoid()
         
         # Post-process: resize mask back to original image size
         mask = preds[0].squeeze()
@@ -116,7 +120,7 @@ def remove_bg():
         result.save(output_buffer, format='PNG', optimize=True)
         output_buffer.seek(0)
         
-        logger.info(f"Background removed successfully")
+        logger.info("Background removed successfully")
         
         return send_file(
             output_buffer,
@@ -132,4 +136,4 @@ def remove_bg():
 if __name__ == '__main__':
     port = int(os.environ.get('RMBG_PORT', 5001))
     logger.info(f"Starting RMBG-2.0 service on port {port}...")
-    app.run(host='127.0.0.1', port=port, threaded=True)
+    app.run(host='0.0.0.0', port=port, threaded=True)
