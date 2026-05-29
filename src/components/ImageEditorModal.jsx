@@ -166,11 +166,11 @@ const ImageEditorModal = ({ imageUrl, onSave, onClose }) => {
         setAiStatusText('Загрузка нейросети (около 70 МБ)...');
 
         try {
-            // Using latest v3 version
-            const { pipeline, env, RawImage } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3/dist/transformers.min.js');
+            // Using latest v4 version which supports modnet natively
+            const { pipeline, env, RawImage } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0/dist/transformers.min.js');
 
             env.allowLocalModels = false;
-            env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3/dist/';
+            env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0/dist/';
 
             if (!segmenterRef.current) {
                 setAiStatusText('Инициализация ИИ-модели...');
