@@ -198,7 +198,7 @@ export default function AdminProducts() {
         } else {
             setMsWarehouseStock([]);
         }
-    }, [activeVolumeTab, viewMode]);
+    }, [activeVolumeTab, viewMode, currentProduct.id]);
 
     const fetchProducts = async () => {
         setLoading(true);
