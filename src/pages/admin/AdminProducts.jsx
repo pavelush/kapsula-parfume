@@ -54,10 +54,12 @@ export default function AdminProducts() {
     // Autofill cache and loading states for individual fields
     const [autofillCache, setAutofillCache] = useState({ brand: '', name: '', data: null });
     const [autofillingFields, setAutofillingFields] = useState({});
+    const [cacheUsedFields, setCacheUsedFields] = useState({});
 
     // Reset autofill cache if product brand or name changes
     useEffect(() => {
         setAutofillCache({ brand: '', name: '', data: null });
+        setCacheUsedFields({});
     }, [currentProduct.brand, currentProduct.name]);
 
     useEffect(() => {
@@ -523,7 +525,12 @@ export default function AdminProducts() {
         }
 
         // 2. Try cache for remote fields (description, fullDescription, compositionPyramid, characteristics)
+        const isFieldEmpty = !currentProduct[field];
+        const alreadyUsedCache = !!cacheUsedFields[field];
+
         if (
+            isFieldEmpty &&
+            !alreadyUsedCache &&
             autofillCache.brand === currentProduct.brand &&
             autofillCache.name === currentProduct.name &&
             autofillCache.data
@@ -533,6 +540,7 @@ export default function AdminProducts() {
                 ...prev,
                 [field]: cachedValue || prev[field]
             }));
+            setCacheUsedFields(prev => ({ ...prev, [field]: true }));
             return;
         }
 
@@ -559,6 +567,10 @@ export default function AdminProducts() {
                     name: currentProduct.name,
                     data
                 });
+
+                // Reset cache used flags for all other fields, but mark this field as used
+                // so clicking it again will force a fresh generation.
+                setCacheUsedFields({ [field]: true });
 
                 // Set field
                 if (field === 'seoDescription') {
