@@ -232,8 +232,9 @@ export default function AdminProducts() {
                 setSaveMessage('Успешно сохранено');
                 setTimeout(() => setSaveMessage(''), 3000);
             } else {
-                setSaveMessage('Ошибка при сохранении');
-                setTimeout(() => setSaveMessage(''), 3000);
+                const data = await res.json().catch(() => ({}));
+                setSaveMessage(data.error ? `Ошибка: ${data.error}` : 'Ошибка при сохранении');
+                setTimeout(() => setSaveMessage(''), 5000);
             }
         } catch (error) {
             console.error('Error saving product:', error);

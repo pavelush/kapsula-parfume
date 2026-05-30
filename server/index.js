@@ -740,6 +740,15 @@ app.get('/api/products', async (req, res) => {
 app.post('/api/products', authenticateAdmin, validateProductPayload, async (req, res) => {
     try {
         const { name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active, slug, seoTitle, seoDescription, category, fsa_link, compositionPyramid, characteristics } = req.body;
+
+        // Check if slug is already in use
+        if (slug) {
+            const slugCheck = await pool.query('SELECT 1 FROM products WHERE slug = $1', [slug]);
+            if (slugCheck.rows.length > 0) {
+                return res.status(400).json({ error: 'Товар с таким URL (slug) уже существует' });
+            }
+        }
+
         const result = await pool.query(
             'INSERT INTO products (name, brand, description, "fullDescription", "imgUrl", "colorTheme", prices, is_active, slug, "seoTitle", "seoDescription", category, fsa_link, "compositionPyramid", "characteristics") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *',
             [name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active !== undefined ? is_active : true, slug, seoTitle, seoDescription, category || 'Парфюмерия', fsa_link, compositionPyramid, characteristics]
@@ -1216,6 +1225,15 @@ app.put('/api/products/:id', authenticateAdmin, validateProductPayload, async (r
     try {
         const { id } = req.params;
         const { name, brand, description, fullDescription, imgUrl, colorTheme, prices, is_active, slug, seoTitle, seoDescription, category, fsa_link, compositionPyramid, characteristics } = req.body;
+
+        // Check if slug is already in use by another product
+        if (slug) {
+            const slugCheck = await pool.query('SELECT 1 FROM products WHERE slug = $1 AND id != $2', [slug, id]);
+            if (slugCheck.rows.length > 0) {
+                return res.status(400).json({ error: 'Товар с таким URL (slug) уже существует' });
+            }
+        }
+
         const activeValue = is_active !== undefined ? is_active : true;
         const result = await pool.query(
             'UPDATE products SET name = $1, brand = $2, description = $3, "fullDescription" = $4, "imgUrl" = $5, "colorTheme" = $6, prices = $7, is_active = $8, slug = $9, "seoTitle" = $10, "seoDescription" = $11, category = $12, fsa_link = $13, "compositionPyramid" = $14, "characteristics" = $15 WHERE id = $16 RETURNING *',
