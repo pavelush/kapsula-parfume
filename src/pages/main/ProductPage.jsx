@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ShoppingBag, ChevronLeft, Heart } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import Footer from '../../components/Footer';
+import NotFoundPage from './NotFoundPage';
 
 export default function ProductPage({ favorites = [], toggleFavorite = () => { }, addToCart = () => { } }) {
     const { slug } = useParams();
@@ -125,7 +126,7 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
                         const shuffled = sameBrand.sort(() => 0.5 - Math.random());
                         setRecommendedProducts(shuffled.slice(0, 3));
                     } else {
-                        navigate('/'); // redirect if not found
+                        setProduct(null);
                     }
                 }
             } catch (error) {
@@ -146,7 +147,9 @@ export default function ProductPage({ favorites = [], toggleFavorite = () => { }
         );
     }
 
-    if (!product) return null;
+    if (!product) {
+        return <NotFoundPage />;
+    }
 
     const currentPrice = product.prices[selectedVolume] || { price: "0" };
     const isFavorite = favorites.includes(product.id);
