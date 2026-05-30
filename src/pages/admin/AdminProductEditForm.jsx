@@ -473,18 +473,7 @@ export default function AdminProductEditForm({
 
                         {/* Product Image */}
                         <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0.5rem' }}>
-                                <h3 className="editor-section-title" style={{ borderBottom: 'none', marginBottom: 0, paddingBottom: 0 }}>Изображение</h3>
-                                <button
-                                    type="button"
-                                    onClick={() => handleAutofillField('imgUrl')}
-                                    disabled={autofillingFields['imgUrl'] || isUpdatingImage}
-                                    title="Найти изображения в интернете"
-                                    className="field-autofill-btn"
-                                >
-                                    <Wand2 size={13} className={(autofillingFields['imgUrl'] || isUpdatingImage) ? 'wand-spinner' : ''} />
-                                </button>
-                            </div>
+                            <h3 className="editor-section-title">Изображение</h3>
                             <div style={{ background: 'rgba(0, 0, 0, 0.2)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
                                 {currentProduct.imgUrl ? (
                                     <div 
@@ -505,6 +494,42 @@ export default function AdminProductEditForm({
                                     >
                                         <img src={currentProduct.imgUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '4px' }} />
                                         
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAutofillField('imgUrl')}
+                                            disabled={autofillingFields['imgUrl'] || isUpdatingImage}
+                                            title="Найти изображения в интернете"
+                                            style={{
+                                                position: 'absolute',
+                                                right: '8px',
+                                                top: '8px',
+                                                background: 'rgba(15, 23, 42, 0.85)',
+                                                border: 'none',
+                                                borderRadius: '50%',
+                                                width: '32px',
+                                                height: '32px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: '#f8fafc',
+                                                cursor: 'pointer',
+                                                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+                                                transition: 'all 0.2s ease',
+                                                opacity: (autofillingFields['imgUrl'] || isUpdatingImage) ? 0.6 : 1,
+                                                zIndex: 10
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = '#7c3aed';
+                                                e.currentTarget.style.transform = 'scale(1.1)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = 'rgba(15, 23, 42, 0.85)';
+                                                e.currentTarget.style.transform = 'scale(1)';
+                                            }}
+                                        >
+                                            <Wand2 size={14} className={(autofillingFields['imgUrl'] || isUpdatingImage) ? 'wand-spinner' : ''} />
+                                        </button>
+
                                         <button
                                             type="button"
                                             onClick={() => setIsImageEditorOpen(true)}
@@ -608,9 +633,45 @@ export default function AdminProductEditForm({
                                         )}
                                     </div>
                                 ) : (
-                                    <div style={{ width: '100%', height: '120px', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
+                                    <div style={{ position: 'relative', width: '100%', height: '120px', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
                                         <ImageIcon size={32} />
                                         <span style={{ fontSize: '0.8rem' }}>Изображение отсутствует</span>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAutofillField('imgUrl')}
+                                            disabled={autofillingFields['imgUrl'] || isUpdatingImage}
+                                            title="Найти изображения в интернете"
+                                            style={{
+                                                position: 'absolute',
+                                                right: '8px',
+                                                top: '8px',
+                                                background: 'rgba(15, 23, 42, 0.85)',
+                                                border: 'none',
+                                                borderRadius: '50%',
+                                                width: '32px',
+                                                height: '32px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: '#f8fafc',
+                                                cursor: 'pointer',
+                                                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+                                                transition: 'all 0.2s ease',
+                                                opacity: (autofillingFields['imgUrl'] || isUpdatingImage) ? 0.6 : 1,
+                                                zIndex: 10
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = '#7c3aed';
+                                                e.currentTarget.style.transform = 'scale(1.1)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = 'rgba(15, 23, 42, 0.85)';
+                                                e.currentTarget.style.transform = 'scale(1)';
+                                            }}
+                                        >
+                                            <Wand2 size={14} className={(autofillingFields['imgUrl'] || isUpdatingImage) ? 'wand-spinner' : ''} />
+                                        </button>
                                     </div>
                                 )}
 
