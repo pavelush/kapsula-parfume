@@ -14,6 +14,27 @@ const PRESET_COLORS = [
     { name: 'Белый/Серебро', value: 'rgba(255, 255, 255, 0.15)' }
 ];
 
+const getTransliteratedSlug = (brand, name) => {
+    const transliterate = (text) => {
+        const rus = {
+            'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y',
+            'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f',
+            'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+            ' ': '-'
+        };
+        return text.toLowerCase().split('').map(char => {
+            return rus[char] !== undefined ? rus[char] : char;
+        }).join('')
+          .replace(/[^a-z0-9-]/g, '')
+          .replace(/-+/g, '-')
+          .replace(/^-+|-+$/g, '');
+    };
+
+    const brandSlug = transliterate(brand || '');
+    const nameSlug = transliterate(name || '');
+    return `${brandSlug}-${nameSlug}`;
+};
+
 export default function AdminProducts() {
     const [products, setProducts] = useState([]);
     const [brands, setBrands] = useState([]);
@@ -137,20 +158,22 @@ export default function AdminProducts() {
             };
         }
 
-        const transliterate = (text) => {
-            const ru = {
-                'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh',
-                'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
-                'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts',
-                'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu',
-                'я': 'ya'
-            };
-            return text.toLowerCase().split('').map(char => ru[char] || char).join('').replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-        };
-
-        const finalSlug = currentProduct.slug || transliterate(currentProduct.name);
-        const finalSeoTitle = currentProduct.seoTitle || `${currentProduct.name} - ${currentProduct.brand}`;
-        const finalSeoDescription = currentProduct.seoDescription || currentProduct.description;
+        const finalSlug = currentProduct.slug || getTransliteratedSlug(currentProduct.brand, currentProduct.name);
+        
+        const isAccessory = currentProduct.category === 'Аксессуары';
+        const finalSeoTitle = currentProduct.seoTitle || (
+            isAccessory
+            ? `${currentProduct.brand} - ${currentProduct.name} | Купить аксессуар в магазине Kapsula Parfume`
+            : `${currentProduct.brand} - ${currentProduct.name} | Купить парфюм в магазине Kapsula Parfume`
+        );
+        
+        const descSource = currentProduct.fullDescription || currentProduct.description || '';
+        const cleanDesc = descSource.substring(0, 120);
+        const finalSeoDescription = currentProduct.seoDescription || (
+            isAccessory
+            ? `Купить оригинальный аксессуар ${currentProduct.brand} - ${currentProduct.name} в интернет-магазине. ${cleanDesc}...`
+            : `Купить оригинальный парфюм ${currentProduct.brand} - ${currentProduct.name} в интернет-магазине. ${cleanDesc}...`
+        );
 
         const payload = {
             name: currentProduct.name,
@@ -453,26 +476,7 @@ export default function AdminProducts() {
         }
     };
 
-    const getTransliteratedSlug = (brand, name) => {
-        const transliterate = (text) => {
-            const rus = {
-                'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y',
-                'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f',
-                'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
-                ' ': '-'
-            };
-            return text.toLowerCase().split('').map(char => {
-                return rus[char] !== undefined ? rus[char] : char;
-            }).join('')
-              .replace(/[^a-z0-9-]/g, '')
-              .replace(/-+/g, '-')
-              .replace(/^-+|-+$/g, '');
-        };
 
-        const brandSlug = transliterate(brand || '');
-        const nameSlug = transliterate(name || '');
-        return `${brandSlug}-${nameSlug}`;
-    };
 
     const handleAutofillField = async (field) => {
         if (!currentProduct.brand || !currentProduct.name) {
