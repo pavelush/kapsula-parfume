@@ -473,7 +473,18 @@ export default function AdminProductEditForm({
 
                         {/* Product Image */}
                         <div>
-                            <h3 className="editor-section-title">Изображение</h3>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0.5rem' }}>
+                                <h3 className="editor-section-title" style={{ borderBottom: 'none', marginBottom: 0, paddingBottom: 0 }}>Изображение</h3>
+                                <button
+                                    type="button"
+                                    onClick={() => handleAutofillField('imgUrl')}
+                                    disabled={autofillingFields['imgUrl'] || isUpdatingImage}
+                                    title="Найти изображения в интернете"
+                                    className="field-autofill-btn"
+                                >
+                                    <Wand2 size={13} className={(autofillingFields['imgUrl'] || isUpdatingImage) ? 'wand-spinner' : ''} />
+                                </button>
+                            </div>
                             <div style={{ background: 'rgba(0, 0, 0, 0.2)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
                                 {currentProduct.imgUrl ? (
                                     <div 

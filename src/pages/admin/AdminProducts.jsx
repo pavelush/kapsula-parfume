@@ -524,24 +524,49 @@ export default function AdminProducts() {
             // If description is missing, proceed to call the API to fetch details so we can generate description
         }
 
-        // 2. Try cache for remote fields (description, fullDescription, compositionPyramid, characteristics)
-        const isFieldEmpty = !currentProduct[field];
-        const alreadyUsedCache = !!cacheUsedFields[field];
+        // 2. Try cache for remote fields (description, fullDescription, compositionPyramid, characteristics, imgUrl)
+        if (field === 'imgUrl') {
+            const hasCache = autofillCache.brand === currentProduct.brand &&
+                             autofillCache.name === currentProduct.name &&
+                             autofillCache.data;
+            const alreadyUsedCache = !!cacheUsedFields['imgUrl'];
+            if (
+                hasCache &&
+                foundUrls.length === 0 &&
+                !alreadyUsedCache
+            ) {
+                const cachedImgUrl = autofillCache.data.imgUrl;
+                const cachedFoundUrls = autofillCache.data.foundUrls || [];
+                const cachedIndex = autofillCache.data.currentUrlIndex !== undefined ? autofillCache.data.currentUrlIndex : 0;
+                
+                setCurrentProduct(prev => ({
+                    ...prev,
+                    imgUrl: cachedImgUrl || prev.imgUrl
+                }));
+                setFoundUrls(cachedFoundUrls);
+                setCurrentUrlIndex(cachedIndex);
+                setCacheUsedFields(prev => ({ ...prev, imgUrl: true }));
+                return;
+            }
+        } else {
+            const isFieldEmpty = !currentProduct[field];
+            const alreadyUsedCache = !!cacheUsedFields[field];
 
-        if (
-            isFieldEmpty &&
-            !alreadyUsedCache &&
-            autofillCache.brand === currentProduct.brand &&
-            autofillCache.name === currentProduct.name &&
-            autofillCache.data
-        ) {
-            const cachedValue = autofillCache.data[field];
-            setCurrentProduct(prev => ({
-                ...prev,
-                [field]: cachedValue || prev[field]
-            }));
-            setCacheUsedFields(prev => ({ ...prev, [field]: true }));
-            return;
+            if (
+                isFieldEmpty &&
+                !alreadyUsedCache &&
+                autofillCache.brand === currentProduct.brand &&
+                autofillCache.name === currentProduct.name &&
+                autofillCache.data
+            ) {
+                const cachedValue = autofillCache.data[field];
+                setCurrentProduct(prev => ({
+                    ...prev,
+                    [field]: cachedValue || prev[field]
+                }));
+                setCacheUsedFields(prev => ({ ...prev, [field]: true }));
+                return;
+            }
         }
 
         // 3. Otherwise fetch from API
@@ -573,7 +598,14 @@ export default function AdminProducts() {
                 setCacheUsedFields({ [field]: true });
 
                 // Set field
-                if (field === 'seoDescription') {
+                if (field === 'imgUrl') {
+                    setCurrentProduct(prev => ({
+                        ...prev,
+                        imgUrl: data.imgUrl || prev.imgUrl
+                    }));
+                    setFoundUrls(data.foundUrls || []);
+                    setCurrentUrlIndex(data.currentUrlIndex !== undefined ? data.currentUrlIndex : 0);
+                } else if (field === 'seoDescription') {
                     const isAccessory = currentProduct.category === 'Аксессуары';
                     const descSource = data.fullDescription || data.description || '';
                     const cleanDesc = descSource.substring(0, 120);
