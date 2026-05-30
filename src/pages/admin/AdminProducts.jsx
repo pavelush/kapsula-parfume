@@ -51,6 +51,15 @@ export default function AdminProducts() {
     const [isImageEditorOpen, setIsImageEditorOpen] = useState(false);
     const [isSavingProduct, setIsSavingProduct] = useState(false);
 
+    // Autofill cache and loading states for individual fields
+    const [autofillCache, setAutofillCache] = useState({ brand: '', name: '', data: null });
+    const [autofillingFields, setAutofillingFields] = useState({});
+
+    // Reset autofill cache if product brand or name changes
+    useEffect(() => {
+        setAutofillCache({ brand: '', name: '', data: null });
+    }, [currentProduct.brand, currentProduct.name]);
+
     useEffect(() => {
         fetchProducts();
         fetchBrands();
@@ -424,6 +433,13 @@ export default function AdminProducts() {
                 }));
                 setFoundUrls(data.foundUrls || []);
                 setCurrentUrlIndex(hasExistingImage ? -1 : (data.currentUrlIndex !== undefined ? data.currentUrlIndex : 0));
+
+                // Save full response to cache for subsequent individual field autofill clicks
+                setAutofillCache({
+                    brand: currentProduct.brand,
+                    name: currentProduct.name,
+                    data
+                });
             } else {
                 alert(data.error || 'Произошла ошибка при автоматическом заполнении');
             }
@@ -432,6 +448,141 @@ export default function AdminProducts() {
             alert('Не удалось подключиться к серверу автозаполнения');
         } finally {
             setIsAutofilling(false);
+        }
+    };
+
+    const getTransliteratedSlug = (brand, name) => {
+        const transliterate = (text) => {
+            const rus = {
+                'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y',
+                'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f',
+                'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+                ' ': '-'
+            };
+            return text.toLowerCase().split('').map(char => {
+                return rus[char] !== undefined ? rus[char] : char;
+            }).join('')
+              .replace(/[^a-z0-9-]/g, '')
+              .replace(/-+/g, '-')
+              .replace(/^-+|-+$/g, '');
+        };
+
+        const brandSlug = transliterate(brand || '');
+        const nameSlug = transliterate(name || '');
+        return `${brandSlug}-${nameSlug}`;
+    };
+
+    const handleAutofillField = async (field) => {
+        if (!currentProduct.brand || !currentProduct.name) {
+            alert('Сначала выберите бренд и введите название товара');
+            return;
+        }
+
+        // 1. Local generation for deterministic fields
+        if (field === 'slug') {
+            const slugVal = getTransliteratedSlug(currentProduct.brand, currentProduct.name);
+            setCurrentProduct(prev => ({ ...prev, slug: slugVal }));
+            return;
+        }
+
+        if (field === 'seoTitle') {
+            const isAccessory = currentProduct.category === 'Аксессуары';
+            const seoTitleVal = isAccessory
+                ? `${currentProduct.brand} - ${currentProduct.name} | Купить аксессуар в магазине Kapsula Parfume`
+                : `${currentProduct.brand} - ${currentProduct.name} | Купить парфюм в магазине Kapsula Parfume`;
+            setCurrentProduct(prev => ({ ...prev, seoTitle: seoTitleVal }));
+            return;
+        }
+
+        if (field === 'seoDescription') {
+            const hasLocalDesc = !!(currentProduct.fullDescription || currentProduct.description);
+            const hasCache = autofillCache.brand === currentProduct.brand &&
+                             autofillCache.name === currentProduct.name &&
+                             autofillCache.data;
+
+            if (hasLocalDesc) {
+                const isAccessory = currentProduct.category === 'Аксессуары';
+                const descSource = currentProduct.fullDescription || currentProduct.description || '';
+                const cleanDesc = descSource.substring(0, 120);
+                const seoDescriptionVal = isAccessory
+                    ? `Купить оригинальный аксессуар ${currentProduct.brand} - ${currentProduct.name} в интернет-магазине. ${cleanDesc}...`
+                    : `Купить оригинальный парфюм ${currentProduct.brand} - ${currentProduct.name} в интернет-магазине. ${cleanDesc}...`;
+                setCurrentProduct(prev => ({ ...prev, seoDescription: seoDescriptionVal }));
+                return;
+            } else if (hasCache) {
+                const isAccessory = currentProduct.category === 'Аксессуары';
+                const descSource = autofillCache.data.fullDescription || autofillCache.data.description || '';
+                const cleanDesc = descSource.substring(0, 120);
+                const seoDescriptionVal = isAccessory
+                    ? `Купить оригинальный аксессуар ${currentProduct.brand} - ${currentProduct.name} в интернет-магазине. ${cleanDesc}...`
+                    : `Купить оригинальный парфюм ${currentProduct.brand} - ${currentProduct.name} в интернет-магазине. ${cleanDesc}...`;
+                setCurrentProduct(prev => ({ ...prev, seoDescription: seoDescriptionVal }));
+                return;
+            }
+            // If description is missing, proceed to call the API to fetch details so we can generate description
+        }
+
+        // 2. Try cache for remote fields (description, fullDescription, compositionPyramid, characteristics)
+        if (
+            autofillCache.brand === currentProduct.brand &&
+            autofillCache.name === currentProduct.name &&
+            autofillCache.data
+        ) {
+            const cachedValue = autofillCache.data[field];
+            setCurrentProduct(prev => ({
+                ...prev,
+                [field]: cachedValue || prev[field]
+            }));
+            return;
+        }
+
+        // 3. Otherwise fetch from API
+        setAutofillingFields(prev => ({ ...prev, [field]: true }));
+        try {
+            const res = await fetch('/api/products/autofill', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    brand: currentProduct.brand,
+                    name: currentProduct.name,
+                    category: currentProduct.category
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                // Update cache
+                setAutofillCache({
+                    brand: currentProduct.brand,
+                    name: currentProduct.name,
+                    data
+                });
+
+                // Set field
+                if (field === 'seoDescription') {
+                    const isAccessory = currentProduct.category === 'Аксессуары';
+                    const descSource = data.fullDescription || data.description || '';
+                    const cleanDesc = descSource.substring(0, 120);
+                    const seoDescriptionVal = isAccessory
+                        ? `Купить оригинальный аксессуар ${currentProduct.brand} - ${currentProduct.name} в интернет-магазине. ${cleanDesc}...`
+                        : `Купить оригинальный парфюм ${currentProduct.brand} - ${currentProduct.name} в интернет-магазине. ${cleanDesc}...`;
+                    setCurrentProduct(prev => ({ ...prev, seoDescription: seoDescriptionVal }));
+                } else {
+                    setCurrentProduct(prev => ({
+                        ...prev,
+                        [field]: data[field] || prev[field]
+                    }));
+                }
+            } else {
+                alert(data.error || 'Произошла ошибка при автоматическом заполнении');
+            }
+        } catch (error) {
+            console.error(`Autofill error for field ${field}:`, error);
+            alert('Не удалось подключиться к серверу автозаполнения');
+        } finally {
+            setAutofillingFields(prev => ({ ...prev, [field]: false }));
         }
     };
 
@@ -546,6 +697,8 @@ export default function AdminProducts() {
                 loadingMsStock={loadingMsStock}
                 handleAutofill={handleAutofill}
                 isAutofilling={isAutofilling}
+                handleAutofillField={handleAutofillField}
+                autofillingFields={autofillingFields}
                 handleImageUpload={handleImageUpload}
                 foundUrls={foundUrls}
                 currentUrlIndex={currentUrlIndex}

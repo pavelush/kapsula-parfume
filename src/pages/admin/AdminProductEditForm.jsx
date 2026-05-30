@@ -15,6 +15,8 @@ export default function AdminProductEditForm({
     loadingMsStock,
     handleAutofill,
     isAutofilling,
+    handleAutofillField,
+    autofillingFields = {},
     handleImageUpload,
     foundUrls,
     currentUrlIndex,
@@ -217,7 +219,18 @@ export default function AdminProductEditForm({
                         </div>
 
                         <div className="form-group">
-                            <label>Краткое описание</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                <label style={{ marginBottom: 0 }}>Краткое описание</label>
+                                <button
+                                    type="button"
+                                    onClick={() => handleAutofillField('description')}
+                                    disabled={autofillingFields['description']}
+                                    title="Заполнить краткое описание"
+                                    className="field-autofill-btn"
+                                >
+                                    <Wand2 size={13} className={autofillingFields['description'] ? 'wand-spinner' : ''} />
+                                </button>
+                            </div>
                             <textarea
                                 className="form-control"
                                 rows="2"
@@ -228,7 +241,18 @@ export default function AdminProductEditForm({
                         </div>
 
                         <div className="form-group">
-                            <label>Полное описание</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                <label style={{ marginBottom: 0 }}>Полное описание</label>
+                                <button
+                                    type="button"
+                                    onClick={() => handleAutofillField('fullDescription')}
+                                    disabled={autofillingFields['fullDescription']}
+                                    title="Заполнить полное описание"
+                                    className="field-autofill-btn"
+                                >
+                                    <Wand2 size={13} className={autofillingFields['fullDescription'] ? 'wand-spinner' : ''} />
+                                </button>
+                            </div>
                             <textarea
                                 className="form-control"
                                 rows="4"
@@ -240,7 +264,18 @@ export default function AdminProductEditForm({
 
                         {currentProduct.category === 'Парфюмерия' && (
                             <div className="form-group">
-                                <label>Пирамида композиции</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                    <label style={{ marginBottom: 0 }}>Пирамида композиции</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAutofillField('compositionPyramid')}
+                                        disabled={autofillingFields['compositionPyramid']}
+                                        title="Заполнить пирамиду композиции"
+                                        className="field-autofill-btn"
+                                    >
+                                        <Wand2 size={13} className={autofillingFields['compositionPyramid'] ? 'wand-spinner' : ''} />
+                                    </button>
+                                </div>
                                 <textarea
                                     className="form-control"
                                     rows="4"
@@ -252,7 +287,18 @@ export default function AdminProductEditForm({
                         )}
 
                         <div className="form-group">
-                            <label>Характеристики</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                <label style={{ marginBottom: 0 }}>Характеристики</label>
+                                <button
+                                    type="button"
+                                    onClick={() => handleAutofillField('characteristics')}
+                                    disabled={autofillingFields['characteristics']}
+                                    title="Заполнить характеристики"
+                                    className="field-autofill-btn"
+                                >
+                                    <Wand2 size={13} className={autofillingFields['characteristics'] ? 'wand-spinner' : ''} />
+                                </button>
+                            </div>
                             <textarea
                                 className="form-control"
                                 rows="4"
@@ -621,7 +667,18 @@ export default function AdminProductEditForm({
                             <h3 className="editor-section-title">SEO настройки</h3>
                             <div style={{ background: 'rgba(0, 0, 0, 0.2)', padding: '1.2rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 <div className="form-group" style={{ marginBottom: 0 }}>
-                                    <label>URL (slug)</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                        <label style={{ marginBottom: 0 }}>URL (slug)</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAutofillField('slug')}
+                                            disabled={autofillingFields['slug']}
+                                            title="Сгенерировать URL"
+                                            className="field-autofill-btn"
+                                        >
+                                            <Wand2 size={13} className={autofillingFields['slug'] ? 'wand-spinner' : ''} />
+                                        </button>
+                                    </div>
                                     <input
                                         type="text"
                                         className="form-control"
@@ -631,7 +688,18 @@ export default function AdminProductEditForm({
                                     />
                                 </div>
                                 <div className="form-group" style={{ marginBottom: 0 }}>
-                                    <label>SEO Title</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                        <label style={{ marginBottom: 0 }}>SEO Title</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAutofillField('seoTitle')}
+                                            disabled={autofillingFields['seoTitle']}
+                                            title="Заполнить SEO Title"
+                                            className="field-autofill-btn"
+                                        >
+                                            <Wand2 size={13} className={autofillingFields['seoTitle'] ? 'wand-spinner' : ''} />
+                                        </button>
+                                    </div>
                                     <input
                                         type="text"
                                         className="form-control"
@@ -641,7 +709,18 @@ export default function AdminProductEditForm({
                                     />
                                 </div>
                                 <div className="form-group" style={{ marginBottom: 0 }}>
-                                    <label>SEO Description</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                        <label style={{ marginBottom: 0 }}>SEO Description</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAutofillField('seoDescription')}
+                                            disabled={autofillingFields['seoDescription']}
+                                            title="Заполнить SEO Description"
+                                            className="field-autofill-btn"
+                                        >
+                                            <Wand2 size={13} className={autofillingFields['seoDescription'] ? 'wand-spinner' : ''} />
+                                        </button>
+                                    </div>
                                     <textarea
                                         className="form-control"
                                         rows="3"
